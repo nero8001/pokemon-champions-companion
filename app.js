@@ -32,6 +32,7 @@ const deM=id=>german.move[String(id)]||null;
 const deA=id=>german.ability[String(id)]||null;
 const deT=id=>german.type[String(id)]||null;
 const rid=u=>{const m=String(u).match(/\/(\d+)\/?$/);return m?m[1]:null};
+const resourceId=rid;
 async function json(u){const r=await fetch(u);if(!r.ok)throw Error(r.status);return r.json()}
 const title=s=>s.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join(' ');
 
@@ -272,8 +273,6 @@ async function init(){
  $('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
  $('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
- $('nature').innerHTML=['Hart','Solo','Robust','Mutig','Brav','Kühn','Sanft','Locker','Pfiffig','Mäßig','Mild','Hastig','Still','Zart','Forsch','Scheu','Naiv','Ernst','Kauzig','Froh','Frech','Sacht','Lasch','Hitzig','Ruhig'].map(x=>`<option>${x}</option>`).join('');
- ['hp','atk','def','spa','spd','spe'].forEach(k=>$('ev-'+k).oninput=calcEV);
  try{
   await loadGerman();
   const d=await json(`${API}/pokemon?limit=1025`);
