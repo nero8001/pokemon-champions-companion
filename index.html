@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Champions Companion – v0.5</title>
+<meta name="theme-color" content="#0b1020"><title>Champions Companion – v0.9</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 </header>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 0.5</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 0.9</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -21,12 +21,13 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 0.7</small><h1>Battle Calculator</h1>
+<div class="hero"><small>VERSION 0.9</small><h1>Battle Calculator</h1>
 <p>Level 50 · IVs 31 · EVs · Nature · Items · Status · Statuswertänderungen · Attacken.</p></div>
 
 <div class="card">
   <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">EVs: 0 / 510</span></div>
-  <label>Pokémon<select id="attacker"><option value="">Pokémon wählen …</option></select></label>
+  <label>Pokémon suchen<input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><div id="atkSuggestions" class="calc-suggestions" hidden></div></label>
+  <label>Form<select id="atkForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
   <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
   <div class="twocol">
     <label>Nature<select id="atkNature"></select></label>
@@ -44,7 +45,8 @@
 
 <div class="card">
   <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
-  <label>Pokémon<select id="defender"><option value="">Pokémon wählen …</option></select></label>
+  <label>Pokémon suchen<input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><div id="defSuggestions" class="calc-suggestions" hidden></div></label>
+  <label>Form<select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
   <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
   <div class="twocol">
     <label>Nature<select id="defNature"></select></label>
@@ -63,7 +65,7 @@
 <div class="card">
 <h2>Attacke</h2>
 <div class="twocol">
-<label>Attacke<select id="moveSelect"><option value="">Zuerst einen Angreifer wählen …</option></select></label>
+<label>Attacke suchen<input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …"><div id="moveSuggestions" class="calc-suggestions" hidden></div></label>
 <label>Zieltyp<select id="targetType"><option value="">Automatisch</option></select></label>
 </div>
 <div id="moveInfo" class="move-info">Wähle einen Angreifer und eine Attacke.</div>

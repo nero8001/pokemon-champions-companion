@@ -1,20 +1,16 @@
-# Pokémon Champions Companion v0.7
+# Pokémon Champions Companion – v0.9
 
-## Battle Calculator
-- Level 50
-- IVs fest auf 31
-- EVs frei verteilbar, 252 pro Wert / 510 insgesamt
-- 25 Nature auf Deutsch
-- Item-Auswahl
-- Statusbedingungen auf Deutsch
-- Statuswertänderungen -6 bis +6
-- Angreifer und Verteidiger getrennt
-- Attackenauswahl auf Deutsch
-- Vorläufige Schadensbasis
-- deutsche Pokémon-, Attacken-, Fähigkeiten- und Typnamen
+Deutsche Pokémon-App für GitHub Pages.
 
-## Pokédex
-Die bisherige deutsche Pokédex-Funktion bleibt enthalten.
+## v0.9
+- Pokédex mit deutscher Suche und Detailansicht
+- Battle Calculator auf Level 50
+- Pokémon im Calculator per Suchbegriff auswählbar
+- Angreifer und Verteidiger mit eigener Formauswahl (z. B. Mega/Gigadynamax, sofern von der Datenquelle vorhanden)
+- Attacken des gewählten Angreifers per Suchbegriff auswählbar
+- vollständige Item-Liste aus PokéAPI mit deutschen Namen, soweit vorhanden
+- Nature, EVs, Status und Statuswertänderungen
+- `.nojekyll` ist enthalten und absichtlich nicht leer
 
 ## GitHub Pages
-`.nojekyll` ist enthalten, liegt direkt im Root und ist absichtlich nicht leer.
+`index.html`, `app.js`, `style.css` und `.nojekyll` in den Root des Repositories legen.
