@@ -27,7 +27,27 @@ const formSuffixMap={
   bloodmoon:'Blutmondform', teal:'Türkis', wells:'Quellform', hearthflame:'Ofenform', cornerstone:'Felsform',
   hearthflame:'Ofenform', cornerstone:'Felsform', cornerstone:'Felsform', artful:'Prunkform'
 };
-function formDisplayName(fp,speciesId,speciesName){const formId=fp?.id?String(fp.id):rid(fp?.url||'');const official=deF(formId);if(official)return official;const base=deP(speciesId)||speciesName||title(fp.name);const raw=String(fp.name||'').toLowerCase(),sr=String(speciesName||'').toLowerCase();if(raw===sr||raw===sr+'-normal')return base;const suffix=raw.startsWith(sr+'-')?raw.slice(sr.length+1):raw;const map={mega:'Mega', 'mega-x':'Mega X','mega-y':'Mega Y',gmax:'Gigantamax',alola:'Alolan Form',galar:'Galarian Form',hisui:'Hisuian Form',paldea:'Paldean Form',origin:'Origin Forme',altered:'Altered Forme',therian:'Therian Forme',incarnate:'Incarnate Forme',school:'School Form',solo:'Solo Form',midday:'Midday Form',midnight:'Midnight Form',dusk:'Dusk Form',dawn:'Dawn Form',sunny:'Sunny Form',rainy:'Rainy Form',snowy:'Snowy Form',heat:'Heat Rotom',wash:'Wash Rotom',frost:'Frost Rotom',fan:'Fan Rotom',mow:'Mow Rotom',blade:'Blade Forme',shield:'Shield Forme',complete:'Complete Forme',small:'Small Size',large:'Large Size',gulping:'Gulping Form',gorging:'Gorging Form',hangry:'Hangry Mode','low-key':'Low Key Form',amped:'Amped Form',crowned:'Crowned Form',hero:'Hero Form',bloodmoon:'Bloodmoon Form',teal:'Teal Mask',wellspring:'Wellspring Mask',hearthflame:'Hearthflame Mask',cornerstone:'Cornerstone Mask',artful:'Artful Form',combat:'Combat Form',water:'Water Form',fire:'Fire Form',ice:'Ice Form',stellar:'Stellar Form'};return map[suffix]?`${map[suffix]} ${base}`:`${base} – ${title(suffix)}`}
+function formDisplayName(fp,speciesId,speciesName,formResourceId=null){
+ const pokemonId=fp?.id?String(fp.id):rid(fp?.url||'');
+ const formId=formResourceId?String(formResourceId):String(fp?.formResourceId||'');
+ const official=formId?dataName('form',formId,''):'';
+ if(official){
+   const base=dataName('pokemon',speciesId,speciesName||title(fp?.name));
+   const raw=String(fp?.name||'').toLowerCase();
+   const baseRaw=String(speciesName||'').toLowerCase();
+   if(raw===baseRaw||raw===baseRaw+'-normal')return base;
+   // PokeAPI's localized form name is already the official display name in most cases.
+   // If it is only a generic form label, prepend the species name.
+   const generic=['mega','mega x','mega y','gigantamax','alolan form','galarian form','hisuian form','paldean form','origin forme','altered forme','therian forme','incarnate forme','school form','solo form','midday form','midnight form','dusk form','dawn form','sunny form','rainy form','snowy form','heat rotom','wash rotom','frost rotom','fan rotom','mow rotom','blade forme','shield forme','complete forme','small size','large size','gulping form','gorging form','hangry mode','low key form','amped form','crowned form','hero form','bloodmoon form','teal mask','wellspring mask','hearthflame mask','cornerstone mask','artful form'];
+   return generic.includes(official.toLowerCase()) && base ? `${base} – ${official}` : official;
+ }
+ const base=dataName('pokemon',speciesId,speciesName||title(fp?.name));
+ const raw=String(fp?.name||'').toLowerCase(),sr=String(speciesName||'').toLowerCase();
+ if(raw===sr||raw===sr+'-normal')return base;
+ const suffix=raw.startsWith(sr+'-')?raw.slice(sr.length+1):raw;
+ const map={mega:'Mega', 'mega-x':'Mega X','mega-y':'Mega Y',gmax:'Gigantamax',alola:'Alolan Form',galar:'Galarian Form',hisui:'Hisuian Form',paldea:'Paldean Form',origin:'Origin Forme',altered:'Altered Forme',therian:'Therian Forme',incarnate:'Incarnate Forme',school:'School Form',solo:'Solo Form',midday:'Midday Form',midnight:'Midnight Form',dusk:'Dusk Form',dawn:'Dawn Form',sunny:'Sunny Form',rainy:'Rainy Form',snowy:'Snowy Form',heat:'Heat Rotom',wash:'Wash Rotom',frost:'Frost Rotom',fan:'Fan Rotom',mow:'Mow Rotom',blade:'Blade Forme',shield:'Shield Forme',complete:'Complete Forme',small:'Small Size',large:'Large Size',gulping:'Gulping Form',gorging:'Gorging Form',hangry:'Hangry Mode','low-key':'Low Key Form',amped:'Amped Form',crowned:'Crowned Form',hero:'Hero Form',bloodmoon:'Bloodmoon Form',teal:'Teal Mask',wellspring:'Wellspring Mask',hearthflame:'Hearthflame Mask',cornerstone:'Cornerstone Mask',artful:'Artful Form',combat:'Combat Form',water:'Water Form',fire:'Fire Form',ice:'Ice Form',stellar:'Stellar Form'};
+ return map[suffix]?`${base} – ${map[suffix]}`:`${base} – ${title(suffix)}`;
+}
 const typeRelationsCache=new Map();
 const allTypeIds=Array.from({length:18},(_,i)=>i+1);
 async function getTypeRelations(p){
@@ -83,7 +103,8 @@ async function detail(p,s){
   let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:deM(m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));const groupLabel=uiLang==='en'?({'Durch Levelaufstieg':'Level Up','TM / VM':'TM / HM','Attacken-Lehrer':'Move Tutor','Ei-Attacke':'Egg Move','Spezial':'Special','Weitere':'Other'}[group]||group):group;moveHtml+=`<div class="move-group"><h4>${groupLabel} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
   const langName=uiLang==='en'?'en':'de';const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name===langName)|| (s.flavor_text_entries||[]).find(x=>x.language?.name==='en');const genus=(s.genera||[]).find(x=>x.language?.name===langName)|| (s.genera||[]).find(x=>x.language?.name==='en');
   const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:uiLang==='en'?'HP':'KP',attack:uiLang==='en'?'Attack':'Angriff',defense:uiLang==='en'?'Defense':'Verteidigung','special-attack':uiLang==='en'?'Sp. Atk':'Sp. Angriff','special-defense':uiLang==='en'?'Sp. Def':'Sp. Verteidigung',speed:uiLang==='en'?'Speed':'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
-  const forms=s.varieties.map(v=>{const id=rid(v.pokemon.url);const name=formDisplayName({id:id,name:v.pokemon.name},s.id,s.name);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`}).join('');
+  const formRows=await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);if(!id)return '';let fp=null,formId=null;try{fp=await json(v.pokemon.url);formId=rid(fp?.forms?.[0]?.url||'')}catch(e){}const name=formDisplayName(fp||{id,name:v.pokemon.name},s.id,s.name,formId);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`;}));
+  const forms=formRows.filter(Boolean).join('');
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
   const relations=await getTypeRelations(p);
   $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>${uiLang==='en'?'Select Form':'Form auswählen'}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Strengths & Weaknesses':'Stärken & Schwächen'}</h3><div class="relation-grid"><div><strong>${uiLang==='en'?'Resistances':'Stärken / Resistenzen'}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${uiLang==='en'?'Weaknesses':'Schwächen'}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${uiLang==='en'?'Immunities':'Immunitäten'}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${uiLang==='en'?'Pokédex Description':'Pokédex-Beschreibung'}</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):(uiLang==='en'?'No description available.':'Keine deutsche Beschreibung vorhanden.')}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${uiLang==='en'?'Abilities':'Fähigkeiten'}</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>${uiLang==='en'?'Base Stats':'Basiswerte'}</h3>${stats}</div><div class="section"><h3>${uiLang==='en'?'Max Stats at Level 50':'Maximalwerte auf Level 50'}</h3><p class="muted">${uiLang==='en'?'IV 31 · 252 EVs in the selected stat · no item or battle bonuses':'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni'}</p><label class="nature-inline">${uiLang==='en'?'Nature':'Wesen'}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${uiLang==='en'?'Moves':'Attacken'}</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
@@ -104,37 +125,56 @@ function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${n
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
 function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
-function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
+function calcDisplayName(p){return p._formName||dataName('pokemon',p.speciesId||p.id,p.name)||title(p.name)}
 
-function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
- input.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
+function setupSearchBox(inputId,listId,side,itemsProvider,onPick){
+ const input=$(inputId),list=$(listId);let lastItems=[];
+ function matches(q){q=q.trim().toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US');return itemsProvider().filter(x=>String(x.id)===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US').includes(q)||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US').includes(q))}
+ function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
+ function chooseExact(){const q=input.value.trim();if(!q)return false;const exact=itemsProvider().find(x=>String(x.id)===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US'));if(exact){list.hidden=true;input.value=exact.label;onPick(exact);return true}return false}
+ input.addEventListener('input',()=>{const q=input.value.trim();draw(q?matches(q):itemsProvider().slice(0,12))});
+ input.addEventListener('focus',()=>{const q=input.value.trim();draw(q?matches(q):itemsProvider().slice(0,12))});
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(!chooseExact()&&lastItems[0]){const x=lastItems[0];input.value=x.label;list.hidden=true;onPick(x)}}});
+ input.addEventListener('blur',()=>setTimeout(()=>{if(!list.contains(document.activeElement))chooseExact()},120));
+ document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true});
+}
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
 async function selectCalcPokemon(side,item){
  const key=side==='atk'?'attacker':'defender',search=$(`${side}Search`);
+ if(!item||!item.id)return;
  try{
   search.disabled=true;
   const p=await json(`${API}/pokemon/${item.id}`);
-  const speciesId=rid(p.species?.url)||item.id;
-  const species=await json(`${API}/pokemon-species/${speciesId}`);
-  p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;
+  p.speciesId=rid(p.species?.url)||item.id;
+  p._formName=dataName('pokemon',p.speciesId,item.label||title(p.name))||item.label||title(p.name);
+  // Commit the selection immediately. Loading species/forms must never make the selection disappear.
   calcState[key]=p;
   search.value=calcDisplayName(p);
   updateCalcSide(side);
-  await loadCalcForms(side,species,p.id);
+  let species=null;
+  try{species=await json(`${API}/pokemon-species/${p.speciesId}`)}catch(e){console.warn('Species:',e)}
+  if(species)await loadCalcForms(side,species,p.id);
+  else {const sel=$(side==='atk'?'atkForm':'defForm');sel.innerHTML=`<option value="${p.id}">${calcDisplayName(p)}</option>`;sel.value=String(p.id);sel.disabled=true;calcState.forms[key]=[p]}
   if(side==='atk')await loadCalcMoves();
- }catch(e){console.error(e)}
+ }catch(e){console.error(e);search.value=item.label||'';calcState[key]=null;updateCalcSide(side)}
  finally{search.disabled=false}
 }
 async function loadCalcForms(side,species,selectedId){
  const key=side==='atk'?'attacker':'defender',forms=[];
  for(const v of species.varieties||[]){
   const id=rid(v.pokemon.url);if(!id)continue;
-  try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=formDisplayName(fp,species.id,species.name);forms.push(fp)}catch(e){}
+  try{
+   const fp=await json(v.pokemon.url);
+   fp.speciesId=species.id;
+   fp.formResourceId=rid(fp?.forms?.[0]?.url||'');
+   fp._formName=formDisplayName(fp,species.id,species.name,fp.formResourceId);
+   forms.push(fp);
+  }catch(e){console.warn('Form:',e)}
  }
  calcState.forms[key]=forms;
  const sel=$(side==='atk'?'atkForm':'defForm');
- sel.innerHTML=forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join('');
+ sel.innerHTML=forms.length?forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join(''):`<option value="${selectedId||''}">${uiLang==='en'?'Select Pokémon first …':'Erst Pokémon auswählen …'}</option>`;
  sel.disabled=forms.length<=1;
  const wanted=String(selectedId??calcState[key]?.id??'');
  if(forms.some(fp=>String(fp.id)===wanted))sel.value=wanted;
@@ -147,8 +187,8 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
 }
-async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?`${t('moveSearch')} …`:`${uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.'}`;if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=t('moveSearch')+' …';input.value='';}catch(e){input.disabled=true;input.placeholder=uiLang==='en'?'Moves could not be loaded':'Attacken konnten nicht geladen werden'}}
-async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=uiLang==='en'?(m.damage_class?.name==='physical'?'Physical':m.damage_class?.name==='special'?'Special':'Status'):(m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status');$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · ${uiLang==='en'?'Power':'Stärke'}: ${m.power??'—'} · ${uiLang==='en'?'Accuracy':'Genauigkeit'}: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
+async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?`${t('moveSearch')} …`:`${uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.'}`;if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:dataName('move',id,x.move.name)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=t('moveSearch')+' …';input.value='';}catch(e){input.disabled=true;input.placeholder=uiLang==='en'?'Moves could not be loaded':'Attacken konnten nicht geladen werden'}}
+async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=dataName('type',rid(m.type?.url),m.type?.name)||title(m.type?.name||'—');const cls=uiLang==='en'?(m.damage_class?.name==='physical'?'Physical':m.damage_class?.name==='special'?'Special':'Status'):(m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status');$('moveInfo').innerHTML=`<b>${dataName('move',id,m.name)||title(m.name)}</b> · ${type} · ${cls} · ${uiLang==='en'?'Power':'Stärke'}: ${m.power??'—'} · ${uiLang==='en'?'Accuracy':'Genauigkeit'}: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
 const fieldEffects={none:{type:null},electric:{labelDe:'Elektrofeld',labelEn:'Electric Terrain',type:'electric',boost:1.3},grassy:{labelDe:'Grasfeld',labelEn:'Grassy Terrain',type:'grass',boost:1.3},psychic:{labelDe:'Psychofeld',labelEn:'Psychic Terrain',type:'psychic',boost:1.3},misty:{labelDe:'Nebelfeld',labelEn:'Misty Terrain',dragonReduction:.5}};
 const fieldLabel=e=>e===fieldEffects.none?(uiLang==='en'?'No Terrain':'Kein Feld'):(uiLang==='en'?e.labelEn:e.labelDe);
 const weatherEffects={none:{},sun:{labelDe:'Sonnenschein',labelEn:'Sun',boostType:'fire',boost:1.5,nerfType:'water',nerf:.5},rain:{labelDe:'Regen',labelEn:'Rain',boostType:'water',boost:1.5,nerfType:'fire',nerf:.5},sand:{labelDe:'Sandsturm',labelEn:'Sandstorm'},snow:{labelDe:'Schnee',labelEn:'Snow'}};
