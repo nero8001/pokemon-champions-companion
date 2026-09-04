@@ -18,3 +18,10 @@ Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. At
 
 ## Version 1.8
 - Wesen-Auswahl zeigt nun bei jedem Wesen den positiven und negativen Statuswert, z. B. „Froh (+Initiative, −Sp. Angriff)“. Neutrale Wesen werden als „neutral“ gekennzeichnet. Die Anzeige gilt im Pokédex und im Battle Calculator.
+
+
+## Version 1.9
+- Wesen korrigiert: Hart = +Angriff / -Sp. Angriff; alle 25 Wesen korrekt zugeordnet.
+- Schadensausgabe zusätzlich als Prozent des Verteidiger-KP-Werts.
+- Grafische KP-Leiste zeigt verbleibende KP nach dem Treffer.
+- Vorläufige Schadensformel bleibt unverändert als Basis bestehen.

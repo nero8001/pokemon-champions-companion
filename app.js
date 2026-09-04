@@ -119,7 +119,7 @@ async function detail(p,s){
 }
 
 function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(Math.max(0,Math.min(32,+($(`${side}-${k}`).value)||0))),0);$(`${side}Total`).textContent=`Statuswertpunkte: ${t} / 66`;$(`${side}Total`).style.color=t>66?'#ff9a9a':''}
-const natureData=[['Hart','neutral','neutral'],['Solo','atk','def'],['Robust','atk','spa'],['Mutig','atk','spe'],['Brav','atk','spd'],['Kühn','def','atk'],['Sanft','def','spd'],['Locker','def','spe'],['Pfiffig','def','spa'],['Mäßig','spa','atk'],['Mild','spa','def'],['Hastig','spe','def'],['Still','spd','spe'],['Zart','spd','def'],['Forsch','spd','spe'],['Scheu','spe','atk'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Froh','spe','spa'],['Frech','atk','spd'],['Sacht','spd','spa'],['Lasch','def','spa'],['Hitzig','spa','spd'],['Ruhig','spa','spe']];
+const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Brav','atk','spa'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Hitzig','spa','spd'],['Ruhig','spa','spe'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Froh','spe','spa'],['Scheu','spe','atk'],['Hastig','spe','def'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
 const natureStatLabels={atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',neutral:'neutral'};
 function natureLabel(n){
   const name=n[0],up=natureStatLabels[n[1]]||n[1],down=natureStatLabels[n[2]]||n[2];
@@ -236,13 +236,23 @@ async function calculateDamage(){
   let basePower=m.power;
   const fw=fieldWeatherPowerMultiplier(m,a,d);
   basePower=Math.floor(basePower*fw.mult);
-  const base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
+  let base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
   const field=getSelectedField(),weather=getSelectedWeather();
   const notes=fw.notes.slice();
   if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
   if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
+  const hp=Math.max(1,dv[0]);
+  const pct=Math.min(100,Math.max(0,(base/hp)*100));
+  const remaining=Math.max(0,hp-base);
+  const label=deM(mid)||title(m.name);
   const env=[field.label,weather.label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
-  $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base}</div><div class="damage-muted">${deM(mid)||title(m.name)} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}${env?' · '+env:''}</div>${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}</div>`;
+  $('damageResult').innerHTML=`<div class="damage-box">
+   <div class="damage-number">${base} KP</div>
+   <div class="damage-percent">${pct.toFixed(1).replace('.',',')} % Schaden</div>
+   <div class="hpbar-wrap"><div class="hpbar"><div class="hpbar-fill" style="width:${Math.max(0,100-pct)}%"></div></div><div class="hpbar-label">${remaining} / ${hp} KP verbleibend</div></div>
+   <div class="damage-muted">${label} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}${env?' · '+env:''}</div>
+   ${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}
+  </div>`;
  }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
 }
 async function loadAllItems(){const d=await json(`${API}/item?limit=10000`);calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:deI(id)||title(x.name),raw:x.name}}).sort((a,b)=>a.name.localeCompare(b.name,'de'));}
