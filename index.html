@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10172e">
+<title>Pokémon Champions Companion</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="#dex">⚡ Champions Companion</a>
+  <nav>
+    <button class="nav active" data-page="dex">Pokédex</button>
+    <button class="nav" data-page="calc">Battle Calculator</button>
+  </nav>
+</header>
+<main>
+<section id="dex" class="page active">
+  <div class="hero">
+    <span class="eyebrow">Version 0.3</span>
+    <h1>Pokédex</h1>
+    <p>Pokémon suchen, Formen ansehen und Werte auf Level 50 berechnen.</p>
+    <div class="searchbox"><span>⌕</span><input id="search" type="search" placeholder="Name oder Pokédex-Nummer…" autocomplete="off"><button id="clear">×</button></div>
+    <div id="suggestions" class="suggestions hidden"></div>
+  </div>
+  <div id="status" class="status">Lade Pokémon…</div>
+  <div id="grid" class="grid"></div>
+</section>
+<section id="calc" class="page">
+  <div class="hero"><span class="eyebrow">Vorbereitung</span><h1>Battle Calculator</h1><p>Die vollständige Schadensberechnung kommt als eigener Ausbauschritt. Die Pokémon-Auswahl nutzt bereits dieselbe Datenbasis.</p></div>
+  <div class="calc-grid">
+    <article class="panel"><h2>Angreifer</h2><label>Pokémon<select id="attacker"></select></label><label>Wesen<select><option>Neutral</option><option>Hart</option><option>Froh</option><option>Mäßig</option><option>Still</option></select></label><label>Angriff-EVs<input type="number" min="0" max="252" value="252"></label><label>Initiative-EVs<input type="number" min="0" max="252" value="252"></label><p class="hint">Level 50 · IV/DV 31</p></article>
+    <article class="panel"><h2>Verteidiger</h2><label>Pokémon<select id="defender"></select></label><label>Wesen<select><option>Neutral</option><option>Kühn</option><option>Still</option><option>Sacht</option><option>Forsch</option></select></label><label>KP-EVs<input type="number" min="0" max="252" value="252"></label><label>Verteidigungs-EVs<input type="number" min="0" max="252" value="252"></label><p class="hint">Level 50 · IV/DV 31</p></article>
+  </div>
+</section>
+</main>
+<div id="modal" class="modal hidden"><div class="modal-card"><button id="close" class="close">×</button><div id="detail"></div></div></div>
+<script src="app.js"></script>
+</body></html>
