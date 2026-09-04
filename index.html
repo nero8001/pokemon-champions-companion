@@ -35,11 +35,11 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 1.5</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · EVs · Wesen · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 1.5</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
-    <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">EVs gesamt: 0 / 510</span></div>
+    <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
     <label>Pokémon suchen
       <input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
@@ -67,7 +67,7 @@
       </div>
     </div>
 
-    <h3>EV-Verteilung</h3>
+    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
     <div id="atkEV" class="evgrid"></div>
     <div class="changegrid">
       <label>Status<select id="atkStatus"></select></label>
@@ -82,7 +82,7 @@
   </div>
 
   <div class="card combatant-card-v14" id="defenderCard">
-    <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">EVs gesamt: 0 / 510</span></div>
+    <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
     <label>Pokémon suchen
       <input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
@@ -104,7 +104,7 @@
       </div>
     </div>
 
-    <h3>EV-Verteilung</h3>
+    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
     <div id="defEV" class="evgrid"></div>
     <div class="changegrid">
       <label>Status<select id="defStatus"></select></label>
