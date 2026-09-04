@@ -21,6 +21,49 @@ const deI=id=>german.item[String(id)]||null;
 const deF=id=>german.form[String(id)]||null;
 const rid=u=>{const m=String(u).match(/\/(\d+)\/?$/);return m?m[1]:null};
 const title=s=>String(s||'').split('-').map(x=>x[0]?x[0].toUpperCase()+x.slice(1):x).join(' ');
+const formSuffixMap={
+  mega:'Mega', 'mega-x':'Mega X', 'mega-y':'Mega Y',
+  gmax:'Gigadynamax', alola:'Alola-Form', galar:'Galar-Form', hisui:'Hisui-Form', paldea:'Paldea-Form',
+  origin:'Urform', altered:'Wandelform', therian:'Tiergeistform', incarnate:'Inkarnationsform',
+  resolute:'Resolutform', ordinary:'Normalform', pirouette:'Pirouettenform', school:'Schwarmform',
+  solo:'Solofrom', midday:'Tagform', midnight:'Nachtform', dusk:'Zwielichtform', dawn:'Morgenform',
+  sunny:'Sonnenform', rainy:'Regenform', snowy:'Schneeflockenform', heat:'Hitzemodul', wash:'Waschmodul',
+  frost:'Gefriermodul', fan:'Ventilatormodul', mow:'Rasenmähermodul', blade:'Klingenform', shield:'Schildform',
+  complete:'Komplettform', 10:'10%-Form', 50:'50%-Form', 100:'100%-Form', small:'Klein', large:'Groß',
+  school:'Schwarmform', gulping:'Schlingform', gorging:'Stopfform', hangry:'Heißhungerform',
+  'low-key':'Low-Key-Form', amped:'High-Voltage-Form', crown:'Kronenform', hero:'Heldenform',
+  bloodmoon:'Blutmondform', teal:'Türkis', wells:'Quellform', hearthflame:'Ofenform', cornerstone:'Felsform',
+  hearthflame:'Ofenform', cornerstone:'Felsform', cornerstone:'Felsform', artful:'Prunkform'
+};
+function formDisplayName(fp,speciesId,speciesName){
+  const base=deP(speciesId)||speciesName||title(fp.name);
+  const raw=String(fp.name||'').toLowerCase();
+  if(raw===String(base).toLowerCase().replace(/ /g,'-') || raw===String(title(speciesName)).toLowerCase().replace(/ /g,'-')) return base;
+  const suffix=raw.startsWith(String(speciesName||'').toLowerCase()+'-')?raw.slice(String(speciesName||'').length+1):raw;
+  if(!suffix || suffix==='normal') return base;
+  const mapped=formSuffixMap[suffix];
+  if(mapped) return `${mapped} ${base}`;
+  if(suffix.startsWith('mega-')) return `Mega ${base} ${title(suffix.slice(5))}`;
+  return `${base} – ${title(suffix)}`;
+}
+const typeRelationsCache=new Map();
+const allTypeIds=Array.from({length:18},(_,i)=>i+1);
+async function getTypeRelations(p){
+  const types=p.types||[]; if(!types.length)return {weak:[],resist:[],immune:[]};
+  const defending=types.map(t=>String(rid(t.type.url)));
+  const mult={}; allTypeIds.forEach(id=>mult[id]=1);
+  for(const typeId of defending){
+    let data=typeRelationsCache.get(typeId);
+    if(!data){data=await json(`${API}/type/${typeId}`);typeRelationsCache.set(typeId,data)}
+    for(const x of data.damage_relations.double_damage_from||[])mult[rid(x.url)]*=2;
+    for(const x of data.damage_relations.half_damage_from||[])mult[rid(x.url)]*=.5;
+    for(const x of data.damage_relations.no_damage_from||[])mult[rid(x.url)]=0;
+  }
+  const weak=[],resist=[],immune=[];
+  for(const id of allTypeIds){const name=deT(id)||title((typeRelationsCache.get(String(id))||{}).name||'');if(!name)continue;if(mult[id]>1)weak.push({name,m:mult[id]});else if(mult[id]===0)immune.push({name});else if(mult[id]<1)resist.push({name,m:mult[id]})}
+  return {weak,resist,immune};
+}
+function relationPills(arr,showMultiplier=false){return arr.length?arr.map(x=>`<span class="pill">${x.name}${showMultiplier?` ×${x.m}`:''}</span>`).join(''):'<span class="muted">Keine</span>';}
 async function json(u){const r=await fetch(u);if(!r.ok)throw Error(r.status);return r.json()}
 
 function nav(){document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active');scrollTo(0,0)})}
@@ -33,9 +76,10 @@ async function detail(p,s){
   let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:deM(m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));moveHtml+=`<div class="move-group"><h4>${group} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
   const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name==='de'),genus=(s.genera||[]).find(x=>x.language?.name==='de');
   const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:'KP',attack:'Angriff',defense:'Verteidigung','special-attack':'Sp. Angriff','special-defense':'Sp. Verteidigung',speed:'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
-  const forms=s.varieties.map(v=>{const id=rid(v.pokemon.url);const name=deF(id)||deP(id)||title(v.pokemon.name);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`}).join('');
+  const forms=s.varieties.map(v=>{const id=rid(v.pokemon.url);const name=formDisplayName({name:v.pokemon.name},s.id,s.name);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`}).join('');
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
-  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>Basiswerte</h3>${stats}</div><div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
+  const relations=await getTypeRelations(p);
+  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>Stärken & Schwächen</h3><div class="relation-grid"><div><strong>Stärken / Resistenzen</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>Schwächen</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>Immunitäten</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>Basiswerte</h3>${stats}</div><div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
   $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
   document.querySelectorAll('#forms .form-choice').forEach(btn=>btn.onclick=async()=>{try{const fp=await json(btn.dataset.formUrl);current={p:fp,s};isShiny=false;await detail(fp,s)}catch(e){console.error(e)}})
 }
@@ -57,7 +101,7 @@ function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
 async function selectCalcPokemon(side,item){try{$(`${side}Search`).disabled=true;const p=await json(`${API}/pokemon/${item.id}`);const speciesId=rid(p.species?.url)||item.id;const species=await json(`${API}/pokemon-species/${speciesId}`);p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;calcState[side]=p;await loadCalcForms(side,species);updateCalcSide(side);if(side==='attacker')await loadCalcMoves()}catch(e){console.error(e)}finally{$(`${side}Search`).disabled=false}}
-async function loadCalcForms(side,species){const forms=[];for(const v of species.varieties||[]){const id=rid(v.pokemon.url);if(!id)continue;try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=deF(fp.id)||((fp.id===species.id)?(deP(species.id)||title(fp.name)):`${deP(species.id)||title(species.name)} – ${deF(fp.id)||title(fp.name)}`);forms.push(fp)}catch(e){}}
+async function loadCalcForms(side,species){const forms=[];for(const v of species.varieties||[]){const id=rid(v.pokemon.url);if(!id)continue;try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=formDisplayName(fp,species.id,species.name);forms.push(fp)}catch(e){}}
  calcState.forms[side]=forms;const sel=$(side==='atk'?'atkForm':'defForm');sel.innerHTML=forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join('');sel.disabled=forms.length<=1;if(calcState[side])sel.value=String(calcState[side].id)}
 async function changeCalcForm(side,id){const p=calcState.forms[side].find(x=>String(x.id)===String(id));if(!p)return;calcState[side]=p;updateCalcSide(side);if(side==='atk')await loadCalcMoves()}
 async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder='Attacke suchen …';input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}

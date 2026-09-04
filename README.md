@@ -1,16 +1,12 @@
-# Pokémon Champions Companion – v0.9
+# Pokémon Champions Companion v1.0
 
-Deutsche Pokémon-App für GitHub Pages.
+Statischer Web-Prototyp für GitHub Pages.
 
-## v0.9
-- Pokédex mit deutscher Suche und Detailansicht
-- Battle Calculator auf Level 50
-- Pokémon im Calculator per Suchbegriff auswählbar
-- Angreifer und Verteidiger mit eigener Formauswahl (z. B. Mega/Gigadynamax, sofern von der Datenquelle vorhanden)
-- Attacken des gewählten Angreifers per Suchbegriff auswählbar
-- vollständige Item-Liste aus PokéAPI mit deutschen Namen, soweit vorhanden
-- Nature, EVs, Status und Statuswertänderungen
+## v1.0
+- Pokédex vollständig auf Deutsch
+- Korrekte lesbare Formnamen wie Mega Bisaflor und Gigadynamax-Formen
+- Stärken/Resistenzen, Schwächen und Immunitäten direkt in der Pokémon-Info
+- Battle Calculator mit Pokémon-/Attacken-Suche, Formen, Items, EVs, Nature und Statuswerten
 - `.nojekyll` ist enthalten und absichtlich nicht leer
 
-## GitHub Pages
-`index.html`, `app.js`, `style.css` und `.nojekyll` in den Root des Repositories legen.
+Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
