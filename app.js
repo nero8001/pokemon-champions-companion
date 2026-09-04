@@ -133,7 +133,7 @@ function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.
 function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=calcStatuses.map(x=>`<option>${x}</option>`).join(''));['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''))}
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
+function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent=T('noPokemon');calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
@@ -177,7 +177,7 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
 }
-async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder='Attacke suchen …';input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
+async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=T('attackSearch');input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
 const fieldEffects={
   none:{label:'Kein Feld'},
@@ -296,7 +296,7 @@ async function switchCombatantsV14(){
   const search=$(side==='atk'?'atkSearch':'defSearch');
   const form=$(side==='atk'?'atkForm':'defForm');
   if(!p){
-   search.value='';form.innerHTML='<option>Erst Pokémon auswählen …</option>';form.disabled=true;
+   search.value='';form.innerHTML=`<option>${T('choosePokemon')}</option>`;form.disabled=true;
    calcState.forms[key]=[];updateCalcSide(side);return;
   }
   search.value=calcDisplayName(p);
@@ -322,6 +322,83 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  $('atkForm').addEventListener('change',()=>changeCalcForm('atk',$('atkForm').value));$('defForm').addEventListener('change',()=>changeCalcForm('def',$('defForm').value));$('calcButton').addEventListener('click',calculateDamage);
  setupItemSearchV14('atk');setupItemSearchV14('def');$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});
 }
+
+/* ---------- UI language ---------- */
+const UI_LANG_KEY='pcc-language';
+let uiLang=localStorage.getItem(UI_LANG_KEY)||'de';
+
+const UI_TEXT={
+ de:{
+  navDex:'Pokédex',navCalc:'Battle Calculator',search:'Pokémon suchen …',
+  attacker:'Angreifer',defender:'Verteidiger',form:'Form',nature:'Wesen',item:'Item',
+  attack:'Attacke',attackSearch:'Attacke suchen …',noPokemon:'Noch kein Pokémon ausgewählt.',
+  choosePokemon:'Erst Pokémon auswählen …',chooseAttacker:'Wähle einen Angreifer und danach eine Attacke.',
+  chooseFirst:'Wähle zuerst einen Angreifer.',ev:'Statuswertpunkte-Verteilung',
+  total:'Statuswertpunkte gesamt',status:'Status',attackStat:'Angriff',defStat:'Verteidigung',
+  spAttack:'Sp. Angriff',spDefense:'Sp. Verteidigung',speed:'Initiative',hp:'KP',
+  switch:'Switch',calculate:'Attacke',language:'Sprache / Language',
+  preliminary:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',
+  damage:'Schaden',remaining:'KP verbleibend',percent:'% Schaden',
+  neutral:'neutral',plus:'+',minus:'−',none:'Keine',
+  weather:'Wetter',terrain:'Feldstatus',noWeather:'Kein Wetter',noTerrain:'Kein Feld',
+  sun:'Sonnenschein',rain:'Regen',sand:'Sandsturm',snow:'Schnee',
+  electricTerrain:'Elektrofeld',grassTerrain:'Grasfeld',psychicTerrain:'Psychofeld',mistyTerrain:'Nebelfeld'
+ },
+ en:{
+  navDex:'Pokédex',navCalc:'Battle Calculator',search:'Search Pokémon …',
+  attacker:'Attacker',defender:'Defender',form:'Form',nature:'Nature',item:'Item',
+  attack:'Move',attackSearch:'Search move …',noPokemon:'No Pokémon selected yet.',
+  choosePokemon:'Select a Pokémon first …',chooseAttacker:'Choose an attacker and then a move.',
+  chooseFirst:'Choose an attacker first.',ev:'Stat Point Distribution',
+  total:'Stat Points total',status:'Status',attackStat:'Attack',defStat:'Defense',
+  spAttack:'Sp. Atk',spDefense:'Sp. Def',speed:'Speed',hp:'HP',
+  switch:'Switch',calculate:'Move',language:'Language / Sprache',
+  preliminary:'The damage calculation remains preliminary until the verified Champions ruleset is available.',
+  damage:'Damage',remaining:'HP remaining',percent:'% damage',
+  neutral:'neutral',plus:'+',minus:'−',none:'None',
+  weather:'Weather',terrain:'Terrain',noWeather:'No weather',noTerrain:'No terrain',
+  sun:'Sun',rain:'Rain',sand:'Sandstorm',snow:'Snow',
+  electricTerrain:'Electric Terrain',grassTerrain:'Grassy Terrain',psychicTerrain:'Psychic Terrain',mistyTerrain:'Misty Terrain'
+ }
+};
+function T(k){return (UI_TEXT[uiLang]||UI_TEXT.de)[k]||k}
+function fillNatureLabel(n){
+ const stat={atk:T('attackStat'),def:T('defStat'),spa:T('spAttack'),spd:T('spDefense'),spe:T('speed')};
+ return n[1]==='neutral'?`${n[0]} (${T('neutral')})`:`${n[0]} (${T('plus')}${stat[n[1]]}, ${T('minus')}${stat[n[2]]})`;
+}
+function applyLanguage(){
+ document.documentElement.lang=uiLang;
+ const s=$('languageSelect');if(s)s.value=uiLang;
+ // Static navigation/headings.
+ document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=T(el.dataset.i18n));
+ const q=(id,k)=>{const e=$(id);if(e)e.textContent=T(k)};
+ const ph=(id,k)=>{const e=$(id);if(e)e.placeholder=T(k)};
+ ph('search','search');ph('atkSearch','search');ph('defSearch','search');ph('moveSearch','attackSearch');
+ ph('atkItemSearch','item');ph('defItemSearch','item');
+ q('switchCombatants','switch');q('calcButton','calculate');
+ document.querySelectorAll('#attackerCard h2').forEach(e=>e.textContent=T('attacker'));
+ document.querySelectorAll('#defenderCard h2').forEach(e=>e.textContent=T('defender'));
+ // Translate common labels by their visible text.
+ const labelMap={
+  'Pokémon suchen':'search','Pokémon search':'search','Form':'form','Wesen':'nature','Nature':'nature',
+  'Item':'item','Attacke suchen':'attackSearch','Attacke':'attack','Status':'status',
+  'EV-Verteilung':'ev','EV Distribution':'ev'
+ };
+ document.querySelectorAll('label,h3').forEach(el=>{
+   const raw=el.childNodes[0]?.textContent?.trim();
+   if(raw&&labelMap[raw]) el.childNodes[0].textContent=T(labelMap[raw])+' ';
+ });
+ if(typeof fillOptions==='function') fillOptions();
+ if(typeof updateCalcSide==='function'){updateCalcSide('atk');updateCalcSide('def')}
+}
+function setLanguage(lang){
+ uiLang=lang==='en'?'en':'de';localStorage.setItem(UI_LANG_KEY,uiLang);applyLanguage();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ const s=$('languageSelect');if(s)s.addEventListener('change',()=>setLanguage(s.value));
+ setTimeout(applyLanguage,0);
+});
+
 async function init(){nav();$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
  try{await loadGerman();const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`),loadAllItems()]);mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=`${mons.length} Pokémon geladen`;render(mons.slice(0,24));setupCalculator()}catch(e){console.error(e);$('status').textContent='Fehler beim Laden. Bitte Seite neu laden.'}}
 init();

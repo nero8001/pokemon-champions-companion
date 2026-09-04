@@ -25,3 +25,11 @@ Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. At
 - Schadensausgabe zusätzlich als Prozent des Verteidiger-KP-Werts.
 - Grafische KP-Leiste zeigt verbleibende KP nach dem Treffer.
 - Vorläufige Schadensformel bleibt unverändert als Basis bestehen.
+
+
+## Version 2.0
+- Sprachumschaltung Deutsch/English am oberen Seitenrand.
+- UI-Texte des Pokédex und Calculators werden dynamisch umgeschaltet.
+- Auswahlfelder, Buttons, Status-/Wetter-/Feldtexte und Wesensanzeige werden übersetzt.
+- Gewählte Sprache wird lokal gespeichert und beim nächsten Öffnen wieder verwendet.
+- Pokémon-, Attacken- und Itemdaten können unabhängig von der UI-Sprache lokalisiert werden.
