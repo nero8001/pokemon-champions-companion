@@ -14,3 +14,7 @@ Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Rege
 
 ## Version 1.4
 Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. Attacke direkt beim Angreifer, Item-Suche, Switch zwischen Angreifer und Verteidiger, Statuswertänderungen 0 bis +6. Pokédex-Code unverändert.
+
+
+## Version 1.8
+- Wesen-Auswahl zeigt nun bei jedem Wesen den positiven und negativen Statuswert, z. B. „Froh (+Initiative, −Sp. Angriff)“. Neutrale Wesen werden als „neutral“ gekennzeichnet. Die Anzeige gilt im Pokédex und im Battle Calculator.
