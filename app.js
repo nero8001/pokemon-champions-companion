@@ -4,21 +4,18 @@ const sprite=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 const shiny=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
 const $=id=>document.getElementById(id);
 let mons=[],current=null,isShiny=false;
-const legacyGerman={pokemon:{},move:{},ability:{},type:{},item:{},form:{}};
-const calcState={attacker:null,defender:null,forms:{attacker:[],defender:[]},moves:[],selectedMove:null};
+const localized={de:{pokemon:{},move:{},ability:{},type:{},item:{},form:{}},en:{pokemon:{},move:{},ability:{},type:{},item:{},form:{}}};
 
-function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
-async function legacyLoadCSV(kind,file){const r=await fetch(LOCAL+file);if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]==='6')legacyGerman[kind][row[0]]=row[2]}}
-async function legacyLoadGerman(){await Promise.all([
-  legacyLoadCSV('pokemon','pokemon_species_names.csv'),legacyLoadCSV('move','move_names.csv'),legacyLoadCSV('ability','ability_names.csv'),
-  legacyLoadCSV('type','type_names.csv'),legacyLoadCSV('item','item_names.csv'),legacyLoadCSV('form','pokemon_form_names.csv')
-])}
-const legacyDeP=id=>legacyGerman.pokemon[String(id)]||null;
-const legacyDeM=id=>legacyGerman.move[String(id)]||null;
-const legacyDeA=id=>legacyGerman.ability[String(id)]||null;
-const legacyDeT=id=>legacyGerman.type[String(id)]||null;
-const legacyDeI=id=>legacyGerman.item[String(id)]||null;
-const legacyDeF=id=>legacyGerman.form[String(id)]||null;
+function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='\"'){if(q&&line[i+1]==='\"'){cur+='\"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
+async function loadLocalizedCSV(lang,kind,file,languageId){const r=await fetch(LOCAL+file);if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(languageId))localized[lang][kind][row[0]]=row[2]}}
+async function loadLanguages(){const files=[['pokemon','pokemon_species_names.csv'],['move','move_names.csv'],['ability','ability_names.csv'],['type','type_names.csv'],['item','item_names.csv'],['form','pokemon_form_names.csv']];await Promise.all(files.flatMap(([k,f])=>[loadLocalizedCSV('de',k,f,6),loadLocalizedCSV('en',k,f,9)]))}
+function currentDataName(kind,id){return localized[uiLang]?.[kind]?.[String(id)]||localized.en?.[kind]?.[String(id)]||null}
+const deP=id=>currentDataName('pokemon',id);
+const deM=id=>currentDataName('move',id);
+const deA=id=>currentDataName('ability',id);
+const deT=id=>currentDataName('type',id);
+const deI=id=>currentDataName('item',id);
+const deF=id=>currentDataName('form',id);
 const rid=u=>{const m=String(u).match(/\/(\d+)\/?$/);return m?m[1]:null};
 const title=s=>String(s||'').split('-').map(x=>x[0]?x[0].toUpperCase()+x.slice(1):x).join(' ');
 const formSuffixMap={
@@ -36,7 +33,7 @@ const formSuffixMap={
   hearthflame:'Ofenform', cornerstone:'Felsform', cornerstone:'Felsform', artful:'Prunkform'
 };
 function formDisplayName(fp,speciesId,speciesName){
-  const base=deP(speciesId)||speciesName||title(fp.name);
+  const base=currentDataName('pokemon',speciesId)||title(speciesName||fp.name);
   const raw=String(fp.name||'').toLowerCase();
   const speciesRaw=String(speciesName||'').toLowerCase();
   if(raw===speciesRaw || raw===speciesRaw+'-normal') return base;
@@ -101,13 +98,13 @@ function maxStatsHtml(p){
   return `<div class="maxstats" id="maxStatsBox">${vals.map((v,i)=>`<div class="maxstat"><span>${calcStatLabels[i]}</span><b id="dexMaxStat${i}">${v}</b></div>`).join('')}</div>`;
 }
 async function detail(p,s){
-  const pname=deP(p.id)||deF(p.id)||title(p.name);const abilities=await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name)));
+  const pname=currentDataName('pokemon',p.id)||title(p.name);const abilities=await Promise.all(p.abilities.map(async x=>currentDataName('ability',rid(x.ability.url))||title(x.ability.name)));
   const grouped={};p.moves.forEach(x=>(x.version_group_details||[]).forEach(v=>{let key='Weitere';const m=v.move_learn_method?.name;if(m==='level-up')key='Durch Levelaufstieg';else if(m==='machine')key='TM / VM';else if(m==='tutor')key='Attacken-Lehrer';else if(m==='egg')key='Ei-Attacke';else if(m==='stadium-surfing-pikachu')key='Spezial';if(!grouped[key])grouped[key]=[];const entry={id:rid(x.move.url),name:x.move.name,level:v.level_learned_at||0};if(!grouped[key].some(a=>a.id===entry.id))grouped[key].push(entry)}));
-  let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:deM(m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));moveHtml+=`<div class="move-group"><h4>${group} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
+  let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:currentDataName('move',m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));moveHtml+=`<div class="move-group"><h4>${group} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
   const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name==='de'),genus=(s.genera||[]).find(x=>x.language?.name==='de');
   const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:'KP',attack:'Angriff',defense:'Verteidigung','special-attack':'Sp. Angriff','special-defense':'Sp. Verteidigung',speed:'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
   const forms=s.varieties.map(v=>{const id=rid(v.pokemon.url);const name=formDisplayName({name:v.pokemon.name},s.id,s.name);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`}).join('');
-  const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
+  const types=p.types.map(t=>`<span class="pill">${currentDataName('type',rid(t.type.url))||title(t.type.name)}</span>`).join('');
   const relations=await getTypeRelations(p);
   $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>Stärken & Schwächen</h3><div class="relation-grid"><div><strong>Stärken / Resistenzen</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>Schwächen</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>Immunitäten</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>Basiswerte</h3>${stats}</div><div class="section"><h3>Maximalwerte auf Level 50</h3><p class="muted">IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni</p><label class="nature-inline">Wesen<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
   $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
@@ -119,9 +116,12 @@ async function detail(p,s){
 }
 
 function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(Math.max(0,Math.min(32,+($(`${side}-${k}`).value)||0))),0);$(`${side}Total`).textContent=`Statuswertpunkte: ${t} / 66`;$(`${side}Total`).style.color=t>66?'#ff9a9a':''}
-const legacyNatureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Brav','atk','spa'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Hitzig','spa','spd'],['Ruhig','spa','spe'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Froh','spe','spa'],['Scheu','spe','atk'],['Hastig','spe','def'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
+const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Brav','atk','spe'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Ruhig','spa','spe'],['Hitzig','spa','spd'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Forsch','spd','spe'],['Scheu','spe','atk'],['Hastig','spe','def'],['Froh','spe','spa'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
 const natureStatLabels={atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',neutral:'neutral'};
-function legacyNatureLabel(n){return natureLabel2(n)}
+function natureLabel(n){
+  const name=n[0],up=natureStatLabels[n[1]]||n[1],down=natureStatLabels[n[2]]||n[2];
+  return n[1]==='neutral' ? `${name} (neutral)` : `${name} (+${up}, −${down})`;
+}
 
 const calcStatKeys=['hp','atk','def','spa','spd','spe'];const calcStatLabels=['KP','Angriff','Verteidigung','Sp. Angriff','Sp. Verteidigung','Initiative'];
 const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','Paralyse','Eingefroren'];const stages=['0','+1','+2','+3','+4','+5','+6'];
@@ -135,7 +135,7 @@ function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
  input.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
-function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
+function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:currentDataName('pokemon',p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
 async function selectCalcPokemon(side,item){
  const key=side==='atk'?'attacker':'defender',search=$(`${side}Search`);
@@ -144,7 +144,7 @@ async function selectCalcPokemon(side,item){
   const p=await json(`${API}/pokemon/${item.id}`);
   const speciesId=rid(p.species?.url)||item.id;
   const species=await json(`${API}/pokemon-species/${speciesId}`);
-  p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;
+  p.speciesId=speciesId;p._formName=currentDataName('pokemon',speciesId)||item.label;
   calcState[key]=p;
   search.value=calcDisplayName(p);
   updateCalcSide(side);
@@ -174,7 +174,7 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
 }
-async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':U('firstAttacker');if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=T('attackSearch');input.value='';}catch(e){input.disabled=true;input.placeholder=U('moveError')}}
+async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:currentDataName('move',id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=T('attackSearch');input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
 const fieldEffects={
   none:{label:'Kein Feld'},
@@ -241,7 +241,7 @@ async function calculateDamage(){
   const hp=Math.max(1,dv[0]);
   const pct=Math.min(100,Math.max(0,(base/hp)*100));
   const remaining=Math.max(0,hp-base);
-  const label=deM(mid)||title(m.name);
+  const label=currentDataName('move',mid)||title(m.name);
   const env=[field.label,weather.label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
   $('damageResult').innerHTML=`<div class="damage-box">
    <div class="damage-number">${base} KP</div>
@@ -252,7 +252,7 @@ async function calculateDamage(){
   </div>`;
  }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
 }
-async function loadAllItems(){const d=await json(`${API}/item?limit=10000`);calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:deI(id)||title(x.name),raw:x.name}}).sort((a,b)=>a.name.localeCompare(b.name,'de'));}
+async function loadAllItems(){const d=await json(`${API}/item?limit=10000`);calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:currentDataName('item',id)||title(x.name),raw:x.name}}).sort((a,b)=>a.name.localeCompare(b.name,'de'));}
 
 function setupItemSearchV14(side){
   const input=$(side==='atk'?'atkItemSearch':'defItemSearch');
@@ -260,9 +260,9 @@ function setupItemSearchV14(side){
   if(!input||!select)return;
   const all=Array.from(select.options).map(o=>({value:o.value,label:o.textContent}));
   function draw(){
-    const q=input.value.trim().toLocaleLowerCase('de-DE');
+    const q=input.value.trim().toLocaleLowerCase();
     Array.from(select.options).forEach(o=>{
-      o.hidden=!!q&&!o.textContent.toLocaleLowerCase('de-DE').includes(q);
+      o.hidden=!!q&&!o.textContent.toLocaleLowerCase().includes(q);
     });
     const visible=Array.from(select.options).find(o=>!o.hidden);
     if(q&&visible) select.value=visible.value;
@@ -305,7 +305,7 @@ async function switchCombatantsV14(){
  try{
   await Promise.all([refresh('atk',calcState.attacker),refresh('def',calcState.defender)]);
   $('moveSearch').value='';$('moveSuggestions').innerHTML='';$('moveSuggestions').hidden=true;
-  $('moveInfo').textContent=calcState.attacker?'Attacke suchen …':U('firstAttacker');
+  $('moveInfo').textContent=calcState.attacker?'Attacke suchen …':'Wähle zuerst einen Angreifer.';
   if(calcState.attacker)await loadCalcMoves();else $('moveSearch').disabled=true;
  }catch(e){console.error(e)}
 }
@@ -321,28 +321,28 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
 }
 
 /* ---------- UI language ---------- */
-const LEGACY_UI_LANG_KEY='pcc-language';
-let legacyUiLang=localStorage.getItem(UI_LANG_KEY)||'de';
+const UI_LANG_KEY='pcc-language';
+let uiLang=localStorage.getItem(UI_LANG_KEY)||'de';
 
-const LEGACY_UI_TEXT={
+const UI_TEXT={
  de:{
-  navDex:'Pokédex',navCalc:'Battle Calculator',search:'Pokémon suchen …',
+  navDex:'Pokédex',navCalc:'Battle Calculator',searchLabel:'Pokémon suchen',search:'Name oder Pokédex-Nummer',
   attacker:'Angreifer',defender:'Verteidiger',form:'Form',nature:'Wesen',item:'Item',
   attack:'Attacke',attackSearch:'Attacke suchen …',noPokemon:'Noch kein Pokémon ausgewählt.',
-  choosePokemon:U('firstPokemon'),chooseAttacker:U('chooseMove'),
-  chooseFirst:U('firstAttacker'),ev:'Statuswertpunkte-Verteilung',
+  choosePokemon:'Erst Pokémon auswählen …',chooseAttacker:'Wähle einen Angreifer und danach eine Attacke.',
+  chooseFirst:'Wähle zuerst einen Angreifer.',ev:'Statuswertpunkte-Verteilung',
   total:'Statuswertpunkte gesamt',status:'Status',attackStat:'Angriff',defStat:'Verteidigung',
   spAttack:'Sp. Angriff',spDefense:'Sp. Verteidigung',speed:'Initiative',hp:'KP',
   switch:'Switch',calculate:'Attacke',language:'Sprache / Language',
   preliminary:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',
   damage:'Schaden',remaining:'KP verbleibend',percent:'% Schaden',
   neutral:'neutral',plus:'+',minus:'−',none:'Keine',
-  weather:'Wetter',fieldHelp:'Feld und Wetter werden bei der Schadensberechnung berücksichtigt.',terrain:'Feldstatus',noWeather:'Kein Wetter',noTerrain:'Kein Feld',
+  weather:'Wetter',terrain:'Feldstatus',noWeather:'Kein Wetter',noTerrain:'Kein Feld',
   sun:'Sonnenschein',rain:'Regen',sand:'Sandsturm',snow:'Schnee',
   electricTerrain:'Elektrofeld',grassTerrain:'Grasfeld',psychicTerrain:'Psychofeld',mistyTerrain:'Nebelfeld'
  },
  en:{
-  navDex:'Pokédex',navCalc:'Battle Calculator',search:'Search Pokémon …',
+  navDex:'Pokédex',navCalc:'Battle Calculator',searchLabel:'Search Pokémon',search:'Name or Pokédex number',
   attacker:'Attacker',defender:'Defender',form:'Form',nature:'Nature',item:'Item',
   attack:'Move',attackSearch:'Search move …',noPokemon:'No Pokémon selected yet.',
   choosePokemon:'Select a Pokémon first …',chooseAttacker:'Choose an attacker and then a move.',
@@ -353,17 +353,41 @@ const LEGACY_UI_TEXT={
   preliminary:'The damage calculation remains preliminary until the verified Champions ruleset is available.',
   damage:'Damage',remaining:'HP remaining',percent:'% damage',
   neutral:'neutral',plus:'+',minus:'−',none:'None',
-  weather:'Weather',fieldHelp:'Field and weather are included in the damage calculation.',terrain:'Terrain',noWeather:'No weather',noTerrain:'No terrain',
+  weather:'Weather',terrain:'Terrain',noWeather:'No weather',noTerrain:'No terrain',
   sun:'Sun',rain:'Rain',sand:'Sandstorm',snow:'Snow',
   electricTerrain:'Electric Terrain',grassTerrain:'Grassy Terrain',psychicTerrain:'Psychic Terrain',mistyTerrain:'Misty Terrain'
  }
 };
-function legacyT(k){return (UI_TEXT[uiLang]||UI_TEXT.de)[k]||k}
+function T(k){return (UI_TEXT[uiLang]||UI_TEXT.de)[k]||k}
 function fillNatureLabel(n){
  const stat={atk:T('attackStat'),def:T('defStat'),spa:T('spAttack'),spd:T('spDefense'),spe:T('speed')};
  return n[1]==='neutral'?`${n[0]} (${T('neutral')})`:`${n[0]} (${T('plus')}${stat[n[1]]}, ${T('minus')}${stat[n[2]]})`;
 }
-function applyLanguage(){ translateAllUI(); }
+function applyLanguage(){
+ document.documentElement.lang=uiLang;
+ const s=$('languageSelect');if(s)s.value=uiLang;
+ // Static navigation/headings.
+ document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=T(el.dataset.i18n));
+ const q=(id,k)=>{const e=$(id);if(e)e.textContent=T(k)};
+ const ph=(id,k)=>{const e=$(id);if(e)e.placeholder=T(k)};
+ ph('search','search');ph('atkSearch','search');ph('defSearch','search');ph('moveSearch','attackSearch');
+ ph('atkItemSearch','item');ph('defItemSearch','item');
+ q('switchCombatants','switch');q('calcButton','calculate');
+ document.querySelectorAll('#attackerCard h2').forEach(e=>e.textContent=T('attacker'));
+ document.querySelectorAll('#defenderCard h2').forEach(e=>e.textContent=T('defender'));
+ // Translate common labels by their visible text.
+ const labelMap={
+  'Pokémon suchen':'search','Pokémon search':'search','Form':'form','Wesen':'nature','Nature':'nature',
+  'Item':'item','Attacke suchen':'attackSearch','Attacke':'attack','Status':'status',
+  'EV-Verteilung':'ev','EV Distribution':'ev'
+ };
+ document.querySelectorAll('label,h3').forEach(el=>{
+   const raw=el.childNodes[0]?.textContent?.trim();
+   if(raw&&labelMap[raw]) el.childNodes[0].textContent=T(labelMap[raw])+' ';
+ });
+ if(typeof fillOptions==='function') fillOptions();
+ if(typeof updateCalcSide==='function'){updateCalcSide('atk');updateCalcSide('def')}
+}
 function setLanguage(lang){
  uiLang=lang==='en'?'en':'de';localStorage.setItem(UI_LANG_KEY,uiLang);applyLanguage();
 }
@@ -372,219 +396,25 @@ document.addEventListener('DOMContentLoaded',()=>{
  setTimeout(applyLanguage,0);
 });
 
-
-const LEGACY_UI2={
-de:{
- version:'VERSION 2.1',pokedex:'Pokédex',calculator:'Battle Calculator',
- introDex:'Alle Pokémon · Formen · Fähigkeiten · Attacken · Werte · Stärken und Schwächen.',
- introCalc:'Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Wetter · Feldstatus.',
- searchPokemon:'Pokémon suchen …',number:'Name oder Pokédex-Nummer',form:'Form',nature:'Wesen',item:'Item',
- attacker:'Angreifer',defender:'Verteidiger',move:'Attacke',searchMove:'Attacke suchen …',
- nonePokemon:'Noch kein Pokémon ausgewählt.',firstPokemon:U('firstPokemon'),
- firstAttacker:U('firstAttacker'),chooseMove:U('chooseMove'),
- statPoints:'Statuswertpunkte-Verteilung',total:'Statuswertpunkte gesamt',status:'Status',
- hp:'KP',atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',
- weather:'Wetter',terrain:'Feldstatus',noWeather:'Kein Wetter',noTerrain:'Kein Feld',
- sun:'Sonnenschein',rain:'Regen',sand:'Sandsturm',snow:'Schnee',
- electric:'Elektrofeld',grass:'Grasfeld',psychic:'Psychofeld',misty:'Nebelfeld',
- switch:'Switch',attackButton:'Attacke',prelim:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',
- damage:'Schaden',remaining:'KP verbleibend',damagePct:'% Schaden',accuracy:'Genauigkeit',power:'Stärke',
- physical:'Physisch',special:'Speziell',statusClass:'Status',neutral:'neutral',none:'Keine',
- itemSearch:'Item suchen …',equip:'Ausrüstbares Champions-Item',loadError:U('loadError'),
- moveError:'Attacken konnten nicht geladen werden.',calcError:U('calcError')
-},
-en:{
- version:'VERSION 2.1',pokedex:'Pokédex',calculator:'Battle Calculator',
- introDex:'All Pokémon · Forms · Abilities · Moves · Stats · Strengths and Weaknesses.',
- introCalc:'Level 50 · IVs 31 · Stat Points · Nature · Status · Weather · Terrain.',
- searchPokemon:'Search Pokémon …',number:'Name or Pokédex number',form:'Form',nature:'Nature',item:'Item',
- attacker:'Attacker',defender:'Defender',move:'Move',searchMove:'Search move …',
- nonePokemon:'No Pokémon selected yet.',firstPokemon:'Select a Pokémon first …',
- firstAttacker:'Choose an attacker first.',chooseMove:'Choose an attacker and then a move.',
- statPoints:'Stat Point Distribution',total:'Stat Points total',status:'Status',
- hp:'HP',atk:'Attack',def:'Defense',spa:'Sp. Atk',spd:'Sp. Def',spe:'Speed',
- weather:'Weather',terrain:'Terrain',noWeather:'No weather',noTerrain:'No terrain',
- sun:'Sun',rain:'Rain',sand:'Sandstorm',snow:'Snow',
- electric:'Electric Terrain',grass:'Grassy Terrain',psychic:'Psychic Terrain',misty:'Misty Terrain',
- switch:'Switch',attackButton:'Move',prelim:'The damage calculation remains preliminary until the verified Champions ruleset is available.',
- damage:'Damage',remaining:'HP remaining',damagePct:'% damage',accuracy:'Accuracy',power:'Power',
- physical:'Physical',special:'Special',statusClass:'Status',neutral:'neutral',none:'None',
- itemSearch:'Search item …',equip:'Equippable Champions item',loadError:'The Pokémon could not be loaded.',
- moveError:'Moves could not be loaded.',calcError:'The calculation could not be performed.'
-}};
-function legacyU(k){return UI2[uiLang]?.[k]??UI2.de[k]??k}
-function natureLabel2(n){
- const st={atk:U('atk'),def:U('def'),spa:U('spa'),spd:U('spd'),spe:U('spe')};
- return n[1]==='neutral'?`${n[0]} (${U('neutral')})`:`${n[0]} (+${st[n[1]]}, −${st[n[2]]})`;
-}
-function translateAllUI(){
- document.documentElement.lang=uiLang;
- const sel=$('languageSelect');if(sel)sel.value=uiLang;
- const textMap={'Pokédex':'pokedex','Battle Calculator':'calculator','Angreifer':'attacker','Verteidiger':'defender','Form':'form','Wesen':'nature','Item':'item','Attacke':'attackButton','Status':'status','Wetter':'weather','Feldstatus':'terrain','Switch':'switch','EV-Verteilung':'statPoints','Statuswertpunkte-Verteilung':'statPoints','Statuswertpunkte gesamt':'total','EVs gesamt':'total'};
- document.querySelectorAll('h1,h2,h3,h4,label,button,p,small,.notice').forEach(el=>{
-   const raw=el.textContent.trim();
-   if(textMap[raw]) el.textContent=U(textMap[raw]);
- });
- const ph={search:'searchPokemon',atkSearch:'searchPokemon',defSearch:'searchPokemon',moveSearch:'searchMove',atkItemSearch:'itemSearch',defItemSearch:'itemSearch'};
- Object.entries(ph).forEach(([id,k])=>{const e=$(id);if(e)e.placeholder=U(k)});
- document.querySelectorAll('.hero p').forEach((e,i)=>{e.textContent=i===0?U('introDex'):U('introCalc')});
- const v=document.querySelector('.hero small');if(v)v.textContent=U('version');
- if(typeof fillOptions==='function')fillOptions();
-}
-
-async function init(){nav();$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
- try{await legacyLoadGerman();const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`),loadAllItems()]);mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=`${mons.length} Pokémon geladen`;render(mons.slice(0,24));setupCalculator()}catch(e){console.error(e);$('status').textContent='Fehler beim Laden. Bitte Seite neu laden.'}}
-init();
-
-/* ===== v2.2 bilingual core ===== */
-const UI_LANG_KEY='pcc-language';
-let uiLang=localStorage.getItem(UI_LANG_KEY)||'de';
-const localized={de:{pokemon:{},move:{},ability:{},type:{},item:{},form:{},nature:{}},en:{pokemon:{},move:{},ability:{},type:{},item:{},form:{},nature:{}}};
-async function loadLocalizedCSV(lang,kind,file,id){const r=await fetch(LOCAL+file);if(!r.ok)throw Error(r.status);const lines=(await r.text()).split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(id))localized[lang][kind][row[0]]=row[2]}}
-async function loadLanguages(){const files=[['pokemon','pokemon_species_names.csv'],['move','move_names.csv'],['ability','ability_names.csv'],['type','type_names.csv'],['item','item_names.csv'],['form','pokemon_form_names.csv'],['nature','nature_names.csv']];await Promise.all(files.flatMap(([k,f])=>[loadLocalizedCSV('de',k,f,6),loadLocalizedCSV('en',k,f,9)]))}
-function currentDataName(kind,id){return localized[uiLang]?.[kind]?.[String(id)]||localized.en?.[kind]?.[String(id)]||null}
-function deP(id){return currentDataName('pokemon',id)} function deM(id){return currentDataName('move',id)} function deA(id){return currentDataName('ability',id)} function deT(id){return currentDataName('type',id)} function deI(id){return currentDataName('item',id)} function deF(id){return currentDataName('form',id)}
-const natureData=[['Hart','atk','spa','adamant'],['Solo','atk','def','lonely'],['Mutig','atk','spe','brave'],['Frech','atk','spd','naughty'],['Kühn','def','atk','bold'],['Pfiffig','def','spa','impish'],['Locker','def','spe','relaxed'],['Lasch','def','spd','lax'],['Mäßig','spa','atk','modest'],['Mild','spa','def','mild'],['Ruhig','spa','spe','quiet'],['Hitzig','spa','spd','rash'],['Still','spd','atk','calm'],['Zart','spd','def','gentle'],['Sacht','spd','spa','careful'],['Forsch','spd','spe','sassy'],['Scheu','spe','atk','timid'],['Hastig','spe','def','hasty'],['Froh','spe','spa','jolly'],['Naiv','spe','spd','naive'],['Ernst','neutral','neutral','serious'],['Kauzig','neutral','neutral','quirky'],['Robust','neutral','neutral','hardy'],['Zaghaft','neutral','neutral','docile'],['Doche','neutral','neutral','bashful']];
-const natureEn={adamant:'Adamant',lonely:'Lonely',brave:'Brave',naughty:'Naughty',bold:'Bold',impish:'Impish',relaxed:'Relaxed',lax:'Lax',modest:'Modest',mild:'Mild',quiet:'Quiet',rash:'Rash',calm:'Calm',gentle:'Gentle',sassy:'Sassy',timid:'Timid',hasty:'Hasty',jolly:'Jolly',naive:'Naive',serious:'Serious',quirky:'Quirky',hardy:'Hardy',docile:'Docile',bashful:'Bashful',careful:'Careful'};
-function natureLabel(n){const stats={atk:T('attackStat'),def:T('defStat'),spa:T('spAttack'),spd:T('spDefense'),spe:T('speed')};const name=uiLang==='en'?(natureEn[n[3]]||n[0]):n[0];return n[1]==='neutral'?`${name} (${T('neutral')})`:`${name} (+${stats[n[1]]}, −${stats[n[2]]})`}
-const UI={
- de:{version:'VERSION 2.2',pokedex:'Pokédex',calculator:'Battle Calculator',introDex:'Alle Pokémon · Formen · Fähigkeiten · Attacken · Werte · Stärken und Schwächen.',introCalc:'Level 50 · Statuswertpunkte · Wesen · Status · Wetter · Feldstatus.',language:'Sprache / Language',searchLabel:'Pokémon suchen',searchPlaceholder:'Name oder Pokédex-Nummer',attacker:'Angreifer',defender:'Verteidiger',form:'Form',choosePokemon:'Erst Pokémon auswählen …',noPokemon:'Noch kein Pokémon ausgewählt.',move:'Attacke',moveSearch:'Attacke suchen …',chooseMove:'Wähle einen Angreifer und danach eine Attacke.',firstAttacker:'Wähle zuerst einen Angreifer.',nature:'Wesen',item:'Item',itemSearch:'Item suchen …',statPoints:'Statuswertpunkte-Verteilung',statHelp:'Max. 32 pro Statuswert · 66 insgesamt',status:'Status',attackStat:'Angriff',defStat:'Verteidigung',spAttack:'Sp. Angriff',spDefense:'Sp. Verteidigung',speed:'Initiative',hp:'KP',total:'Statuswertpunkte: 0 / 66',switch:'Switch',terrain:'Feldstatus',weather:'Wetter',fieldHelp:'Feld und Wetter werden bei der Schadensberechnung berücksichtigt.',noTerrain:'Kein Feld',electric:'Elektrofeld',grass:'Grasfeld',psychic:'Psychofeld',misty:'Nebelfeld',noWeather:'Kein Wetter',sun:'Sonnenschein',rain:'Regen',sand:'Sandsturm',snow:'Schnee',calculate:'Attacke',prelim:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',none:'Keine',sleep:'Schlaf',poison:'Gift',toxic:'Schwere Vergiftung',burn:'Verbrennung',paralysis:'Paralyse',freeze:'Eingefroren',noDamage:'Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.',damageError:'Berechnung konnte nicht durchgeführt werden.',loadError:'Die Pokémon-Daten konnten nicht geladen werden.',remaining:'KP verbleibend',damagePct:'% Schaden',accuracy:'Genauigkeit',power:'Stärke',physical:'Physisch',special:'Speziell',statusClass:'Status',dexDesc:'Pokédex-Beschreibung',abilities:'Fähigkeiten',baseStats:'Basiswerte',maxStats:'Maximalwerte auf Level 50',maxStatsHelp:'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni',moves:'Attacken',forms:'Form auswählen',strengths:'Stärken / Resistenzen',weaknesses:'Schwächen',immunities:'Immunitäten',noDescription:'Keine deutsche Beschreibung vorhanden.',noMoves:'Keine Attacken gefunden.',noAbilities:'Keine',levelUp:'Durch Levelaufstieg',machine:'TM / VM',tutor:'Attacken-Lehrer',egg:'Ei-Attacke',special:'Spezial',other:'Weitere',loaded:'Pokémon geladen',shiny:'Shiny'},
- en:{version:'VERSION 2.2',pokedex:'Pokédex',calculator:'Battle Calculator',introDex:'All Pokémon · Forms · Abilities · Moves · Stats · Strengths and Weaknesses.',introCalc:'Level 50 · Stat Points · Nature · Status · Weather · Terrain.',language:'Language / Sprache',searchLabel:'Search Pokémon',searchPlaceholder:'Name or Pokédex number',attacker:'Attacker',defender:'Defender',form:'Form',choosePokemon:'Select a Pokémon first …',noPokemon:'No Pokémon selected yet.',move:'Move',moveSearch:'Search move …',chooseMove:'Choose an attacker and then a move.',firstAttacker:'Choose an attacker first.',nature:'Nature',item:'Item',itemSearch:'Search item …',statPoints:'Stat Point Distribution',statHelp:'Max. 32 per stat · 66 total',status:'Status',attackStat:'Attack',defStat:'Defense',spAttack:'Sp. Atk',spDefense:'Sp. Def',speed:'Speed',hp:'HP',total:'Stat Points: 0 / 66',switch:'Switch',terrain:'Terrain',weather:'Weather',fieldHelp:'Field and weather are included in the damage calculation.',noTerrain:'No terrain',electric:'Electric Terrain',grass:'Grassy Terrain',psychic:'Psychic Terrain',misty:'Misty Terrain',noWeather:'No weather',sun:'Sun',rain:'Rain',sand:'Sandstorm',snow:'Snow',calculate:'Move',prelim:'The damage calculation remains preliminary until the verified Champions ruleset is available.',none:'None',sleep:'Sleep',poison:'Poison',toxic:'Badly poisoned',burn:'Burn',paralysis:'Paralysis',freeze:'Frozen',noDamage:'This move has no fixed base power, so a direct damage value is not shown.',damageError:'The calculation could not be performed.',loadError:'The Pokémon could not be loaded.',remaining:'HP remaining',damagePct:'% damage',accuracy:'Accuracy',power:'Power',physical:'Physical',special:'Special',statusClass:'Status',dexDesc:'Pokédex Description',abilities:'Abilities',baseStats:'Base Stats',maxStats:'Max Level 50 Stats',maxStatsHelp:'IV 31 · 252 EVs in the selected stat · no item or battle bonuses',moves:'Moves',forms:'Select Form',strengths:'Resistances',weaknesses:'Weaknesses',immunities:'Immunities',noDescription:'No English description available.',noMoves:'No moves found.',noAbilities:'None',levelUp:'Level Up',machine:'TM / HM',tutor:'Move Tutor',egg:'Egg Move',special:'Special',other:'Other',loaded:'Pokémon loaded',shiny:'Shiny'}
-};
-function T(k){return UI[uiLang]?.[k]??UI.en[k]??k}
-function calcDisplayName(p){return p._formName||currentDataName('pokemon',p.speciesId||p.id)||title(p.name)}
-function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:currentDataName('pokemon',p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
-function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:currentDataName('move',m.id)||title(m.name),meta:`${m.typeLabel||''} · ${m.clsLabel||''}`}))}
-function formDisplayName(fp,speciesId,speciesName){const fid=rid(fp?.form?.url||'');const f=fid&&deF(fid);if(f)return f;const base=deP(speciesId)||title(speciesName||fp?.name||'');const raw=String(fp?.name||'').toLowerCase(),sr=String(speciesName||'').toLowerCase();if(raw===sr||raw===sr+'-normal')return base;return `${base} – ${title(raw.startsWith(sr+'-')?raw.slice(sr.length+1):raw)}`}
-
-/* v2.2 calculator/runtime localization overrides */
-function makeEVInputs(side){
-  const target=$(side==='atk'?'atkEV':'defEV');
-  const old={};
-  calcStatKeys.forEach(k=>{const el=$(`${side}-${k}`);if(el)old[k]=el.value});
-  target.innerHTML=calcStatKeys.map((k,i)=>`<label>${calcStatLabels[i]}<input id="${side}-${k}" type="number" min="0" max="32" step="1" value="${old[k]??0}"></label>`).join('');
-  calcStatKeys.forEach(k=>$(`${side}-${k}`).addEventListener('input',()=>{calcEV(side);updateCalcSide(side)}));
-}
-function calcEV(side){
-  const t=calcStatKeys.reduce((a,k)=>a+Math.max(0,Math.min(32,Number($(`${side}-${k}`)?.value)||0)),0);
-  $(`${side}Total`).textContent=uiLang==='en'?`Stat Points: ${t} / 66`:`Statuswertpunkte: ${t} / 66`;
-  $(`${side}Total`).style.color=t>66?'#ff9a9a':'';
-}
-function updateCalcSide(side){
-  const p=calcState[side==='atk'?'attacker':'defender'];
-  const box=$(side==='atk'?'attackerPreview':'defenderPreview');
-  if(!p){box.textContent=T('noPokemon');calcEV(side);return}
-  const vals=calcLevel50Stats(p,side);
-  box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;
-  calcEV(side);
-}
-
-function fieldWeatherLabels(){
-  fieldEffects.none.label=T('noTerrain');fieldEffects.electric.label=T('electric');fieldEffects.grassy.label=T('grass');fieldEffects.psychic.label=T('psychic');fieldEffects.misty.label=T('misty');
-  weatherEffects.none.label=T('noWeather');weatherEffects.sun.label=T('sun');weatherEffects.rain.label=T('rain');weatherEffects.sand.label=T('sand');weatherEffects.snow.label=T('snow');
-}
-function environmentNoteTexts(m,a,d,fw){
-  const notes=fw.notes.map(n=>n);
-  // Replace legacy German labels/messages with localized equivalents where they occur.
-  const map={
-    'Elektrofeld: ×1.3':`${T('electric')}: ×1.3`,'Grasfeld: ×1.3':`${T('grass')}: ×1.3`,'Psychofeld: ×1.3':`${T('psychic')}: ×1.3`,'Nebelfeld: ×0,5 gegen Boden-Pokémon':`${T('misty')}: ×0.5 vs. grounded Pokémon`,
-    'Sonnenschein: ×1.5':`${T('sun')}: ×1.5`,'Sonnenschein: ×0.5':`${T('sun')}: ×0.5`,'Regen: ×1.5':`${T('rain')}: ×1.5`,'Regen: ×0.5':`${T('rain')}: ×0.5`,
-    'Expanding Force im Feld: ×1,5':'Expanding Force in terrain: ×1.5','Terrain-Puls im Feld: ×2':'Terrain Pulse in terrain: ×2','Misty Explosion im Nebelfeld: ×1,5':'Misty Explosion in Misty Terrain: ×1.5','Grasfeld gegen Boden-Attacke: ×0,5':'Grassy Terrain vs. Ground move: ×0.5'
-  };
-  return notes.map(n=>uiLang==='en'?(map[n]||n):n);
-}
-async function calculateDamage(){
-  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
-  if(!a||!d||!mid){$('damageResult').innerHTML=`<div class="damage-box">${uiLang==='en'?'Please select an attacker, defender and move.':'Bitte Angreifer, Verteidiger und Attacke auswählen.'}</div>`;return}
-  try{
-    const m=await json(`${API}/move/${mid}`);
-    if(!m.power){$('damageResult').innerHTML=`<div class="damage-box">${T('noDamage')}</div>`;return}
-    const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def'),physical=m.damage_class?.name==='physical';
-    const attack=av[physical?1:3];let defense=dv[physical?2:4];defense=applyWeatherDefense(m,d,defense,physical);
-    const fw=fieldWeatherPowerMultiplier(m,a,d),basePower=Math.floor(m.power*fw.mult);
-    const base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
-    const field=getSelectedField(),weather=getSelectedWeather(),notes=environmentNoteTexts(m,a,d,fw);
-    if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push(uiLang==='en'?'Sandstorm: +50% Rock-type Sp. Def':'Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
-    if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push(uiLang==='en'?'Snow: +50% Ice-type Defense':'Schnee: +50% Verteidigung des Eis-Pokémon');
-    const hp=Math.max(1,dv[0]),pct=Math.min(100,Math.max(0,base/hp*100)),remaining=Math.max(0,hp-base),label=currentDataName('move',mid)||title(m.name);
-    const noField=uiLang==='en'?'No terrain':'Kein Feld',noWeather=uiLang==='en'?'No weather':'Kein Wetter';
-    const env=[field.label,weather.label].filter(x=>x!==noField&&x!==noWeather).join(' · ');
-    $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base} ${uiLang==='en'?'damage':'KP'}</div><div class="damage-percent">${pct.toFixed(1).replace('.',uiLang==='de'?',':'.')} ${T('damagePct')}</div><div class="hpbar-wrap"><div class="hpbar"><div class="hpbar-fill" style="width:${Math.max(0,100-pct)}%"></div></div><div class="hpbar-label">${remaining} / ${hp} ${T('remaining')}</div></div><div class="damage-muted">${label} · ${uiLang==='en'?'preliminary base calculation':'vorläufige Basisberechnung'} · ${physical?T('physical'):T('special')}${env?' · '+env:''}</div>${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}</div>`;
-  }catch(e){console.error(e);$('damageResult').innerHTML=`<div class="damage-box">${T('damageError')}</div>`}
-}
-
-function applyLanguage(){
-  document.documentElement.lang=uiLang;
-  const sel=$('languageSelect');if(sel)sel.value=uiLang;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{const txt=T(el.dataset.i18n);const node=Array.from(el.childNodes).find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());if(node)node.textContent=txt+' ';else el.textContent=txt});
-  const ph={search:'searchPlaceholder',atkSearch:'searchPlaceholder',defSearch:'searchPlaceholder',moveSearch:'moveSearch',atkItemSearch:'itemSearch',defItemSearch:'itemSearch'};
-  Object.entries(ph).forEach(([id,key])=>{const el=$(id);if(el)el.placeholder=T(key)});
-  const dexHero=$('#dex .hero p'),calcHero=$('#calc .hero p');if(dexHero)dexHero.textContent=T('introDex');if(calcHero)calcHero.textContent=T('introCalc');
-  document.querySelectorAll('.hero small').forEach(x=>x.textContent=T('version'));
-  calcStatLabels.splice(0,calcStatLabels.length,T('hp'),T('attackStat'),T('defStat'),T('spAttack'),T('spDefense'),T('speed'));
-  fieldWeatherLabels();
-  const f=$('fieldStatus'),w=$('weatherStatus');
-  if(f){const old=f.value;f.innerHTML=[['none','noTerrain'],['electric','electric'],['grassy','grass'],['psychic','psychic'],['misty','misty']].map(([v,k])=>`<option value="${v}">${T(k)}</option>`).join('');f.value=old||'none';}
-  if(w){const old=w.value;w.innerHTML=[['none','noWeather'],['sun','sun'],['rain','rain'],['sand','sand'],['snow','snow']].map(([v,k])=>`<option value="${v}">${T(k)}</option>`).join('');w.value=old||'none';}
-  fillOptions();
-  if($('atkEV')&&$('defEV')){makeEVInputs('atk');makeEVInputs('def');}
-  if(mons.length)render(mons.slice(0,24));
-  if(calcState.attacker)updateCalcSide('atk');if(calcState.defender)updateCalcSide('def');
-  const statusLoaded=$('status');if(statusLoaded&&mons.length)statusLoaded.textContent=`${mons.length} ${T('loaded')}`;
-  if($('moveInfo')&&!calcState.selectedMove)$('moveInfo').textContent=calcState.attacker?T('moveSearch'):T('firstAttacker');
-  // Keep selected item search fields in the active language.
-  ['atk','def'].forEach(side=>{const s=$(side==='atk'?'atkItem':'defItem'),i=$(side==='atk'?'atkItemSearch':'defItemSearch');if(s&&i&&s.selectedOptions[0])i.value=s.selectedOptions[0].textContent});
-}
-
 async function init(){
-  nav();
-  $('search').oninput=search;
-  $('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};
-  $('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
-  $('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
-  const languageSelect=$('languageSelect');if(languageSelect)languageSelect.onchange=()=>setLanguage(languageSelect.value);
-  try{
-    await loadLanguages();
-    const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`),loadAllItems()]);
-    mons=d.results.map((p,i)=>({name:p.name,id:i+1}));
-    applyLanguage();render(mons.slice(0,24));setupCalculator();applyLanguage();
-  }catch(e){console.error(e);$('status').textContent=T('loadError')}
+ nav();
+ $('search').oninput=search;
+ $('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};
+ $('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
+ $('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
+ const languageSelect=$('languageSelect');
+ if(languageSelect)languageSelect.onchange=()=>setLanguage(languageSelect.value);
+ try{
+   const d=await json(`${API}/pokemon?limit=1025`);
+   mons=d.results.map((p,i)=>({name:p.name,id:i+1}));
+   // The app remains usable even if a localization source is temporarily unavailable.
+   try{await loadLanguages()}catch(e){console.warn('Localization data unavailable:',e)}
+   try{await loadAllItems()}catch(e){console.warn('Item data unavailable:',e)}
+   render(mons.slice(0,24));
+   setupCalculator();
+   applyLanguage();
+   $('status').textContent=`${mons.length} ${T('loaded')}`;
+ }catch(e){console.error(e);$('status').textContent=T('loadError')}
 }
 init();
-
-function fillOptions(){
-  const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');
-  if($('atkNature'))$('atkNature').innerHTML=nat;if($('defNature'))$('defNature').innerHTML=nat;
-  const items=calcItems.map(x=>`<option value="${x.id}">${currentDataName('item',x.id)||x.raw||title(x.name)}</option>`).join('');
-  if($('atkItem'))$('atkItem').innerHTML=items;if($('defItem'))$('defItem').innerHTML=items;
-  const statuses=[T('none'),T('sleep'),T('poison'),T('toxic'),T('burn'),T('paralysis'),T('freeze')];
-  ['atkStatus','defStatus'].forEach(id=>{if($(id))$(id).innerHTML=statuses.map(x=>`<option>${x}</option>`).join('')});
-  ['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>{if($(id))$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join('')});
-}
-async function loadCalcMoves(){
-  const p=calcState.attacker,input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveSuggestions').hidden=true;$('moveInfo').textContent=p?T('moveSearch'):T('firstAttacker');
-  if(!p)return;
-  try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);calcState.moves.push({id,name:x.move.name,label:currentDataName('move',id)||title(x.move.name),type:'',cls:'',typeLabel:'',clsLabel:''})}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,uiLang));input.disabled=false;input.placeholder=T('moveSearch');input.value=''}catch(e){console.error(e);input.disabled=true;input.placeholder=T('loadError')}}
-async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`),type=currentDataName('type',rid(m.type?.url))||title(m.type?.name||'—'),cls=m.damage_class?.name==='physical'?T('physical'):m.damage_class?.name==='special'?T('special'):T('statusClass');$('moveInfo').innerHTML=`<b>${currentDataName('move',id)||title(m.name)}</b> · ${type} · ${cls} · ${T('power')}: ${m.power??'—'} · ${T('accuracy')}: ${m.accuracy??'—'}`;const e=calcState.moves.find(x=>x.id===id);if(e){e.type=m.type?.name||'';e.typeLabel=type;e.cls=m.damage_class?.name||'';e.clsLabel=cls}}catch(e){$('moveInfo').textContent=T('loadError')}}
-
-async function detail(p,s){
-  const pname=currentDataName('pokemon',s.id)||currentDataName('pokemon',p.id)||title(p.name);
-  const abilities=await Promise.all((p.abilities||[]).map(async x=>currentDataName('ability',rid(x.ability.url))||title(x.ability.name)));
-  const grouped={};(p.moves||[]).forEach(x=>(x.version_group_details||[]).forEach(v=>{let key='other';const method=v.move_learn_method?.name;if(method==='level-up')key='levelUp';else if(method==='machine')key='machine';else if(method==='tutor')key='tutor';else if(method==='egg')key='egg';else if(method==='stadium-surfing-pikachu')key='special';if(!grouped[key])grouped[key]=[];const entry={id:rid(x.move.url),name:x.move.name,level:v.level_learned_at||0};if(!grouped[key].some(a=>a.id===entry.id))grouped[key].push(entry)}));
-  let moveHtml='';for(const key of ['levelUp','machine','tutor','egg','special','other']){if(!grouped[key])continue;const entries=await Promise.all(grouped[key].map(async m=>({...m,label:currentDataName('move',m.id)||title(m.name)})));entries.sort((a,b)=>key==='levelUp'?(a.level-b.level||a.label.localeCompare(b.label,uiLang)):a.label.localeCompare(b.label,uiLang));moveHtml+=`<div class="move-group"><h4>${T(key)} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.label}</span>${key==='levelUp'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
-  const language=uiLang==='de'?'de':'en',flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name===language),genus=(s.genera||[]).find(x=>x.language?.name===language);
-  const statMap={hp:T('hp'),attack:T('attackStat'),defense:T('defStat'),'special-attack':T('spAttack'),'special-defense':T('spDefense'),speed:T('speed')};
-  const stats=(p.stats||[]).map(x=>`<div class="stat"><span>${statMap[x.stat.name]||title(x.stat.name)}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
-  const forms=(await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);try{const fp=await json(v.pokemon.url);return {id,url:v.pokemon.url,name:formDisplayName(fp,s.id,s.name),active:Number(id)===Number(p.id)}}catch(e){return {id,url:v.pokemon.url,name:title(v.pokemon.name),active:Number(id)===Number(p.id)}}}))).map(f=>`<button type="button" class="form-choice ${f.active?'active':''}" data-form-url="${f.url}" data-form-id="${f.id}"><img src="${sprite(f.id)}" alt=""><span>${f.name}</span></button>`).join('');
-  const types=(p.types||[]).map(t=>`<span class="pill">${currentDataName('type',rid(t.type.url))||title(t.type.name)}</span>`).join('');const relations=await getTypeRelations(p);const desc=flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):T('noDescription');
-  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ ${T('shiny')}</button></div></div><div class="section"><h3>${T('forms')}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${T('strengths')} &amp; ${T('weaknesses')}</h3><div class="relation-grid"><div><strong>${T('strengths')}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${T('weaknesses')}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${T('immunities')}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${T('dexDesc')}</h3><p class="description">${desc}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${T('abilities')}</h3><p>${abilities.join(', ')||T('noAbilities')}</p></div><div class="section"><h3>${T('baseStats')}</h3>${stats}</div><div class="section"><h3>${T('maxStats')}</h3><p class="muted">${T('maxStatsHelp')}</p><label class="nature-inline">${T('nature')}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${T('moves')}</h3><div class="move-groups">${moveHtml||`<p>${T('noMoves')}</p>`}</div></div>`;
-  $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
-  document.querySelectorAll('#forms .form-choice').forEach(btn=>btn.onclick=async()=>{try{const fp=await json(btn.dataset.formUrl);current={p:fp,s};isShiny=false;await detail(fp,s)}catch(e){console.error(e)}});
-  $('dexNature').addEventListener('change',()=>{const vals=maxLevel50Stats(p,$('dexNature').value);vals.forEach((v,i)=>$(`dexMaxStat${i}`).textContent=v)});
-}
-function relationPills(arr,showMultiplier=false){return arr.length?arr.map(x=>`<span class="pill">${x.name}${showMultiplier?` ×${x.m}`:''}</span>`).join(''):`<span class="muted">${T('none')}</span>`}
-async function open(id){
-  $('modal').hidden=false;document.body.style.overflow='';document.body.style.overflow='hidden';$('modalbody').innerHTML=`<p>${uiLang==='en'?'Loading data …':'Daten werden geladen …'}</p>`;
-  try{const [p,s]=await Promise.all([json(`${API}/pokemon/${id}`),json(`${API}/pokemon-species/${id}`)]);current={p,s};isShiny=false;await detail(p,s)}catch(e){console.error(e);$('modalbody').innerHTML=`<h2>${uiLang==='en'?'Error':'Fehler'}</h2><p>${T('loadError')}</p>`}
-}
