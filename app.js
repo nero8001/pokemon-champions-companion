@@ -127,17 +127,50 @@ function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.
 function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${n[0]}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=calcStatuses.map(x=>`<option>${x}</option>`).join(''));['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''))}
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,ev=Math.max(0,Math.min(252,Number($(`${side}-${key}`).value)||0)),iv=31;if(i===0)vals.push(Math.floor(((2*base+iv+Math.floor(ev/4))*50)/100)+60);else vals.push(Math.floor((Math.floor(((2*base+iv+Math.floor(ev/4))*50)/100)+5)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];if(!p)return;const vals=calcLevel50Stats(p,side);const box=$(side==='atk'?'attackerPreview':'defenderPreview');box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
+function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
  input.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
-async function selectCalcPokemon(side,item){try{$(`${side}Search`).disabled=true;const p=await json(`${API}/pokemon/${item.id}`);const speciesId=rid(p.species?.url)||item.id;const species=await json(`${API}/pokemon-species/${speciesId}`);p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;calcState[side]=p;await loadCalcForms(side,species);updateCalcSide(side);if(side==='attacker')await loadCalcMoves()}catch(e){console.error(e)}finally{$(`${side}Search`).disabled=false}}
-async function loadCalcForms(side,species){const forms=[];for(const v of species.varieties||[]){const id=rid(v.pokemon.url);if(!id)continue;try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=formDisplayName(fp,species.id,species.name);forms.push(fp)}catch(e){}}
- calcState.forms[side]=forms;const sel=$(side==='atk'?'atkForm':'defForm');sel.innerHTML=forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join('');sel.disabled=forms.length<=1;if(calcState[side])sel.value=String(calcState[side].id)}
-async function changeCalcForm(side,id){const p=calcState.forms[side].find(x=>String(x.id)===String(id));if(!p)return;calcState[side]=p;updateCalcSide(side);if(side==='atk')await loadCalcMoves()}
+async function selectCalcPokemon(side,item){
+ const key=side==='atk'?'attacker':'defender',search=$(`${side}Search`);
+ try{
+  search.disabled=true;
+  const p=await json(`${API}/pokemon/${item.id}`);
+  const speciesId=rid(p.species?.url)||item.id;
+  const species=await json(`${API}/pokemon-species/${speciesId}`);
+  p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;
+  calcState[key]=p;
+  search.value=calcDisplayName(p);
+  updateCalcSide(side);
+  await loadCalcForms(side,species,p.id);
+  if(side==='atk')await loadCalcMoves();
+ }catch(e){console.error(e)}
+ finally{search.disabled=false}
+}
+async function loadCalcForms(side,species,selectedId){
+ const key=side==='atk'?'attacker':'defender',forms=[];
+ for(const v of species.varieties||[]){
+  const id=rid(v.pokemon.url);if(!id)continue;
+  try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=formDisplayName(fp,species.id,species.name);forms.push(fp)}catch(e){}
+ }
+ calcState.forms[key]=forms;
+ const sel=$(side==='atk'?'atkForm':'defForm');
+ sel.innerHTML=forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join('');
+ sel.disabled=forms.length<=1;
+ const wanted=String(selectedId??calcState[key]?.id??'');
+ if(forms.some(fp=>String(fp.id)===wanted))sel.value=wanted;
+}
+async function changeCalcForm(side,id){
+ const key=side==='atk'?'attacker':'defender';
+ const p=(calcState.forms[key]||[]).find(x=>String(x.id)===String(id));if(!p)return;
+ calcState[key]=p;
+ $(side==='atk'?'atkSearch':'defSearch').value=calcDisplayName(p);
+ updateCalcSide(side);
+ if(side==='atk')await loadCalcMoves();
+}
 async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder='Attacke suchen …';input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
 async function calculateDamage(){const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}try{const m=await json(`${API}/move/${mid}`);if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def'),physical=m.damage_class?.name==='physical',attack=av[physical?1:3],defense=dv[physical?2:4],base=Math.floor(Math.floor(Math.floor((2*50/5+2)*m.power*attack/Math.max(1,defense))/50)+2);$('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base}</div><div class="damage-muted">${deM(mid)||title(m.name)} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}</div></div>`}catch(e){$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}}
@@ -166,43 +199,38 @@ function setupItemSearchV14(side){
 }
 
 
-function switchCombatantsV14(){
-  const oldAttacker=calcState.attacker;
-  const oldDefender=calcState.defender;
-  calcState.attacker=oldDefender;
-  calcState.defender=oldAttacker;
+async function switchCombatantsV14(){
+ const oldA=calcState.attacker,oldD=calcState.defender;
+ const oldAForms=calcState.forms.attacker,oldDForms=calcState.forms.defender;
 
-  const oldFormsA=calcState.forms.attacker;
-  calcState.forms.attacker=calcState.forms.defender;
-  calcState.forms.defender=oldFormsA;
+ const pairs=[['atkNature','defNature'],['atkItem','defItem'],['atkItemSearch','defItemSearch'],['atkStatus','defStatus'],['atkBoost','defBoost'],['atkSpABoost','defSpDBoost'],['atkSpeedBoost','defSpeedBoost']];
+ for(const [a,b] of pairs){const A=$(a),B=$(b);if(A&&B){const v=A.value;A.value=B.value;B.value=v}}
+ for(const k of calcStatKeys){const A=$(`atk-${k}`),B=$(`def-${k}`);if(A&&B){const v=A.value;A.value=B.value;B.value=v}}
 
-  const pairs=[
-    ['atkSearch','defSearch'],['atkForm','defForm'],
-    ['atkNature','defNature'],['atkItem','defItem'],
-    ['atkItemSearch','defItemSearch'],['atkStatus','defStatus'],
-    ['atkBoost','defBoost'],['atkSpABoost','defSpDBoost'],['atkSpeedBoost','defSpeedBoost']
-  ];
-  for(const [a,b] of pairs){
-    const A=$(a),B=$(b); if(!A||!B)continue;
-    const v=A.value; A.value=B.value; B.value=v;
+ calcState.attacker=oldD;calcState.defender=oldA;
+ calcState.forms.attacker=oldDForms;calcState.forms.defender=oldAForms;
+ calcState.selectedMove=null;calcState.moves=[];
+
+ async function refresh(side,p){
+  const key=side==='atk'?'attacker':'defender';
+  const search=$(side==='atk'?'atkSearch':'defSearch');
+  const form=$(side==='atk'?'atkForm':'defForm');
+  if(!p){
+   search.value='';form.innerHTML='<option>Erst Pokémon auswählen …</option>';form.disabled=true;
+   calcState.forms[key]=[];updateCalcSide(side);return;
   }
-  for(const k of calcStatKeys){
-    const A=$(`atk-${k}`),B=$(`def-${k}`); if(!A||!B)continue;
-    const v=A.value;A.value=B.value;B.value=v;
-  }
-
-  calcState.selectedMove=null;
-  $('moveSearch').value='';
-  $('moveSearch').disabled=!calcState.attacker;
-  $('moveSuggestions').innerHTML='';
-  $('moveSuggestions').hidden=true;
+  search.value=calcDisplayName(p);
+  const speciesId=p.speciesId||rid(p.species?.url)||p.id;
+  const species=await json(`${API}/pokemon-species/${speciesId}`);
+  await loadCalcForms(side,species,p.id);
+  calcState[key]=p;form.value=String(p.id);updateCalcSide(side);
+ }
+ try{
+  await Promise.all([refresh('atk',calcState.attacker),refresh('def',calcState.defender)]);
+  $('moveSearch').value='';$('moveSuggestions').innerHTML='';$('moveSuggestions').hidden=true;
   $('moveInfo').textContent=calcState.attacker?'Attacke suchen …':'Wähle zuerst einen Angreifer.';
-  $('attackerPreview').textContent='Noch kein Pokémon ausgewählt.';
-  $('defenderPreview').textContent='Noch kein Pokémon ausgewählt.';
-
-  updateCalcSide('atk');
-  updateCalcSide('def');
-  if(calcState.attacker)loadCalcMoves();
+  if(calcState.attacker)await loadCalcMoves();else $('moveSearch').disabled=true;
+ }catch(e){console.error(e)}
 }
 
 function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions();
