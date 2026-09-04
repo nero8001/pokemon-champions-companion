@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Champions Companion – v1.1</title>
+<meta name="theme-color" content="#0b1020"><title>Champions Companion</title>
 <link rel="stylesheet" href="style.css">
 
 <style id="v14-calculator">
@@ -21,73 +21,62 @@
 <style id="v16-field-controls">
 .field-controls-v16{margin-top:14px}.field-help{margin-top:8px;font-size:.9rem;opacity:.75}
 </style>
-<style id="v19-hpbar">.damage-percent{font-size:1.15rem;font-weight:700;margin:.35rem 0 .8rem}.hpbar-wrap{margin:.5rem 0 1rem}.hpbar{height:22px;border-radius:999px;background:#222;overflow:hidden;border:1px solid #444}.hpbar-fill{height:100%;background:linear-gradient(90deg,#59c95a,#8bdd6b);transition:width .25s ease}.hpbar-label{text-align:center;margin-top:.35rem;font-weight:600}</style><style id="v20-language">
-.language-bar{position:sticky;top:0;z-index:100;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:8px 14px;background:rgba(10,15,28,.96);border-bottom:1px solid #27334f;backdrop-filter:blur(8px)}
-.language-bar label{font-size:.85rem;color:#aeb8cf}.language-bar select{width:auto;min-width:115px;margin:0;padding:7px 10px}
-</style>
 </head>
-<body><div id="languageBar" class="language-bar">
-  <label for="languageSelect">Sprache / Language</label>
-  <select id="languageSelect">
-    <option value="de">Deutsch</option>
-    <option value="en">English</option>
-  </select>
-</div>
-
+<body>
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
-  <nav><button class="nav active" data-page="dex">Pokédex</button><button class="nav" data-page="calc">Battle Calculator</button></nav>
+  <nav><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button></nav>
 </header>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 1.1</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 2.2</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
-    <label for="search">Pokémon suchen</label>
+    <label for="search" data-i18n="searchLabel">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
     <div id="suggestions"></div><div id="status">Pokémon werden geladen …</div>
   </div>
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 2.1</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 1.7</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
-    <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
+    <div class="calc-title"><h2 data-i18n="attacker">Angreifer</h2><span id="atkTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
-    <label>Pokémon suchen
+    <label data-i18n="searchLabel">Pokémon suchen
       <input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
       <div id="atkSuggestions" class="calc-suggestions" hidden></div>
     </label>
 
-    <label>Form
+    <label data-i18n="form">Form
       <select id="atkForm" disabled><option>Erst Pokémon auswählen …</option></select>
     </label>
 
     <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
 
-    <label>Attacke suchen
+    <label data-i18n="move">Attacke suchen
       <input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …">
       <div id="moveSuggestions" class="calc-suggestions" hidden></div>
     </label>
     <div id="moveInfo" class="move-info">Wähle einen Angreifer und danach eine Attacke.</div>
 
     <div class="twocol">
-      <label>Wesen<select id="atkNature"></select></label>
+      <label data-i18n="nature">Wesen<select id="atkNature"></select></label>
       <div>
-        <label for="atkItemSearch">Item suchen</label>
+        <label for="atkItemSearch" data-i18n="itemSearch">Item suchen</label>
         <input id="atkItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
         <select id="atkItem"></select>
       </div>
     </div>
 
-    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
+    <h3 data-i18n="statPoints">Statuswertpunkte-Verteilung</h3><div class="sp-help" data-i18n="statHelp">Max. 32 pro Statuswert · 66 insgesamt</div>
     <div id="atkEV" class="evgrid"></div>
     <div class="changegrid">
-      <label>Status<select id="atkStatus"></select></label>
-      <label>Angriff<select id="atkBoost"></select></label>
-      <label>Sp. Angriff<select id="atkSpABoost"></select></label>
-      <label>Initiative<select id="atkSpeedBoost"></select></label>
+      <label data-i18n="status">Status<select id="atkStatus"></select></label>
+      <label data-i18n="attackStat">Angriff<select id="atkBoost"></select></label>
+      <label data-i18n="spAttack">Sp. Angriff<select id="atkSpABoost"></select></label>
+      <label data-i18n="speed">Initiative<select id="atkSpeedBoost"></select></label>
     </div>
   </div>
 
@@ -96,42 +85,42 @@
   </div>
 
   <div class="card combatant-card-v14" id="defenderCard">
-    <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
+    <div class="calc-title"><h2 data-i18n="defender">Verteidiger</h2><span id="defTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
-    <label>Pokémon suchen
+    <label data-i18n="searchLabel">Pokémon suchen
       <input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
       <div id="defSuggestions" class="calc-suggestions" hidden></div>
     </label>
 
-    <label>Form
+    <label data-i18n="form">Form
       <select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select>
     </label>
 
     <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
 
     <div class="twocol">
-      <label>Wesen<select id="defNature"></select></label>
+      <label data-i18n="nature">Wesen<select id="defNature"></select></label>
       <div>
-        <label for="defItemSearch">Item suchen</label>
+        <label for="defItemSearch" data-i18n="itemSearch">Item suchen</label>
         <input id="defItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
         <select id="defItem"></select>
       </div>
     </div>
 
-    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
+    <h3 data-i18n="statPoints">Statuswertpunkte-Verteilung</h3><div class="sp-help" data-i18n="statHelp">Max. 32 pro Statuswert · 66 insgesamt</div>
     <div id="defEV" class="evgrid"></div>
     <div class="changegrid">
       <label>Status<select id="defStatus"></select></label>
-      <label>Verteidigung<select id="defBoost"></select></label>
-      <label>Sp. Verteidigung<select id="defSpDBoost"></select></label>
-      <label>Initiative<select id="defSpeedBoost"></select></label>
+      <label data-i18n="defStat">Verteidigung<select id="defBoost"></select></label>
+      <label data-i18n="spDefense">Sp. Verteidigung<select id="defSpDBoost"></select></label>
+      <label data-i18n="speed">Initiative<select id="defSpeedBoost"></select></label>
     </div>
   </div>
 </div>
 
 <div class="card field-controls-v16">
   <div class="twocol">
-    <label>Feldstatus
+    <label data-i18n="terrain">Feldstatus
       <select id="fieldStatus">
         <option value="none">Kein Feld</option>
         <option value="electric">Elektrofeld</option>
@@ -140,7 +129,7 @@
         <option value="misty">Nebelfeld</option>
       </select>
     </label>
-    <label>Wetter
+    <label data-i18n="weather">Wetter
       <select id="weatherStatus">
         <option value="none">Kein Wetter</option>
         <option value="sun">Sonnenschein</option>
@@ -150,12 +139,12 @@
       </select>
     </label>
   </div>
-  <div class="field-help">Feld und Wetter werden bei der Schadensberechnung berücksichtigt.</div>
+  <div class="field-help" data-i18n="fieldHelp">Feld und Wetter werden bei der Schadensberechnung berücksichtigt.</div>
 </div>
 
 <div class="card attack-action-v14">
-  <button id="calcButton" class="primary" type="button">Attacke</button>
-  <div class="notice">Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.</div>
+  <button id="calcButton" class="primary" type="button" data-i18n="calculate">Attacke</button>
+  <div class="notice" data-i18n="prelim">Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.</div>
   <div id="damageResult" class="damage-result"></div>
 </div>
 </section>

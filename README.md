@@ -1,39 +1,18 @@
-# Pokémon Champions Companion v1.0
+# Pokémon Champions Companion – v2.2
 
-Statischer Web-Prototyp für GitHub Pages.
+## Neu in v2.2
+- Saubere Deutsch/Englisch-Umschaltung ohne wörtliche Übersetzungen.
+- Pokémon-, Attacken-, Fähigkeiten-, Typ-, Item-, Form- und Wesen-Namen werden aus den offiziellen mehrsprachigen PokéAPI-Datensätzen geladen.
+- Englisch nutzt die offiziellen englischen Begriffe direkt; Deutsch nutzt die offiziellen deutschen Bezeichnungen.
+- Pokédex-Beschreibungen wechseln passend zur ausgewählten Sprache.
+- Formnamen werden über die tatsächlichen Pokémon-Formdaten lokalisiert.
+- Battle Calculator, Statuswerte, Feld/Wetter, Schadensanzeige und Fehlermeldungen sind vollständig zweisprachig.
+- Die korrekten Standard-Wesen-Effekte wurden für alle 25 Wesen hinterlegt.
+- Die bisherige vorläufige Champions-Schadensformel bleibt unverändert.
 
-## v1.0
-- Pokédex vollständig auf Deutsch
-- Korrekte lesbare Formnamen wie Mega Bisaflor und Gigadynamax-Formen
-- Stärken/Resistenzen, Schwächen und Immunitäten direkt in der Pokémon-Info
-- Battle Calculator mit Pokémon-/Attacken-Suche, Formen, Items, EVs, Nature und Statuswerten
-- `.nojekyll` ist enthalten und absichtlich nicht leer
+## Datenquellen
+- PokéAPI v2 für Pokémon-, Attacken-, Fähigkeiten-, Typ-, Item-, Form- und Sprachdaten.
+- Offizielle Pokémon-Champions-Seite für die Champions-Terminologie und den aktuellen Kontext.
 
-Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
-
-
-## Version 1.4
-Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. Attacke direkt beim Angreifer, Item-Suche, Switch zwischen Angreifer und Verteidiger, Statuswertänderungen 0 bis +6. Pokédex-Code unverändert.
-
-
-## Version 1.8
-- Wesen-Auswahl zeigt nun bei jedem Wesen den positiven und negativen Statuswert, z. B. „Froh (+Initiative, −Sp. Angriff)“. Neutrale Wesen werden als „neutral“ gekennzeichnet. Die Anzeige gilt im Pokédex und im Battle Calculator.
-
-
-## Version 1.9
-- Wesen korrigiert: Hart = +Angriff / -Sp. Angriff; alle 25 Wesen korrekt zugeordnet.
-- Schadensausgabe zusätzlich als Prozent des Verteidiger-KP-Werts.
-- Grafische KP-Leiste zeigt verbleibende KP nach dem Treffer.
-- Vorläufige Schadensformel bleibt unverändert als Basis bestehen.
-
-
-## Version 2.0
-- Sprachumschaltung Deutsch/English am oberen Seitenrand.
-- UI-Texte des Pokédex und Calculators werden dynamisch umgeschaltet.
-- Auswahlfelder, Buttons, Status-/Wetter-/Feldtexte und Wesensanzeige werden übersetzt.
-- Gewählte Sprache wird lokal gespeichert und beim nächsten Öffnen wieder verwendet.
-- Pokémon-, Attacken- und Itemdaten können unabhängig von der UI-Sprache lokalisiert werden.
-
-
-## Version 2.1
-Die Sprachumschaltung wurde auf die komplette Benutzeroberfläche erweitert: Überschriften, Beschriftungen, Platzhalter, Buttons, Status-/Wetter-/Feldtexte, Meldungen und Wesensbeschreibungen werden zwischen Deutsch und Englisch umgeschaltet.
+## Start
+`index.html` direkt öffnen oder über GitHub Pages bereitstellen.
