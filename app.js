@@ -76,7 +76,11 @@ async function getTypeRelations(p){
   return {weak,resist,immune};
 }
 function relationPills(arr,showMultiplier=false){return arr.length?arr.map(x=>`<span class="pill">${x.name}${showMultiplier?` ×${x.m}`:''}</span>`).join(''):'<span class="muted">Keine</span>';}
-async function json(u){const r=await fetch(u);if(!r.ok)throw Error(r.status);return r.json()}
+async function json(u,timeout=15000){
+ const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);
+ try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw Error(r.status);return await r.json()}
+ finally{clearTimeout(timer)}
+}
 
 function nav(){document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active');scrollTo(0,0)})}
 function render(list){$('grid').innerHTML=list.map(p=>`<article class="poke"><button data-id="${p.id}"><div class="pic"><img src="${sprite(p.id)}" alt="${deP(p.id)||title(p.name)}"></div><div class="no">#${String(p.id).padStart(4,'0')}</div><div class="name">${deP(p.id)||title(p.name)}</div></button></article>`).join('');document.querySelectorAll('.poke button').forEach(b=>b.onclick=()=>open(+b.dataset.id))}
@@ -116,7 +120,7 @@ async function detail(p,s){
 }
 
 function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(Math.max(0,Math.min(32,+($(`${side}-${k}`).value)||0))),0);$(`${side}Total`).textContent=`Statuswertpunkte: ${t} / 66`;$(`${side}Total`).style.color=t>66?'#ff9a9a':''}
-const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Brav','atk','spe'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Ruhig','spa','spe'],['Hitzig','spa','spd'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Forsch','spd','spe'],['Scheu','spe','atk'],['Hastig','spe','def'],['Froh','spe','spa'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
+const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Ruhig','spa','spe'],['Hitzig','spa','spd'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Forsch','spd','spe'],['Scheu','spe','atk'],['Hastig','spe','def'],['Froh','spe','spa'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
 const natureStatLabels={atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',neutral:'neutral'};
 function natureLabel(n){
   const name=n[0],up=natureStatLabels[n[1]]||n[1],down=natureStatLabels[n[2]]||n[2];
@@ -133,8 +137,25 @@ function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atk
 function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent=T('noPokemon');calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
-function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
- input.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
+function setupSearchBox(inputId,listId,side,itemsProvider,onPick){
+ const input=$(inputId),list=$(listId);let lastItems=[];let requestToken=0;
+ function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
+ async function drawPokemonDirect(q){
+   if(side==='move'||mons.length)return false;
+   const token=++requestToken;
+   try{
+     const p=await json(`${API}/pokemon/${encodeURIComponent(q)}`,10000);
+     if(token!==requestToken)return true;
+     const speciesId=rid(p.species?.url)||p.id;
+     const label=currentDataName('pokemon',speciesId)||title(p.name);
+     draw([{id:p.id,name:p.name,label,meta:`#${String(p.id).padStart(4,'0')}`}]);
+   }catch(e){if(token===requestToken)list.hidden=true}
+   return true;
+ }
+ input.addEventListener('input',async()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}if(await drawPokemonDirect(q))return;draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});
+ input.addEventListener('focus',async()=>{const q=input.value.trim().toLowerCase();if(q&&await drawPokemonDirect(q))return;draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});
+ document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})
+}
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:currentDataName('pokemon',p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
 async function selectCalcPokemon(side,item){
@@ -396,25 +417,44 @@ document.addEventListener('DOMContentLoaded',()=>{
  setTimeout(applyLanguage,0);
 });
 
-async function init(){
+function bindCoreUI(){
  nav();
- $('search').oninput=search;
- $('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};
- $('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
- $('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
+ const search=$('search'); if(search)search.oninput=searchFn;
+ const clear=$('clear'); if(clear)clear.onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};
+ const close=$('close'); if(close)close.onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
+ const backdrop=$('backdrop'); if(backdrop)backdrop.onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
- const languageSelect=$('languageSelect');
- if(languageSelect)languageSelect.onchange=()=>setLanguage(languageSelect.value);
+ const languageSelect=$('languageSelect'); if(languageSelect)languageSelect.onchange=()=>setLanguage(languageSelect.value);
+}
+// Keep the original search function name, but avoid shadowing the input element.
+const searchFn=search;
+
+function bootstrapCalculator(){
+ try{setupCalculator()}catch(e){console.error('Calculator bootstrap failed:',e)}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+ bindCoreUI();
+ bootstrapCalculator();
+ applyLanguage();
+});
+
+async function init(){
  try{
-   const d=await json(`${API}/pokemon?limit=1025`);
+   $('status').textContent=uiLang==='en'?'Loading Pokémon …':'Pokémon werden geladen …';
+   // Load the Pokémon index and localization in parallel. The UI/calculator are already usable.
+   const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`,20000),loadLanguages().catch(e=>{console.warn('Localization data unavailable:',e)})]);
    mons=d.results.map((p,i)=>({name:p.name,id:i+1}));
-   // The app remains usable even if a localization source is temporarily unavailable.
-   try{await loadLanguages()}catch(e){console.warn('Localization data unavailable:',e)}
-   try{await loadAllItems()}catch(e){console.warn('Item data unavailable:',e)}
-   render(mons.slice(0,24));
-   setupCalculator();
+   await loadAllItems().catch(e=>console.warn('Item data unavailable:',e));
    applyLanguage();
-   $('status').textContent=`${mons.length} ${T('loaded')}`;
- }catch(e){console.error(e);$('status').textContent=T('loadError')}
+   render(mons.slice(0,24));
+   $('status').textContent=uiLang==='en'?`${mons.length} Pokémon loaded`:`${mons.length} Pokémon geladen`;
+   // Calculator search providers now have the complete Pokémon index.
+   updateCalcSide('atk'); updateCalcSide('def');
+ }catch(e){
+   console.error(e);
+   $('status').innerHTML=(uiLang==='en'?'Pokémon could not be loaded. The Calculator is still usable. <button type="button" id="retryLoad">Retry</button>':'Pokémon konnten nicht geladen werden. Der Calculator bleibt trotzdem nutzbar. <button type="button" id="retryLoad">Erneut versuchen</button>');
+   const retry=$('retryLoad');if(retry)retry.onclick=()=>{retry.disabled=true;location.reload()};
+ }
 }
 init();

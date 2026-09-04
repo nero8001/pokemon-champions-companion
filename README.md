@@ -35,8 +35,15 @@ Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. At
 - Pokémon-, Attacken- und Itemdaten können unabhängig von der UI-Sprache lokalisiert werden.
 
 
-## v2.3 Fixes
+## v2.4 Fixes
 - Calculator navigation and Pokémon selection are initialized independently of localization/item downloads.
 - German and English data are loaded from the corresponding PokéAPI language records.
 - Language selector is present in the HTML and remains usable even if localization data temporarily fail to load.
 - Removed the duplicated/brittle v2.2 runtime patch approach.
+
+
+## v2.4
+- Calculator and navigation are initialized independently of the Pokémon index request.
+- Added timeout/retry handling for slow API connections.
+- Added direct Pokémon lookup in the calculator when the full index is not ready.
+- Removed the erroneous extra Nature entry so the standard 25 Natures are used.
