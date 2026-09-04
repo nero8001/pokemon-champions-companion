@@ -62,28 +62,98 @@ async function open(id){
  catch(e){$('modalbody').innerHTML='<h2>Fehler</h2><p>Die Pokémon-Daten konnten nicht geladen werden.</p>'}
 }
 async function detail(p,s){
- const pname=deP(p.id)||title(p.name);
- const abilities=await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name)));
- const moves=await Promise.all(p.moves.slice(0,100).map(async x=>deM(rid(x.move.url))||title(x.move.name)));
- const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name==='de');
- const genus=(s.genera||[]).find(x=>x.language?.name==='de');
- const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:'KP',attack:'Angriff',defense:'Verteidigung','special-attack':'Sp. Angriff','special-defense':'Sp. Verteidigung',speed:'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
- const forms=s.varieties.map(v=>`<span class="tag">${deP(rid(v.pokemon.url))||title(v.pokemon.name)}</span>`).join('');
- const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
- $('modalbody').innerHTML=`
- <div class="detail"><div class="detailpic"><img id="ds" src="${sprite(p.id)}" alt="${pname}"></div><div>
- <h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div>
- <p>${types}</p><button id="sh" class="pill">✨ Shiny</button></div></div>
- <div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div>
- <div class="section"><h3>Formen</h3>${forms||'—'}</div>
- <div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div>
- <div class="section"><h3>Basiswerte</h3>${stats}</div>
- <div class="section"><h3>Attacken (Auswahl)</h3><p>${moves.join(' · ')||'—'}</p></div>
- <div class="section"><h3>Basisdaten</h3><div class="data-grid">
- <div class="data-box"><b>Größe</b>${p.height/10} m</div><div class="data-box"><b>Gewicht</b>${p.weight/10} kg</div>
- <div class="data-box"><b>EP-Gruppe</b>${title(p.base_experience?String(p.base_experience):'—')}</div>
- <div class="data-box"><b>Fähigkeiten</b>${abilities.length}</div></div></div>`;
- $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id)}
+  const pname=deP(p.id)||title(p.name);
+  const abilities=await Promise.all(p.abilities.map(async x=>deA(resourceId(x.ability.url))||title(x.ability.name)));
+
+  const grouped={};
+  p.moves.forEach(x=>{
+    const methods=x.version_group_details||[];
+    methods.forEach(v=>{
+      let key='Weitere';
+      const m=v.move_learn_method?.name;
+      if(m==='level-up') key='Durch Levelaufstieg';
+      else if(m==='machine') key='TM / VM';
+      else if(m==='tutor') key='Attacken-Lehrer';
+      else if(m==='egg') key='Ei-Attacke';
+      else if(m==='stadium-surfing-pikachu') key='Spezial';
+      if(!grouped[key]) grouped[key]=[];
+      const level=v.level_learned_at||0;
+      const entry={id:resourceId(x.move.url),name:x.move.name,level};
+      if(!grouped[key].some(a=>a.id===entry.id)) grouped[key].push(entry);
+    });
+  });
+
+  const moveOrder=['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere'];
+  let moveHtml='';
+  for(const group of moveOrder){
+    if(!grouped[group]) continue;
+    const entries=await Promise.all(grouped[group].map(async m=>({
+      ...m, de:deM(m.id)||title(m.name)
+    })));
+    entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));
+    moveHtml+=`<div class="move-group"><h4>${group} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">`;
+    moveHtml+=entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('');
+    moveHtml+='</div></div>';
+  }
+
+  const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name==='de');
+  const genus=(s.genera||[]).find(x=>x.language?.name==='de');
+  const stats=p.stats.map(x=>`<div class="stat"><span>${({
+    hp:'KP',attack:'Angriff',defense:'Verteidigung',
+    'special-attack':'Sp. Angriff','special-defense':'Sp. Verteidigung',
+    speed:'Initiative'
+  })[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
+
+  const forms=s.varieties.map(v=>{
+    const id=resourceId(v.pokemon.url);
+    const name=deP(id)||title(v.pokemon.name);
+    const active=Number(id)===Number(p.id);
+    return `<button type="button" class="form-choice ${active?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}">
+      <img src="${sprite(id)}" alt=""><span>${name}</span></button>`;
+  }).join('');
+
+  const types=p.types.map(t=>`<span class="pill">${deT(resourceId(t.type.url))||title(t.type.name)}</span>`).join('');
+
+  $('modalbody').innerHTML=`
+    <div class="detail">
+      <div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div>
+      <div>
+        <h2>${pname}</h2>
+        <div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div>
+        <p>${types}</p>
+        <button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button>
+      </div>
+    </div>
+
+    <div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div>
+
+    <div class="section"><h3>Pokédex-Beschreibung</h3>
+      <p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>
+      ${genus?`<p class="flavor">${genus.genus}</p>`:''}
+    </div>
+
+    <div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div>
+    <div class="section"><h3>Basiswerte</h3>${stats}</div>
+    <div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>
+  `;
+
+  $('sh').onclick=()=>{
+    isShiny=!isShiny;
+    $('ds').src=isShiny?shiny(p.id):sprite(p.id);
+    $('sh').classList.toggle('active',isShiny);
+  };
+
+  document.querySelectorAll('#forms .form-choice').forEach(btn=>{
+    btn.onclick=async()=>{
+      const url=btn.dataset.formUrl;
+      try{
+        const fp=await json(url);
+        current={p:fp,s};
+        isShiny=false;
+        await detail(fp,s);
+      }catch(e){console.error(e)}
+    };
+  });
 }
 function calcEV(){let t=['hp','atk','def','spa','spd','spe'].reduce((a,k)=>a+(+($('ev-'+k).value)||0),0);$('evtotal').textContent=`EVs gesamt: ${t} / 510`;$('evtotal').style.color=t>510?'#ff9a9a':''}
 async function init(){
