@@ -12,19 +12,5 @@ Statischer Web-Prototyp für GitHub Pages.
 Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
 
 
-## Version 1.2
-- Calculator: Champions-relevante Items vorbereitet/auf Suchauswahl ausgelegt.
-- Werteveränderungen beginnen bei 0.
-- Attacke im Angreifer-Bereich.
-- Switch-Button zum Tauschen von Angreifer und Verteidiger.
-- `.nojekyll` wird nicht mehr mitgeliefert.
-
-
-## Version 1.3
-- Calculator-Auswahl vollständig überarbeitet.
-- Pokémon-Auswahl mit Suchvorschlägen und sofortiger Anzeige.
-- Attacke direkt im Angreifer-Bereich mit Suche.
-- Unterer Bereich enthält nur noch den Button „Attacke“.
-- Switch tauscht Pokémon, Formen, Wesen, Items, Statuswerte und EVs.
-- Statuswertänderungen 0 bis +6.
-- Champions-Itempool als separate Datenbasis; `.nojekyll` wird nicht mitgeliefert.
+## Version 1.4
+Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. Attacke direkt beim Angreifer, Item-Suche, Switch zwischen Angreifer und Verteidiger, Statuswertänderungen 0 bis +6. Pokédex-Code unverändert.
