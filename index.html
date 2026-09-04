@@ -12,7 +12,7 @@
 </header>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 0.5</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten, auswählbare Formen, Fähigkeiten, Attacken und Beschreibungen.</p></div>
+  <div class="hero"><small>VERSION 0.5</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -21,26 +21,56 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-  <div class="hero"><small>VERSION 0.5</small><h1>Battle Calculator</h1><p>Grundlage für Level 50, Nature und EVs.</p></div>
-  <div class="card">
-    <div class="twocol">
-      <label>Angreifer<select id="attacker"><option>Pokémon wählen …</option></select></label>
-      <label>Verteidiger<select id="defender"><option>Pokémon wählen …</option></select></label>
-      <label>Nature<select id="nature"></select></label>
-      <label>Item<select><option>Kein Item</option><option>Wahlband</option><option>Wahlschal</option><option>Wahlglas</option><option>Leben-Orb</option><option>Überreste</option></select></label>
-    </div>
-    <h2>EV-Verteilung</h2><p class="muted">Maximal 510 EVs insgesamt, 252 pro Wert.</p>
-    <div class="evgrid">
-      <label>KP<input id="ev-hp" type="number" min="0" max="252" step="4" value="0"></label>
-      <label>Angriff<input id="ev-atk" type="number" min="0" max="252" step="4" value="0"></label>
-      <label>Verteidigung<input id="ev-def" type="number" min="0" max="252" step="4" value="0"></label>
-      <label>Sp. Angriff<input id="ev-spa" type="number" min="0" max="252" step="4" value="0"></label>
-      <label>Sp. Verteidigung<input id="ev-spd" type="number" min="0" max="252" step="4" value="0"></label>
-      <label>Initiative<input id="ev-spe" type="number" min="0" max="252" step="4" value="0"></label>
-    </div>
-    <div id="evtotal">EVs gesamt: 0 / 510</div>
-    <div class="notice">Die vollständige Champions-Schadensberechnung wird in einem späteren Schritt ergänzt.</div>
+<div class="hero"><small>VERSION 0.7</small><h1>Battle Calculator</h1>
+<p>Level 50 · IVs 31 · EVs · Nature · Items · Status · Statuswertänderungen · Attacken.</p></div>
+
+<div class="card">
+  <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">EVs: 0 / 510</span></div>
+  <label>Pokémon<select id="attacker"><option value="">Pokémon wählen …</option></select></label>
+  <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
+  <div class="twocol">
+    <label>Nature<select id="atkNature"></select></label>
+    <label>Item<select id="atkItem"></select></label>
   </div>
+  <h3>EV-Verteilung</h3>
+  <div id="atkEV" class="evgrid"></div>
+  <div class="changegrid">
+    <label>Status<select id="atkStatus"></select></label>
+    <label>Angriff<select id="atkBoost"></select></label>
+    <label>Sp. Angriff<select id="atkSpABoost"></select></label>
+    <label>Initiative<select id="atkSpeedBoost"></select></label>
+  </div>
+</div>
+
+<div class="card">
+  <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
+  <label>Pokémon<select id="defender"><option value="">Pokémon wählen …</option></select></label>
+  <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
+  <div class="twocol">
+    <label>Nature<select id="defNature"></select></label>
+    <label>Item<select id="defItem"></select></label>
+  </div>
+  <h3>EV-Verteilung</h3>
+  <div id="defEV" class="evgrid"></div>
+  <div class="changegrid">
+    <label>Status<select id="defStatus"></select></label>
+    <label>Verteidigung<select id="defBoost"></select></label>
+    <label>Sp. Verteidigung<select id="defSpDBoost"></select></label>
+    <label>Initiative<select id="defSpeedBoost"></select></label>
+  </div>
+</div>
+
+<div class="card">
+<h2>Attacke</h2>
+<div class="twocol">
+<label>Attacke<select id="moveSelect"><option value="">Zuerst einen Angreifer wählen …</option></select></label>
+<label>Zieltyp<select id="targetType"><option value="">Automatisch</option></select></label>
+</div>
+<div id="moveInfo" class="move-info">Wähle einen Angreifer und eine Attacke.</div>
+<button id="calcButton" class="primary" type="button">Schaden berechnen</button>
+<div id="damageResult" class="damage-result"></div>
+<div class="notice">Die angezeigte Schadenszahl ist in v0.7 eine vorläufige Basisberechnung. Die endgültige Champions-Schadensformel wird erst mit verifizierten Regeln des aktiven Regelsatzes eingesetzt.</div>
+</div>
 </section>
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div>

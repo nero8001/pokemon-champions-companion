@@ -156,6 +156,116 @@ async function detail(p,s){
   });
 }
 function calcEV(){let t=['hp','atk','def','spa','spd','spe'].reduce((a,k)=>a+(+($('ev-'+k).value)||0),0);$('evtotal').textContent=`EVs gesamt: ${t} / 510`;$('evtotal').style.color=t>510?'#ff9a9a':''}
+
+const natureData=[
+ ['Hart','neutral','neutral'],['Solo','atk','def'],['Robust','atk','spa'],['Mutig','atk','spe'],['Brav','atk','spd'],
+ ['Kühn','def','atk'],['Sanft','def','spd'],['Locker','def','spe'],['Pfiffig','def','spa'],
+ ['Mäßig','spa','atk'],['Mild','spa','def'],['Hastig','spe','def'],['Still','spd','spe'],
+ ['Zart','spd','def'],['Forsch','spd','spe'],['Scheu','spe','atk'],['Naiv','spe','spd'],
+ ['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Froh','spe','spa'],['Frech','atk','spd'],
+ ['Sacht','spd','spa'],['Lasch','def','spa'],['Hitzig','spa','spd'],['Ruhig','spa','spe']
+];
+const calcStatKeys=['hp','atk','def','spa','spd','spe'];
+const calcStatLabels=['KP','Angriff','Verteidigung','Sp. Angriff','Sp. Verteidigung','Initiative'];
+const calcItems=['Kein Item','Leben-Orb','Wahlband','Wahlglas','Überreste','Fokusgurt','Expertengurt'];
+const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','Paralyse','Eingefroren'];
+const stages=['-6','-5','-4','-3','-2','-1','0','+1','+2','+3','+4','+5','+6'];
+
+function makeEVInputs(side){
+  const target=$(side==='atk'?'atkEV':'defEV');
+  target.innerHTML=calcStatKeys.map((k,i)=>`<label>${calcStatLabels[i]}<input id="${side}-${k}" type="number" min="0" max="252" step="4" value="0"></label>`).join('');
+  calcStatKeys.forEach(k=>$(side+'-'+k).addEventListener('input',()=>updateCalcSide(side)));
+}
+function fillOptions(){
+  const nat=natureData.map((n,i)=>`<option value="${i}">${n[0]}</option>`).join('');
+  $('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;
+  ['atkItem','defItem'].forEach(id=>$(id).innerHTML=calcItems.map(x=>`<option>${x}</option>`).join(''));
+  ['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=calcStatuses.map(x=>`<option>${x}</option>`).join(''));
+  ['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost']
+    .forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));
+}
+function getCalcPokemon(selectId){
+  const id=Number($(selectId).value); return mons.find(p=>p.id===id)||null;
+}
+function evTotal(side){
+  return calcStatKeys.reduce((sum,k)=>sum+Math.max(0,Math.min(252,Number($(side+'-'+k).value)||0)),0);
+}
+function natureMultiplier(index,key){
+  const n=natureData[Number(index)||0];
+  return n[1]===key?1.1:n[2]===key?.9:1;
+}
+function calcLevel50Stats(p,side){
+  const vals=[];
+  const nature=$(side==='atk'?'atkNature':'defNature').value;
+  calcStatKeys.forEach((key,i)=>{
+    const base=p.stats[i]?.base_stat||0;
+    const ev=Math.max(0,Math.min(252,Number($(side+'-'+key).value)||0));
+    const iv=31;
+    if(i===0) vals.push(Math.floor(((2*base+iv+Math.floor(ev/4))*50)/100)+60);
+    else vals.push(Math.floor((Math.floor(((2*base+iv+Math.floor(ev/4))*50)/100)+5)*natureMultiplier(nature,key)));
+  });
+  return vals;
+}
+function updateCalcSide(side){
+  const p=getCalcPokemon(side==='atk'?'attacker':'defender');
+  const total=evTotal(side);
+  const totalEl=$(side==='atk'?'atkTotal':'defTotal');
+  totalEl.textContent=`EVs: ${total} / 510`; totalEl.style.color=total>510?'#ff9a9a':'';
+  if(!p)return;
+  const vals=calcLevel50Stats(p,side);
+  const statsline=vals.map((v,i)=>`${calcStatLabels[i]} ${v}`).join(' · ');
+  const box=$(side==='atk'?'attackerPreview':'defenderPreview');
+  box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${deP(p.id)||title(p.name)}</b><div class="statsline">${statsline}</div></div>`;
+}
+async function loadCalcMoves(){
+  const p=getCalcPokemon('attacker');
+  const sel=$('moveSelect');
+  if(!p){sel.innerHTML='<option value="">Zuerst einen Angreifer wählen …</option>';return}
+  try{
+    const data=await json(`${API}/pokemon/${p.id}`);
+    const list=[],seen=new Set();
+    for(const x of data.moves){
+      const id=resourceId(x.move.url);
+      if(!id||seen.has(id))continue;
+      seen.add(id);list.push({id,name:deM(id)||title(x.move.name)});
+    }
+    list.sort((a,b)=>a.name.localeCompare(b.name,'de'));
+    sel.innerHTML='<option value="">Attacke wählen …</option>'+list.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+  }catch(e){sel.innerHTML='<option value="">Attacken konnten nicht geladen werden</option>'}
+}
+async function showMoveInfo(){
+  const id=Number($('moveSelect').value);
+  if(!id){$('moveInfo').textContent='Wähle einen Angreifer und eine Attacke.';return}
+  try{
+    const m=await json(`${API}/move/${id}`);
+    const type=deT(resourceId(m.type?.url))||title(m.type?.name||'—');
+    const cls=m.damage_class?.name==='physical'?'physisch':m.damage_class?.name==='special'?'speziell':'Status';
+    $('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;
+  }catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}
+}
+async function calculateDamage(){
+  const a=getCalcPokemon('attacker'),d=getCalcPokemon('defender'),mid=Number($('moveSelect').value);
+  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
+  try{
+    const [ap,dp,m]=await Promise.all([json(`${API}/pokemon/${a.id}`),json(`${API}/pokemon/${d.id}`),json(`${API}/move/${mid}`)]);
+    if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
+    const av=calcLevel50Stats(ap,'atk'),dv=calcLevel50Stats(dp,'def');
+    const physical=m.damage_class?.name==='physical';
+    const attack=av[physical?1:3],defense=dv[physical?2:4];
+    const base=Math.floor(Math.floor(Math.floor((2*50/5+2)*m.power*attack/Math.max(1,defense))/50)+2);
+    $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base}</div><div class="damage-muted">${deM(mid)||title(m.name)} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}</div></div>`;
+  }catch(e){$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
+}
+function setupCalculator(){
+  makeEVInputs('atk');makeEVInputs('def');fillOptions();
+  $('attacker').addEventListener('change',async()=>{updateCalcSide('atk');await loadCalcMoves()});
+  $('defender').addEventListener('change',()=>updateCalcSide('def'));
+  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
+  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
+  $('moveSelect').addEventListener('change',showMoveInfo);
+  $('calcButton').addEventListener('click',calculateDamage);
+}
+
 async function init(){
  nav();$('search').oninput=search;
  $('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};
@@ -170,7 +280,7 @@ async function init(){
   mons=d.results.map((p,i)=>({name:p.name,id:i+1}));
   $('status').textContent=`${mons.length} Pokémon geladen`;render(mons.slice(0,24));
   const opts=mons.map(p=>`<option value="${p.id}">#${String(p.id).padStart(4,'0')} ${deP(p.id)||title(p.name)}</option>`).join('');
-  $('attacker').insertAdjacentHTML('beforeend',opts);$('defender').insertAdjacentHTML('beforeend',opts);
+  $('attacker').insertAdjacentHTML('beforeend',opts);$('defender').insertAdjacentHTML('beforeend',opts);setupCalculator();
  }catch(e){console.error(e);$('status').textContent='Fehler beim Laden. Bitte Seite neu laden.'}
 }
 init();
