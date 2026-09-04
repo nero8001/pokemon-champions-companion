@@ -18,6 +18,9 @@
   .switch-btn-v14{width:100%;max-width:180px}
 }
 </style>
+<style id="v16-field-controls">
+.field-controls-v16{margin-top:14px}.field-help{margin-top:8px;font-size:.9rem;opacity:.75}
+</style>
 </head>
 <body>
 <header>
@@ -35,7 +38,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 1.5</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 1.7</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -113,6 +116,30 @@
       <label>Initiative<select id="defSpeedBoost"></select></label>
     </div>
   </div>
+</div>
+
+<div class="card field-controls-v16">
+  <div class="twocol">
+    <label>Feldstatus
+      <select id="fieldStatus">
+        <option value="none">Kein Feld</option>
+        <option value="electric">Elektrofeld</option>
+        <option value="grassy">Grasfeld</option>
+        <option value="psychic">Psychofeld</option>
+        <option value="misty">Nebelfeld</option>
+      </select>
+    </label>
+    <label>Wetter
+      <select id="weatherStatus">
+        <option value="none">Kein Wetter</option>
+        <option value="sun">Sonnenschein</option>
+        <option value="rain">Regen</option>
+        <option value="sand">Sandsturm</option>
+        <option value="snow">Schnee</option>
+      </select>
+    </label>
+  </div>
+  <div class="field-help">Feld und Wetter werden bei der Schadensberechnung berücksichtigt.</div>
 </div>
 
 <div class="card attack-action-v14">

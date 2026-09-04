@@ -173,8 +173,72 @@ async function changeCalcForm(side,id){
 }
 async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder='Attacke suchen …';input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
-async function calculateDamage(){const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}try{const m=await json(`${API}/move/${mid}`);if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def'),physical=m.damage_class?.name==='physical',attack=av[physical?1:3],defense=dv[physical?2:4],base=Math.floor(Math.floor(Math.floor((2*50/5+2)*m.power*attack/Math.max(1,defense))/50)+2);$('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base}</div><div class="damage-muted">${deM(mid)||title(m.name)} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}</div></div>`}catch(e){$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}}
-
+const fieldEffects={
+  none:{label:'Kein Feld'},
+  electric:{label:'Elektrofeld',type:'electric',boost:1.3},
+  grassy:{label:'Grasfeld',type:'grass',boost:1.3},
+  psychic:{label:'Psychofeld',type:'psychic',boost:1.3},
+  misty:{label:'Nebelfeld',dragonReduction:.5}
+};
+const weatherEffects={
+  none:{label:'Kein Wetter'},
+  sun:{label:'Sonnenschein',boostType:'fire',boost:1.5,nerfType:'water',nerf:.5},
+  rain:{label:'Regen',boostType:'water',boost:1.5,nerfType:'fire',nerf:.5},
+  sand:{label:'Sandsturm'},
+  snow:{label:'Schnee'}
+};
+function getSelectedField(){return fieldEffects[$('fieldStatus')?.value||'none']||fieldEffects.none}
+function getSelectedWeather(){return weatherEffects[$('weatherStatus')?.value||'none']||weatherEffects.none}
+function typeNameFromMove(m){return m.type?.name||''}
+function terrainGrounded(p){
+  // Flying-Pokémon erhalten keine Terrain-Boni. Eine spätere Ability-Auswahl kann
+  // zusätzlich Levitate berücksichtigen; aktuell ist diese im Calculator nicht wählbar.
+  return !(p?.types||[]).some(t=>t.type?.name==='flying');
+}
+function fieldWeatherPowerMultiplier(m,a,d){
+  const field=getSelectedField(),weather=getSelectedWeather(),type=typeNameFromMove(m);
+  let mult=1,notes=[];
+  const groundedA=terrainGrounded(a),groundedD=terrainGrounded(d);
+  if(groundedA&&field.type===type){mult*=field.boost;notes.push(`${field.label}: ×${field.boost}`)}
+  if(field.dragonReduction===.5&&type==='dragon'&&groundedD){mult*=.5;notes.push('Nebelfeld: ×0,5 gegen Boden-Pokémon')}
+  if(weather.boostType===type){mult*=weather.boost;notes.push(`${weather.label}: ×${weather.boost}`)}
+  if(weather.nerfType===type){mult*=weather.nerf;notes.push(`${weather.label}: ×${weather.nerf}`)}
+  const moveName=m.name||'';
+  if(field.type&&groundedA&&moveName==='expanding-force'){mult*=1.5;notes.push('Expanding Force im Feld: ×1,5')}
+  if(field.type&&groundedA&&moveName==='terrain-pulse'){mult*=2;notes.push('Terrain-Puls im Feld: ×2')}
+  if(field.type==='misty'&&groundedA&&moveName==='misty-explosion'){mult*=1.5;notes.push('Misty Explosion im Nebelfeld: ×1,5')}
+  if(field.type==='grassy'&&groundedD&&['earthquake','bulldoze','magnitude'].includes(moveName)){mult*=.5;notes.push('Grasfeld gegen Boden-Attacke: ×0,5')}
+  return {mult,notes};
+}
+function applyWeatherDefense(m,d,defense,physical){
+  const weather=getSelectedWeather();
+  if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))return Math.floor(defense*1.5);
+  if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))return Math.floor(defense*1.5);
+  return defense;
+}
+async function calculateDamage(){
+ const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
+ if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
+ try{
+  const m=await json(`${API}/move/${mid}`);
+  if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
+  const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def');
+  const physical=m.damage_class?.name==='physical';
+  const attack=av[physical?1:3];
+  let defense=dv[physical?2:4];
+  defense=applyWeatherDefense(m,d,defense,physical);
+  let basePower=m.power;
+  const fw=fieldWeatherPowerMultiplier(m,a,d);
+  basePower=Math.floor(basePower*fw.mult);
+  const base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
+  const field=getSelectedField(),weather=getSelectedWeather();
+  const notes=fw.notes.slice();
+  if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
+  if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
+  const env=[field.label,weather.label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
+  $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">${base}</div><div class="damage-muted">${deM(mid)||title(m.name)} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}${env?' · '+env:''}</div>${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}</div>`;
+ }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
+}
 async function loadAllItems(){const d=await json(`${API}/item?limit=10000`);calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:deI(id)||title(x.name),raw:x.name}}).sort((a,b)=>a.name.localeCompare(b.name,'de'));}
 
 function setupItemSearchV14(side){
@@ -240,7 +304,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
  $('atkForm').addEventListener('change',()=>changeCalcForm('atk',$('atkForm').value));$('defForm').addEventListener('change',()=>changeCalcForm('def',$('defForm').value));$('calcButton').addEventListener('click',calculateDamage);
- setupItemSearchV14('atk');setupItemSearchV14('def');$('switchCombatants').addEventListener('click',switchCombatantsV14);
+ setupItemSearchV14('atk');setupItemSearchV14('def');$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});
 }
 async function init(){nav();$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
  try{await loadGerman();const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`),loadAllItems()]);mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=`${mons.length} Pokémon geladen`;render(mons.slice(0,24));setupCalculator()}catch(e){console.error(e);$('status').textContent='Fehler beim Laden. Bitte Seite neu laden.'}}
