@@ -1,49 +1,20 @@
-# Pokémon Champions Companion v1.0
+# Pokémon Champions Companion – v2.5
 
-Statischer Web-Prototyp für GitHub Pages.
+v2.5 uses the stable v1.9 application structure as its base and adds a clean bilingual data layer.
 
-## v1.0
-- Pokédex vollständig auf Deutsch
-- Korrekte lesbare Formnamen wie Mega Bisaflor und Gigadynamax-Formen
-- Stärken/Resistenzen, Schwächen und Immunitäten direkt in der Pokémon-Info
-- Battle Calculator mit Pokémon-/Attacken-Suche, Formen, Items, EVs, Nature und Statuswerten
-- `.nojekyll` ist enthalten und absichtlich nicht leer
+## Changes
+- German / English language selector.
+- Pokémon, moves, abilities, types, items and forms use language-specific PokéAPI data.
+- English mode uses official English names instead of translating German text.
+- Language switching is independent from application startup.
+- Calculator initialization no longer waits for language CSVs or the item list.
+- Pokémon API requests use a timeout so a stalled request cannot freeze the UI indefinitely.
+- Existing v1.9 calculator, fields/weather, forms, stats and preliminary damage calculation are preserved.
+- Standard 25 Pokémon Natures are corrected.
 
-Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
+## Files
+- `index.html`
+- `app.js`
+- `style.css`
 
-
-## Version 1.4
-Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. Attacke direkt beim Angreifer, Item-Suche, Switch zwischen Angreifer und Verteidiger, Statuswertänderungen 0 bis +6. Pokédex-Code unverändert.
-
-
-## Version 1.8
-- Wesen-Auswahl zeigt nun bei jedem Wesen den positiven und negativen Statuswert, z. B. „Froh (+Initiative, −Sp. Angriff)“. Neutrale Wesen werden als „neutral“ gekennzeichnet. Die Anzeige gilt im Pokédex und im Battle Calculator.
-
-
-## Version 1.9
-- Wesen korrigiert: Hart = +Angriff / -Sp. Angriff; alle 25 Wesen korrekt zugeordnet.
-- Schadensausgabe zusätzlich als Prozent des Verteidiger-KP-Werts.
-- Grafische KP-Leiste zeigt verbleibende KP nach dem Treffer.
-- Vorläufige Schadensformel bleibt unverändert als Basis bestehen.
-
-
-## Version 2.0
-- Sprachumschaltung Deutsch/English am oberen Seitenrand.
-- UI-Texte des Pokédex und Calculators werden dynamisch umgeschaltet.
-- Auswahlfelder, Buttons, Status-/Wetter-/Feldtexte und Wesensanzeige werden übersetzt.
-- Gewählte Sprache wird lokal gespeichert und beim nächsten Öffnen wieder verwendet.
-- Pokémon-, Attacken- und Itemdaten können unabhängig von der UI-Sprache lokalisiert werden.
-
-
-## v2.4 Fixes
-- Calculator navigation and Pokémon selection are initialized independently of localization/item downloads.
-- German and English data are loaded from the corresponding PokéAPI language records.
-- Language selector is present in the HTML and remains usable even if localization data temporarily fail to load.
-- Removed the duplicated/brittle v2.2 runtime patch approach.
-
-
-## v2.4
-- Calculator and navigation are initialized independently of the Pokémon index request.
-- Added timeout/retry handling for slow API connections.
-- Added direct Pokémon lookup in the calculator when the full index is not ready.
-- Removed the erroneous extra Nature entry so the standard 25 Natures are used.
+No `.nojekyll` file is included.
