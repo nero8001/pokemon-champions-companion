@@ -18,3 +18,13 @@ Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Rege
 - Attacke im Angreifer-Bereich.
 - Switch-Button zum Tauschen von Angreifer und Verteidiger.
 - `.nojekyll` wird nicht mehr mitgeliefert.
+
+
+## Version 1.3
+- Calculator-Auswahl vollständig überarbeitet.
+- Pokémon-Auswahl mit Suchvorschlägen und sofortiger Anzeige.
+- Attacke direkt im Angreifer-Bereich mit Suche.
+- Unterer Bereich enthält nur noch den Button „Attacke“.
+- Switch tauscht Pokémon, Formen, Wesen, Items, Statuswerte und EVs.
+- Statuswertänderungen 0 bis +6.
+- Champions-Itempool als separate Datenbasis; `.nojekyll` wird nicht mitgeliefert.

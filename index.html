@@ -10,6 +10,26 @@
 .switch-btn{min-width:88px;min-height:44px;border:1px solid #555;border-radius:10px;background:#222;color:#fff;font-weight:700;cursor:pointer}
 .field input[type="search"]{width:100%;box-sizing:border-box}
 </style>
+
+<style id="v13-calculator">
+.calc-duo{display:grid;grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr);gap:14px;align-items:stretch}
+.combatant-card{min-width:0}
+.switch-column{display:flex;align-items:center;justify-content:center}
+.switch-btn{width:64px;min-height:48px;border:1px solid #555;border-radius:12px;background:#222;color:#fff;font-weight:800;cursor:pointer}
+.switch-btn:active{transform:translateY(1px)}
+.calc-preview{min-height:72px}
+.item-picker{position:relative;min-width:0}
+.item-picker select{margin-top:6px;width:100%}
+.calc-suggestions{position:relative;z-index:20}
+.attack-action{margin-top:14px}
+@media (max-width:900px){
+  .calc-duo{grid-template-columns:1fr}
+  .switch-column{order:2;padding:4px 0}
+  #defenderCard{order:3}
+  #attackerCard{order:1}
+  .switch-btn{width:100%;max-width:180px}
+}
+</style>
 </head>
 <body>
 <header>
@@ -27,123 +47,87 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 1.1</small><h1>Battle Calculator</h1>
-<p>Level 50 · IVs 31 · EVs · Nature · Items · Status · Statuswertänderungen · Attacken.</p></div>
+<div class="hero"><small>VERSION 1.3</small><h1>Battle Calculator</h1>
+<p>Level 50 · IVs 31 · EVs · Wesen · Champions-Items · Status · Statuswertänderungen.</p></div>
 
-<div class="card">
-  <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">EVs: 0 / 510</span></div>
-  <label>Pokémon suchen<input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><div id="atkSuggestions" class="calc-suggestions" hidden></div></label>
-  <label>Form<select id="atkForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
-  <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
-  <div class="twocol">
-    <label>Nature<select id="atkNature"></select></label>
-    <label>Item<select id="atkItem"></select></label>
+<div class="calc-duo">
+  <div class="card combatant-card" id="attackerCard">
+    <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">EVs: 0 / 510</span></div>
+    <label>Pokémon suchen
+      <input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
+      <div id="atkSuggestions" class="calc-suggestions" hidden></div>
+    </label>
+    <label>Form<select id="atkForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
+    <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
+
+    <label>Attacke suchen
+      <input id="atkMoveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …">
+      <div id="atkMoveSuggestions" class="calc-suggestions" hidden></div>
+    </label>
+    <div id="atkMoveInfo" class="move-info">Wähle einen Angreifer und danach eine Attacke.</div>
+
+    <div class="twocol">
+      <label>Wesen<select id="atkNature"></select></label>
+      <div class="item-picker">
+        <label for="atkItemSearch">Item suchen</label>
+        <input id="atkItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
+        <div id="atkItemSuggestions" class="calc-suggestions" hidden></div>
+        <select id="atkItem" aria-label="Item auswählen"></select>
+      </div>
+    </div>
+
+    <h3>EV-Verteilung</h3>
+    <div id="atkEV" class="evgrid"></div>
+    <div class="changegrid">
+      <label>Status<select id="atkStatus"></select></label>
+      <label>Angriff<select id="atkBoost"></select></label>
+      <label>Sp. Angriff<select id="atkSpABoost"></select></label>
+      <label>Initiative<select id="atkSpeedBoost"></select></label>
+    </div>
   </div>
-  <h3>EV-Verteilung</h3>
-  <div id="atkEV" class="evgrid"></div>
-  <div class="changegrid">
-    <label>Status<select id="atkStatus"></select></label>
-    <label>Angriff<select id="atkBoost"></select></label>
-    <label>Sp. Angriff<select id="atkSpABoost"></select></label>
-    <label>Initiative<select id="atkSpeedBoost"></select></label>
+
+  <div class="switch-column">
+    <button type="button" id="switchCombatants" class="switch-btn" title="Angreifer und Verteidiger tauschen">Switch</button>
+  </div>
+
+  <div class="card combatant-card" id="defenderCard">
+    <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
+    <label>Pokémon suchen
+      <input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
+      <div id="defSuggestions" class="calc-suggestions" hidden></div>
+    </label>
+    <label>Form<select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
+    <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
+
+    <div class="twocol">
+      <label>Wesen<select id="defNature"></select></label>
+      <div class="item-picker">
+        <label for="defItemSearch">Item suchen</label>
+        <input id="defItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
+        <div id="defItemSuggestions" class="calc-suggestions" hidden></div>
+        <select id="defItem" aria-label="Item auswählen"></select>
+      </div>
+    </div>
+
+    <h3>EV-Verteilung</h3>
+    <div id="defEV" class="evgrid"></div>
+    <div class="changegrid">
+      <label>Status<select id="defStatus"></select></label>
+      <label>Verteidigung<select id="defBoost"></select></label>
+      <label>Sp. Verteidigung<select id="defSpDBoost"></select></label>
+      <label>Initiative<select id="defSpeedBoost"></select></label>
+    </div>
   </div>
 </div>
 
-<div class="card">
-  <div class="calc-title">
-<div class="switch-wrap">
-  <button type="button" id="switchCombatants" class="switch-btn" title="Angreifer und Verteidiger tauschen">Switch</button>
-</div>
-<h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
-  <label>Pokémon suchen<input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><div id="defSuggestions" class="calc-suggestions" hidden></div></label>
-  <label>Form<select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
-  <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
-  <div class="twocol">
-    <label>Nature<select id="defNature"></select></label>
-    <label>Item<select id="defItem"></select></label>
-  </div>
-  <h3>EV-Verteilung</h3>
-  <div id="defEV" class="evgrid"></div>
-  <div class="changegrid">
-    <label>Status<select id="defStatus"></select></label>
-    <label>Verteidigung<select id="defBoost"></select></label>
-    <label>Sp. Verteidigung<select id="defSpDBoost"></select></label>
-    <label>Initiative<select id="defSpeedBoost"></select></label>
-  </div>
-</div>
-
-<div class="card">
-<h2>Attacke</h2>
-<div class="twocol">
-<label>Attacke suchen<input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …"><div id="moveSuggestions" class="calc-suggestions" hidden></div></label>
-<label>Zieltyp<select id="targetType"><option value="">Automatisch</option></select></label>
-</div>
-<div id="moveInfo" class="move-info">Wähle einen Angreifer und eine Attacke.</div>
-<button id="calcButton" class="primary" type="button">Schaden berechnen</button>
-<div id="damageResult" class="damage-result"></div>
-<div class="notice">Die angezeigte Schadenszahl ist in v0.7 eine vorläufige Basisberechnung. Die endgültige Champions-Schadensformel wird erst mit verifizierten Regeln des aktiven Regelsatzes eingesetzt.</div>
+<div class="card attack-action">
+  <button id="calcButton" class="primary" type="button">Attacke</button>
+  <div id="moveInfo" class="move-info">Die Attacke des Angreifers wird verwendet.</div>
+  <div id="damageResult" class="damage-result"></div>
+  <div class="notice">Die angezeigte Schadenszahl ist weiterhin eine vorläufige Basisberechnung. Die endgültige Champions-Schadensformel wird erst mit verifizierten Regeln des aktiven Regelsatzes eingesetzt.</div>
 </div>
 </section>
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div>
 <script src="app.js"></script>
-
-<script id="v12-calculator-enhancements">
-(function(){
-  "use strict";
-  function $(id){return document.getElementById(id);}
-  const moveSearch=$("attackerMoveSearch"), moveSelect=$("attackerMoveSelect");
-  const switchBtn=$("switchCombatants");
-
-  // Search/filter the attack selector in the attacker panel.
-  if(moveSearch && moveSelect){
-    moveSearch.addEventListener("input", function(){
-      const q=this.value.trim().toLocaleLowerCase("de-DE");
-      Array.from(moveSelect.options).forEach(function(o){
-        o.hidden = !!q && !o.textContent.toLocaleLowerCase("de-DE").includes(q);
-      });
-      const visible=Array.from(moveSelect.options).find(o=>!o.hidden);
-      if(visible && !moveSelect.value) moveSelect.value=visible.value;
-    });
-  }
-
-  // Keep stat-stage controls at the requested 0..6 range.
-  document.querySelectorAll('select').forEach(function(s){
-    if(/stufe|stage|änderung|veraenderung/i.test(s.id+" "+s.name+" "+(s.previousElementSibling?s.previousElementSibling.textContent:""))){
-      const vals=Array.from(s.options).map(o=>Number(o.value)).filter(Number.isFinite);
-      if(vals.some(v=>v<0)){
-        const keep=Array.from(s.options).filter(o=>Number(o.value)>=0);
-        s.innerHTML="";
-        keep.forEach(o=>s.appendChild(o));
-      }
-      if(!Array.from(s.options).some(o=>o.value==="0")){
-        const o=document.createElement("option");o.value="0";o.textContent="0";s.prepend(o);
-      }
-      s.value="0";
-    }
-  });
-
-  // Swap common attacker/defender controls by ID naming convention.
-  if(switchBtn){
-    switchBtn.addEventListener("click", function(){
-      const pairs=[
-        ["attacker","defender"],["attackerPokemon","defenderPokemon"],
-        ["attackerSearch","defenderSearch"],["attackerNature","defenderNature"],
-        ["attackerItem","defenderItem"],["attackerStatus","defenderStatus"],
-        ["attackerLevel","defenderLevel"]
-      ];
-      pairs.forEach(function(p){
-        const a=$(p[0]),b=$(p[1]);
-        if(!a||!b)return;
-        const av=a.value, bv=b.value;
-        a.value=bv; b.value=av;
-        a.dispatchEvent(new Event("change",{bubbles:true}));
-        b.dispatchEvent(new Event("change",{bubbles:true}));
-      });
-      if(typeof window.renderCalculator==="function") window.renderCalculator();
-      if(typeof window.updateCalculator==="function") window.updateCalculator();
-    });
-  }
-})();
-</script>
 </body></html>
