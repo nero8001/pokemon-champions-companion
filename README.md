@@ -33,3 +33,7 @@ Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. At
 - Auswahlfelder, Buttons, Status-/Wetter-/Feldtexte und Wesensanzeige werden übersetzt.
 - Gewählte Sprache wird lokal gespeichert und beim nächsten Öffnen wieder verwendet.
 - Pokémon-, Attacken- und Itemdaten können unabhängig von der UI-Sprache lokalisiert werden.
+
+
+## Version 2.1
+Die Sprachumschaltung wurde auf die komplette Benutzeroberfläche erweitert: Überschriften, Beschriftungen, Platzhalter, Buttons, Status-/Wetter-/Feldtexte, Meldungen und Wesensbeschreibungen werden zwischen Deutsch und Englisch umgeschaltet.

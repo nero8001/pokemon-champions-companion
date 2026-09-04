@@ -121,10 +121,7 @@ async function detail(p,s){
 function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(Math.max(0,Math.min(32,+($(`${side}-${k}`).value)||0))),0);$(`${side}Total`).textContent=`Statuswertpunkte: ${t} / 66`;$(`${side}Total`).style.color=t>66?'#ff9a9a':''}
 const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Brav','atk','spa'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Hitzig','spa','spd'],['Ruhig','spa','spe'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Froh','spe','spa'],['Scheu','spe','atk'],['Hastig','spe','def'],['Naiv','spe','spd'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Robust','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];
 const natureStatLabels={atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',neutral:'neutral'};
-function natureLabel(n){
-  const name=n[0],up=natureStatLabels[n[1]]||n[1],down=natureStatLabels[n[2]]||n[2];
-  return n[1]==='neutral' ? `${name} (neutral)` : `${name} (+${up}, −${down})`;
-}
+function natureLabel(n){return natureLabel2(n)}
 
 const calcStatKeys=['hp','atk','def','spa','spd','spe'];const calcStatLabels=['KP','Angriff','Verteidigung','Sp. Angriff','Sp. Verteidigung','Initiative'];
 const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','Paralyse','Eingefroren'];const stages=['0','+1','+2','+3','+4','+5','+6'];
@@ -177,7 +174,7 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
 }
-async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':'Wähle zuerst einen Angreifer.';if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=T('attackSearch');input.value='';}catch(e){input.disabled=true;input.placeholder='Attacken konnten nicht geladen werden'}}
+async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?'Attacke suchen …':U('firstAttacker');if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=T('attackSearch');input.value='';}catch(e){input.disabled=true;input.placeholder=U('moveError')}}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent='Attackendaten konnten nicht geladen werden.'}}
 const fieldEffects={
   none:{label:'Kein Feld'},
@@ -308,7 +305,7 @@ async function switchCombatantsV14(){
  try{
   await Promise.all([refresh('atk',calcState.attacker),refresh('def',calcState.defender)]);
   $('moveSearch').value='';$('moveSuggestions').innerHTML='';$('moveSuggestions').hidden=true;
-  $('moveInfo').textContent=calcState.attacker?'Attacke suchen …':'Wähle zuerst einen Angreifer.';
+  $('moveInfo').textContent=calcState.attacker?'Attacke suchen …':U('firstAttacker');
   if(calcState.attacker)await loadCalcMoves();else $('moveSearch').disabled=true;
  }catch(e){console.error(e)}
 }
@@ -332,8 +329,8 @@ const UI_TEXT={
   navDex:'Pokédex',navCalc:'Battle Calculator',search:'Pokémon suchen …',
   attacker:'Angreifer',defender:'Verteidiger',form:'Form',nature:'Wesen',item:'Item',
   attack:'Attacke',attackSearch:'Attacke suchen …',noPokemon:'Noch kein Pokémon ausgewählt.',
-  choosePokemon:'Erst Pokémon auswählen …',chooseAttacker:'Wähle einen Angreifer und danach eine Attacke.',
-  chooseFirst:'Wähle zuerst einen Angreifer.',ev:'Statuswertpunkte-Verteilung',
+  choosePokemon:U('firstPokemon'),chooseAttacker:U('chooseMove'),
+  chooseFirst:U('firstAttacker'),ev:'Statuswertpunkte-Verteilung',
   total:'Statuswertpunkte gesamt',status:'Status',attackStat:'Angriff',defStat:'Verteidigung',
   spAttack:'Sp. Angriff',spDefense:'Sp. Verteidigung',speed:'Initiative',hp:'KP',
   switch:'Switch',calculate:'Attacke',language:'Sprache / Language',
@@ -366,31 +363,7 @@ function fillNatureLabel(n){
  const stat={atk:T('attackStat'),def:T('defStat'),spa:T('spAttack'),spd:T('spDefense'),spe:T('speed')};
  return n[1]==='neutral'?`${n[0]} (${T('neutral')})`:`${n[0]} (${T('plus')}${stat[n[1]]}, ${T('minus')}${stat[n[2]]})`;
 }
-function applyLanguage(){
- document.documentElement.lang=uiLang;
- const s=$('languageSelect');if(s)s.value=uiLang;
- // Static navigation/headings.
- document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=T(el.dataset.i18n));
- const q=(id,k)=>{const e=$(id);if(e)e.textContent=T(k)};
- const ph=(id,k)=>{const e=$(id);if(e)e.placeholder=T(k)};
- ph('search','search');ph('atkSearch','search');ph('defSearch','search');ph('moveSearch','attackSearch');
- ph('atkItemSearch','item');ph('defItemSearch','item');
- q('switchCombatants','switch');q('calcButton','calculate');
- document.querySelectorAll('#attackerCard h2').forEach(e=>e.textContent=T('attacker'));
- document.querySelectorAll('#defenderCard h2').forEach(e=>e.textContent=T('defender'));
- // Translate common labels by their visible text.
- const labelMap={
-  'Pokémon suchen':'search','Pokémon search':'search','Form':'form','Wesen':'nature','Nature':'nature',
-  'Item':'item','Attacke suchen':'attackSearch','Attacke':'attack','Status':'status',
-  'EV-Verteilung':'ev','EV Distribution':'ev'
- };
- document.querySelectorAll('label,h3').forEach(el=>{
-   const raw=el.childNodes[0]?.textContent?.trim();
-   if(raw&&labelMap[raw]) el.childNodes[0].textContent=T(labelMap[raw])+' ';
- });
- if(typeof fillOptions==='function') fillOptions();
- if(typeof updateCalcSide==='function'){updateCalcSide('atk');updateCalcSide('def')}
-}
+function applyLanguage(){ translateAllUI(); }
 function setLanguage(lang){
  uiLang=lang==='en'?'en':'de';localStorage.setItem(UI_LANG_KEY,uiLang);applyLanguage();
 }
@@ -398,6 +371,66 @@ document.addEventListener('DOMContentLoaded',()=>{
  const s=$('languageSelect');if(s)s.addEventListener('change',()=>setLanguage(s.value));
  setTimeout(applyLanguage,0);
 });
+
+
+const UI2={
+de:{
+ version:'VERSION 2.1',pokedex:'Pokédex',calculator:'Battle Calculator',
+ introDex:'Alle Pokémon · Formen · Fähigkeiten · Attacken · Werte · Stärken und Schwächen.',
+ introCalc:'Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Wetter · Feldstatus.',
+ searchPokemon:'Pokémon suchen …',number:'Name oder Pokédex-Nummer',form:'Form',nature:'Wesen',item:'Item',
+ attacker:'Angreifer',defender:'Verteidiger',move:'Attacke',searchMove:'Attacke suchen …',
+ nonePokemon:'Noch kein Pokémon ausgewählt.',firstPokemon:U('firstPokemon'),
+ firstAttacker:U('firstAttacker'),chooseMove:U('chooseMove'),
+ statPoints:'Statuswertpunkte-Verteilung',total:'Statuswertpunkte gesamt',status:'Status',
+ hp:'KP',atk:'Angriff',def:'Verteidigung',spa:'Sp. Angriff',spd:'Sp. Verteidigung',spe:'Initiative',
+ weather:'Wetter',terrain:'Feldstatus',noWeather:'Kein Wetter',noTerrain:'Kein Feld',
+ sun:'Sonnenschein',rain:'Regen',sand:'Sandsturm',snow:'Schnee',
+ electric:'Elektrofeld',grass:'Grasfeld',psychic:'Psychofeld',misty:'Nebelfeld',
+ switch:'Switch',attackButton:'Attacke',prelim:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',
+ damage:'Schaden',remaining:'KP verbleibend',damagePct:'% Schaden',accuracy:'Genauigkeit',power:'Stärke',
+ physical:'Physisch',special:'Speziell',statusClass:'Status',neutral:'neutral',none:'Keine',
+ itemSearch:'Item suchen …',equip:'Ausrüstbares Champions-Item',loadError:U('loadError'),
+ moveError:'Attacken konnten nicht geladen werden.',calcError:U('calcError')
+},
+en:{
+ version:'VERSION 2.1',pokedex:'Pokédex',calculator:'Battle Calculator',
+ introDex:'All Pokémon · Forms · Abilities · Moves · Stats · Strengths and Weaknesses.',
+ introCalc:'Level 50 · IVs 31 · Stat Points · Nature · Status · Weather · Terrain.',
+ searchPokemon:'Search Pokémon …',number:'Name or Pokédex number',form:'Form',nature:'Nature',item:'Item',
+ attacker:'Attacker',defender:'Defender',move:'Move',searchMove:'Search move …',
+ nonePokemon:'No Pokémon selected yet.',firstPokemon:'Select a Pokémon first …',
+ firstAttacker:'Choose an attacker first.',chooseMove:'Choose an attacker and then a move.',
+ statPoints:'Stat Point Distribution',total:'Stat Points total',status:'Status',
+ hp:'HP',atk:'Attack',def:'Defense',spa:'Sp. Atk',spd:'Sp. Def',spe:'Speed',
+ weather:'Weather',terrain:'Terrain',noWeather:'No weather',noTerrain:'No terrain',
+ sun:'Sun',rain:'Rain',sand:'Sandstorm',snow:'Snow',
+ electric:'Electric Terrain',grass:'Grassy Terrain',psychic:'Psychic Terrain',misty:'Misty Terrain',
+ switch:'Switch',attackButton:'Move',prelim:'The damage calculation remains preliminary until the verified Champions ruleset is available.',
+ damage:'Damage',remaining:'HP remaining',damagePct:'% damage',accuracy:'Accuracy',power:'Power',
+ physical:'Physical',special:'Special',statusClass:'Status',neutral:'neutral',none:'None',
+ itemSearch:'Search item …',equip:'Equippable Champions item',loadError:'The Pokémon could not be loaded.',
+ moveError:'Moves could not be loaded.',calcError:'The calculation could not be performed.'
+}};
+function U(k){return UI2[uiLang]?.[k]??UI2.de[k]??k}
+function natureLabel2(n){
+ const st={atk:U('atk'),def:U('def'),spa:U('spa'),spd:U('spd'),spe:U('spe')};
+ return n[1]==='neutral'?`${n[0]} (${U('neutral')})`:`${n[0]} (+${st[n[1]]}, −${st[n[2]]})`;
+}
+function translateAllUI(){
+ document.documentElement.lang=uiLang;
+ const sel=$('languageSelect');if(sel)sel.value=uiLang;
+ const textMap={'Pokédex':'pokedex','Battle Calculator':'calculator','Angreifer':'attacker','Verteidiger':'defender','Form':'form','Wesen':'nature','Item':'item','Attacke':'attackButton','Status':'status','Wetter':'weather','Feldstatus':'terrain','Switch':'switch','EV-Verteilung':'statPoints','Statuswertpunkte-Verteilung':'statPoints','Statuswertpunkte gesamt':'total','EVs gesamt':'total'};
+ document.querySelectorAll('h1,h2,h3,h4,label,button,p,small,.notice').forEach(el=>{
+   const raw=el.textContent.trim();
+   if(textMap[raw]) el.textContent=U(textMap[raw]);
+ });
+ const ph={search:'searchPokemon',atkSearch:'searchPokemon',defSearch:'searchPokemon',moveSearch:'searchMove',atkItemSearch:'itemSearch',defItemSearch:'itemSearch'};
+ Object.entries(ph).forEach(([id,k])=>{const e=$(id);if(e)e.placeholder=U(k)});
+ document.querySelectorAll('.hero p').forEach((e,i)=>{e.textContent=i===0?U('introDex'):U('introCalc')});
+ const v=document.querySelector('.hero small');if(v)v.textContent=U('version');
+ if(typeof fillOptions==='function')fillOptions();
+}
 
 async function init(){nav();$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(mons.slice(0,24));$('search').focus()};$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
  try{await loadGerman();const [d]=await Promise.all([json(`${API}/pokemon?limit=1025`),loadAllItems()]);mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=`${mons.length} Pokémon geladen`;render(mons.slice(0,24));setupCalculator()}catch(e){console.error(e);$('status').textContent='Fehler beim Laden. Bitte Seite neu laden.'}}
