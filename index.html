@@ -4,6 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020"><title>Champions Companion – v1.1</title>
 <link rel="stylesheet" href="style.css">
+
+<style id="v12-calculator-polish">
+.switch-wrap{display:flex;align-items:center;justify-content:center;padding:1rem .5rem}
+.switch-btn{min-width:88px;min-height:44px;border:1px solid #555;border-radius:10px;background:#222;color:#fff;font-weight:700;cursor:pointer}
+.field input[type="search"]{width:100%;box-sizing:border-box}
+</style>
 </head>
 <body>
 <header>
@@ -44,7 +50,11 @@
 </div>
 
 <div class="card">
-  <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
+  <div class="calc-title">
+<div class="switch-wrap">
+  <button type="button" id="switchCombatants" class="switch-btn" title="Angreifer und Verteidiger tauschen">Switch</button>
+</div>
+<h2>Verteidiger</h2><span id="defTotal" class="total">EVs: 0 / 510</span></div>
   <label>Pokémon suchen<input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><div id="defSuggestions" class="calc-suggestions" hidden></div></label>
   <label>Form<select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select></label>
   <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
@@ -77,4 +87,63 @@
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div>
 <script src="app.js"></script>
+
+<script id="v12-calculator-enhancements">
+(function(){
+  "use strict";
+  function $(id){return document.getElementById(id);}
+  const moveSearch=$("attackerMoveSearch"), moveSelect=$("attackerMoveSelect");
+  const switchBtn=$("switchCombatants");
+
+  // Search/filter the attack selector in the attacker panel.
+  if(moveSearch && moveSelect){
+    moveSearch.addEventListener("input", function(){
+      const q=this.value.trim().toLocaleLowerCase("de-DE");
+      Array.from(moveSelect.options).forEach(function(o){
+        o.hidden = !!q && !o.textContent.toLocaleLowerCase("de-DE").includes(q);
+      });
+      const visible=Array.from(moveSelect.options).find(o=>!o.hidden);
+      if(visible && !moveSelect.value) moveSelect.value=visible.value;
+    });
+  }
+
+  // Keep stat-stage controls at the requested 0..6 range.
+  document.querySelectorAll('select').forEach(function(s){
+    if(/stufe|stage|änderung|veraenderung/i.test(s.id+" "+s.name+" "+(s.previousElementSibling?s.previousElementSibling.textContent:""))){
+      const vals=Array.from(s.options).map(o=>Number(o.value)).filter(Number.isFinite);
+      if(vals.some(v=>v<0)){
+        const keep=Array.from(s.options).filter(o=>Number(o.value)>=0);
+        s.innerHTML="";
+        keep.forEach(o=>s.appendChild(o));
+      }
+      if(!Array.from(s.options).some(o=>o.value==="0")){
+        const o=document.createElement("option");o.value="0";o.textContent="0";s.prepend(o);
+      }
+      s.value="0";
+    }
+  });
+
+  // Swap common attacker/defender controls by ID naming convention.
+  if(switchBtn){
+    switchBtn.addEventListener("click", function(){
+      const pairs=[
+        ["attacker","defender"],["attackerPokemon","defenderPokemon"],
+        ["attackerSearch","defenderSearch"],["attackerNature","defenderNature"],
+        ["attackerItem","defenderItem"],["attackerStatus","defenderStatus"],
+        ["attackerLevel","defenderLevel"]
+      ];
+      pairs.forEach(function(p){
+        const a=$(p[0]),b=$(p[1]);
+        if(!a||!b)return;
+        const av=a.value, bv=b.value;
+        a.value=bv; b.value=av;
+        a.dispatchEvent(new Event("change",{bubbles:true}));
+        b.dispatchEvent(new Event("change",{bubbles:true}));
+      });
+      if(typeof window.renderCalculator==="function") window.renderCalculator();
+      if(typeof window.updateCalculator==="function") window.updateCalculator();
+    });
+  }
+})();
+</script>
 </body></html>

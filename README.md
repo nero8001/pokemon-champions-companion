@@ -10,3 +10,11 @@ Statischer Web-Prototyp für GitHub Pages.
 - `.nojekyll` ist enthalten und absichtlich nicht leer
 
 Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
+
+
+## Version 1.2
+- Calculator: Champions-relevante Items vorbereitet/auf Suchauswahl ausgelegt.
+- Werteveränderungen beginnen bei 0.
+- Attacke im Angreifer-Bereich.
+- Switch-Button zum Tauschen von Angreifer und Verteidiger.
+- `.nojekyll` wird nicht mehr mitgeliefert.
