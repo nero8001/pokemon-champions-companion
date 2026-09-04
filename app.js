@@ -38,12 +38,27 @@ const formSuffixMap={
 function formDisplayName(fp,speciesId,speciesName){
   const base=deP(speciesId)||speciesName||title(fp.name);
   const raw=String(fp.name||'').toLowerCase();
-  if(raw===String(base).toLowerCase().replace(/ /g,'-') || raw===String(title(speciesName)).toLowerCase().replace(/ /g,'-')) return base;
-  const suffix=raw.startsWith(String(speciesName||'').toLowerCase()+'-')?raw.slice(String(speciesName||'').length+1):raw;
+  const speciesRaw=String(speciesName||'').toLowerCase();
+  if(raw===speciesRaw || raw===speciesRaw+'-normal') return base;
+  let suffix=raw.startsWith(speciesRaw+'-')?raw.slice(speciesRaw.length+1):raw;
   if(!suffix || suffix==='normal') return base;
-  const mapped=formSuffixMap[suffix];
-  if(mapped) return `${mapped} ${base}`;
+  const direct={
+    'mega':'Mega','mega-x':'Mega X','mega-y':'Mega Y','gmax':'Gigadynamax',
+    'alola':'Alola-Form','galar':'Galar-Form','hisui':'Hisui-Form','paldea':'Paldea-Form',
+    'origin':'Urform','altered':'Wandelform','therian':'Tiergeistform','incarnate':'Inkarnationsform',
+    'resolute':'Resolutform','ordinary':'Normalform','pirouette':'Pirouettenform','school':'Schwarmform',
+    'solo':'Solokämpferform','midday':'Tagform','midnight':'Nachtform','dusk':'Zwielichtform','dawn':'Morgenform',
+    'sunny':'Sonnenform','rainy':'Regenform','snowy':'Schneeflockenform','heat':'Hitzemodul','wash':'Waschmodul',
+    'frost':'Gefriermodul','fan':'Ventilatormodul','mow':'Rasenmähermodul','blade':'Klingenform','shield':'Schildform',
+    'complete':'Komplettform','10':'10%-Form','50':'50%-Form','100':'100%-Form','small':'Kleinform','large':'Großform',
+    'gulping':'Schlingform','gorging':'Stopfform','hangry':'Heißhungerform','low-key':'Low-Key-Form','amped':'High-Voltage-Form',
+    'crowned':'Kronenform','crown':'Kronenform','hero':'Heldenform','bloodmoon':'Blutmondform','teal':'Türkisform',
+    'wellspring':'Quellform','wells':'Quellform','hearthflame':'Ofenform','cornerstone':'Felsform','artful':'Prunkform',
+    'combat':'Kampfgestalt','water':'Wasserform','fire':'Feuerform','ice':'Eisform','stellar':'Sternenform'
+  };
   if(suffix.startsWith('mega-')) return `Mega ${base} ${title(suffix.slice(5))}`;
+  if(suffix.startsWith('gmax-')) return `Gigadynamax ${base}`;
+  if(direct[suffix]) return `${direct[suffix]} ${base}`;
   return `${base} – ${title(suffix)}`;
 }
 const typeRelationsCache=new Map();
@@ -70,6 +85,21 @@ function nav(){document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{docum
 function render(list){$('grid').innerHTML=list.map(p=>`<article class="poke"><button data-id="${p.id}"><div class="pic"><img src="${sprite(p.id)}" alt="${deP(p.id)||title(p.name)}"></div><div class="no">#${String(p.id).padStart(4,'0')}</div><div class="name">${deP(p.id)||title(p.name)}</div></button></article>`).join('');document.querySelectorAll('.poke button').forEach(b=>b.onclick=()=>open(+b.dataset.id))}
 function search(){const q=$('search').value.trim().toLowerCase();if(!q){$('suggestions').innerHTML='';render(mons.slice(0,24));return}const m=mons.filter(p=>p.name.includes(q)||(deP(p.id)||'').toLowerCase().includes(q)||String(p.id)===q||String(p.id).padStart(4,'0')===q).slice(0,8);$('suggestions').innerHTML=m.map(p=>`<button class="suggest" data-id="${p.id}"><img src="${sprite(p.id)}"><span>${deP(p.id)||title(p.name)}<br><small>#${String(p.id).padStart(4,'0')}</small></span></button>`).join('');document.querySelectorAll('.suggest').forEach(b=>b.onclick=()=>open(+b.dataset.id));render(m)}
 async function open(id){$('modal').hidden=false;document.body.style.overflow='hidden';$('modalbody').innerHTML='<p>Daten werden geladen …</p>';try{const [p,s]=await Promise.all([json(`${API}/pokemon/${id}`),json(`${API}/pokemon-species/${id}`)]);current={p,s};isShiny=false;await detail(p,s)}catch(e){console.error(e);$('modalbody').innerHTML='<h2>Fehler</h2><p>Die Pokémon-Daten konnten nicht geladen werden.</p>'}}
+function maxLevel50Stats(p,natureIndex){
+  const n=natureData[Number(natureIndex)||0];
+  return calcStatKeys.map((key,i)=>{
+    const base=p.stats[i]?.base_stat||0;
+    const raw=Math.floor(((2*base+31+63)*50)/100);
+    if(i===0) return raw+52;
+    const neutral=raw+5;
+    return Math.floor(neutral*(n[1]===key?1.1:n[2]===key?0.9:1));
+  });
+}
+function natureOptionsHtml(selected=0){return natureData.map((n,i)=>`<option value="${i}" ${i===Number(selected)?'selected':''}>${n[0]}</option>`).join('')}
+function maxStatsHtml(p){
+  const vals=maxLevel50Stats(p,0);
+  return `<div class="maxstats" id="maxStatsBox">${vals.map((v,i)=>`<div class="maxstat"><span>${calcStatLabels[i]}</span><b id="dexMaxStat${i}">${v}</b></div>`).join('')}</div>`;
+}
 async function detail(p,s){
   const pname=deP(p.id)||deF(p.id)||title(p.name);const abilities=await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name)));
   const grouped={};p.moves.forEach(x=>(x.version_group_details||[]).forEach(v=>{let key='Weitere';const m=v.move_learn_method?.name;if(m==='level-up')key='Durch Levelaufstieg';else if(m==='machine')key='TM / VM';else if(m==='tutor')key='Attacken-Lehrer';else if(m==='egg')key='Ei-Attacke';else if(m==='stadium-surfing-pikachu')key='Spezial';if(!grouped[key])grouped[key]=[];const entry={id:rid(x.move.url),name:x.move.name,level:v.level_learned_at||0};if(!grouped[key].some(a=>a.id===entry.id))grouped[key].push(entry)}));
@@ -79,9 +109,13 @@ async function detail(p,s){
   const forms=s.varieties.map(v=>{const id=rid(v.pokemon.url);const name=formDisplayName({name:v.pokemon.name},s.id,s.name);return `<button type="button" class="form-choice ${Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`}).join('');
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
   const relations=await getTypeRelations(p);
-  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>Stärken & Schwächen</h3><div class="relation-grid"><div><strong>Stärken / Resistenzen</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>Schwächen</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>Immunitäten</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>Basiswerte</h3>${stats}</div><div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
+  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>Form auswählen</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>Stärken & Schwächen</h3><div class="relation-grid"><div><strong>Stärken / Resistenzen</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>Schwächen</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>Immunitäten</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>Pokédex-Beschreibung</h3><p class="description">${flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):'Keine deutsche Beschreibung vorhanden.'}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>Fähigkeiten</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>Basiswerte</h3>${stats}</div><div class="section"><h3>Maximalwerte auf Level 50</h3><p class="muted">IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni</p><label class="nature-inline">Wesen<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>Attacken</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
   $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
   document.querySelectorAll('#forms .form-choice').forEach(btn=>btn.onclick=async()=>{try{const fp=await json(btn.dataset.formUrl);current={p:fp,s};isShiny=false;await detail(fp,s)}catch(e){console.error(e)}})
+  $('dexNature').addEventListener('change',()=>{
+    const vals=maxLevel50Stats(p,$('dexNature').value);
+    vals.forEach((v,i)=>$(`dexMaxStat${i}`).textContent=v);
+  });
 }
 
 function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(+($(`${side}-${k}`).value)||0),0);$(`${side}Total`).textContent=`EVs gesamt: ${t} / 510`;$(`${side}Total`).style.color=t>510?'#ff9a9a':''}
