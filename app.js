@@ -130,25 +130,49 @@ function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atk
 function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
-function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
- input.addEventListener('input',()=>{const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q).slice(0,12))});input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q):itemsProvider().slice(0,12))});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
+function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];let pickedKey='';function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;pickedKey=String(x.id);onPick(x)})}
+ function exactPick(){const q=input.value.trim().toLowerCase();if(!q)return false;const items=itemsProvider();const x=items.find(x=>x.label.toLowerCase()===q||x.name.toLowerCase()===q||String(x.id)===q||String(x.id).padStart(4,'0')===q);if(x&&pickedKey!==String(x.id)){pickedKey=String(x.id);list.hidden=true;onPick(x);return true}return !!x}
+ input.addEventListener('input',()=>{pickedKey='';const q=input.value.trim().toLowerCase();if(!q){draw(itemsProvider().slice(0,12));return}draw(itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q||String(x.id).padStart(4,'0')===q).slice(0,12));exactPick()});
+ input.addEventListener('focus',()=>{const q=input.value.trim().toLowerCase();draw(q?itemsProvider().filter(x=>x.label.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)||String(x.id)===q||String(x.id).padStart(4,'0')===q):itemsProvider().slice(0,12))});
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(!exactPick()&&lastItems[0]){const x=lastItems[0];input.value=x.label;list.hidden=true;pickedKey=String(x.id);onPick(x)}}});
+ input.addEventListener('blur',()=>{setTimeout(()=>exactPick(),0)});document.addEventListener('click',e=>{if(e.target!==input&&!list.contains(e.target))list.hidden=true})}
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
 async function selectCalcPokemon(side,item){
  const key=side==='atk'?'attacker':'defender',search=$(`${side}Search`);
+ // IMPORTANT: store the selection BEFORE any API request. The calculator must
+ // never depend on the species/form requests completing before a Pokémon is
+ // considered selected.
+ const selectedId=String(item.id);
+ const base=mons.find(x=>String(x.id)===selectedId)||item;
+ const placeholder={id:Number(item.id),name:item.name||base.name,stats:[],types:[],speciesId:Number(item.id),_formName:item.label||dataName('pokemon',item.id,item.name||base.name)};
+ calcState[key]=placeholder;
+ search.value=item.label||dataName('pokemon',item.id,item.name||base.name)||title(item.name);
+ search.disabled=false;
+ updateCalcSide(side);
  try{
-  search.disabled=true;
   const p=await json(`${API}/pokemon/${item.id}`);
   const speciesId=rid(p.species?.url)||item.id;
-  const species=await json(`${API}/pokemon-species/${speciesId}`);
-  p.speciesId=speciesId;p._formName=deP(speciesId)||item.label;
+  p.speciesId=speciesId;
+  p._formName=dataName('pokemon',speciesId,item.label||p.name)||item.label||title(p.name);
+  // Ignore stale responses if the user selected another Pokémon meanwhile.
+  if(String(calcState[key]?.id)!==selectedId)return;
   calcState[key]=p;
   search.value=calcDisplayName(p);
   updateCalcSide(side);
-  await loadCalcForms(side,species,p.id);
-  if(side==='atk')await loadCalcMoves();
- }catch(e){console.error(e)}
- finally{search.disabled=false}
+  try{
+   const species=await json(`${API}/pokemon-species/${speciesId}`);
+   if(String(calcState[key]?.id)!==selectedId)return;
+   await loadCalcForms(side,species,p.id);
+   if(side==='atk' && String(calcState.attacker?.id)===selectedId)await loadCalcMoves();
+  }catch(formError){console.warn('Form/species data:',formError);}
+ }catch(e){
+  console.error(e);
+  if(String(calcState[key]?.id)===selectedId){
+   search.disabled=false;
+   updateCalcSide(side);
+  }
+ }
 }
 async function loadCalcForms(side,species,selectedId){
  const key=side==='atk'?'attacker':'defender',forms=[];
