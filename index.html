@@ -21,26 +21,24 @@
 <style id="v16-field-controls">
 .field-controls-v16{margin-top:14px}.field-help{margin-top:8px;font-size:.9rem;opacity:.75}
 </style>
-</head>
+<style id="v19-hpbar">.damage-percent{font-size:1.15rem;font-weight:700;margin:.35rem 0 .8rem}.hpbar-wrap{margin:.5rem 0 1rem}.hpbar{height:22px;border-radius:999px;background:#222;overflow:hidden;border:1px solid #444}.hpbar-fill{height:100%;background:linear-gradient(90deg,#59c95a,#8bdd6b);transition:width .25s ease}.hpbar-label{text-align:center;margin-top:.35rem;font-weight:600}</style></head>
 <body>
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
-  <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
   <nav><button class="nav active" data-page="dex">Pokédex</button><button class="nav" data-page="calc">Battle Calculator</button></nav>
 </header>
-<style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 2.7</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 1.1</small><h1>Pokédex</h1><p>Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
-    <label for="search" data-i18n="searchPokemon">Pokémon suchen</label>
-    <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer" data-i18n-placeholder="searchPlaceholder"><button id="clear" type="button">×</button></div>
+    <label for="search">Pokémon suchen</label>
+    <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
     <div id="suggestions"></div><div id="status">Pokémon werden geladen …</div>
   </div>
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 2.7</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 1.9</small><h1>Battle Calculator</h1><p>Level 50 · IVs 31 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">

@@ -1,10 +1,27 @@
-# Pokémon Champions Companion v2.7
+# Pokémon Champions Companion v1.0
 
-Bilingual version based on the stable v1.9 calculator/pokedex foundation.
+Statischer Web-Prototyp für GitHub Pages.
 
-## v2.7 fixes
-- Exact Pokémon names/IDs in the calculator are selected immediately.
-- Calculator selection is committed before optional species/form requests.
-- Secondary API errors can no longer reset an already selected Pokémon.
-- Forms remain correctly localized and separated from Pokémon IDs.
-- German/English official data localization retained.
+## v1.0
+- Pokédex vollständig auf Deutsch
+- Korrekte lesbare Formnamen wie Mega Bisaflor und Gigadynamax-Formen
+- Stärken/Resistenzen, Schwächen und Immunitäten direkt in der Pokémon-Info
+- Battle Calculator mit Pokémon-/Attacken-Suche, Formen, Items, EVs, Nature und Statuswerten
+- `.nojekyll` ist enthalten und absichtlich nicht leer
+
+Hinweis: Die Schadensberechnung bleibt vorläufig, bis der aktive Champions-Regelsatz verifiziert ist.
+
+
+## Version 1.4
+Stabiler Calculator auf Basis der funktionierenden v1.1-Dateninitialisierung. Attacke direkt beim Angreifer, Item-Suche, Switch zwischen Angreifer und Verteidiger, Statuswertänderungen 0 bis +6. Pokédex-Code unverändert.
+
+
+## Version 1.8
+- Wesen-Auswahl zeigt nun bei jedem Wesen den positiven und negativen Statuswert, z. B. „Froh (+Initiative, −Sp. Angriff)“. Neutrale Wesen werden als „neutral“ gekennzeichnet. Die Anzeige gilt im Pokédex und im Battle Calculator.
+
+
+## Version 1.9
+- Wesen korrigiert: Hart = +Angriff / -Sp. Angriff; alle 25 Wesen korrekt zugeordnet.
+- Schadensausgabe zusätzlich als Prozent des Verteidiger-KP-Werts.
+- Grafische KP-Leiste zeigt verbleibende KP nach dem Treffer.
+- Vorläufige Schadensformel bleibt unverändert als Basis bestehen.
