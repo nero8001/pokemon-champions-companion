@@ -124,7 +124,18 @@ function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.
 function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''))}
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
+function updateCalcSide(side){
+ const p=calcState[side==='atk'?'attacker':'defender'];
+ const box=$(side==='atk'?'attackerPreview':'defenderPreview');
+ if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}
+ if(!Array.isArray(p.stats)||p.stats.length<6){
+  box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline muted">${uiLang==='en'?'Pokémon selected · loading stats …':'Pokémon ausgewählt · Statuswerte werden geladen …'}</div></div>`;
+  calcEV(side);return;
+ }
+ const vals=calcLevel50Stats(p,side);
+ box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div></div>`;
+ calcEV(side)
+}
 function calcDisplayName(p){return p._formName||dataName('pokemon',p.speciesId||p.id,p.name)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){
@@ -132,7 +143,7 @@ function setupSearchBox(inputId,listId,side,itemsProvider,onPick){
  function matches(q){q=q.trim().toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US');return itemsProvider().filter(x=>String(x.id)===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US').includes(q)||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US').includes(q))}
  function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;onPick(x)})}
  function chooseExact(){const q=input.value.trim();if(!q)return false;const exact=itemsProvider().find(x=>String(x.id)===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US'));if(exact){list.hidden=true;input.value=exact.label;onPick(exact);return true}return false}
- input.addEventListener('input',()=>{const q=input.value.trim();const items=itemsProvider();draw(q?matches(q):items.slice(0,12));if(q){const exact=items.find(x=>String(x.id)===q||x.name.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')||x.label.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US')===q.toLocaleLowerCase(uiLang==='de'?'de-DE':'en-US'));if(exact){list.hidden=true;input.value=exact.label;onPick(exact)}}});
+ input.addEventListener('input',()=>{const q=input.value.trim();const items=itemsProvider();draw(q?matches(q):items.slice(0,12));});
  input.addEventListener('focus',()=>{const q=input.value.trim();draw(q?matches(q):itemsProvider().slice(0,12))});
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(!chooseExact()&&lastItems[0]){const x=lastItems[0];input.value=x.label;list.hidden=true;onPick(x)}}});
  input.addEventListener('blur',()=>setTimeout(()=>{if(!list.contains(document.activeElement))chooseExact()},120));
@@ -140,44 +151,46 @@ function setupSearchBox(inputId,listId,side,itemsProvider,onPick){
 }
 function pokemonSearchItems(){return mons.map(p=>({id:p.id,name:p.name,label:deP(p.id)||title(p.name),meta:`#${String(p.id).padStart(4,'0')}`}))}
 function moveSearchItems(){return calcState.moves.map(m=>({id:m.id,name:m.name,label:m.label,meta:`${m.type||''} · ${m.cls||''}`}))}
+let calcSelectionToken={attacker:0,defender:0};
 async function selectCalcPokemon(side,item){
  const key=side==='atk'?'attacker':'defender',search=$(`${side}Search`);
  if(!item||!item.id)return;
- search.disabled=true;
+ const token=++calcSelectionToken[key];
+ // Never lock the search field while API data is loading.
+ search.value=item.label||item.name||'';
+ const selectedLabel=item.label||item.name||title(item.name||'');
+ // Commit a visible selection immediately. Full stats arrive asynchronously.
+ const placeholder={id:Number(item.id),name:item.name||String(item.label||'').toLowerCase(),speciesId:Number(item.id),_formName:selectedLabel,stats:[]};
+ calcState[key]=placeholder;
+ calcState.forms[key]=[placeholder];
+ const sel=$(side==='atk'?'atkForm':'defForm');
+ if(sel){sel.innerHTML=`<option value="${placeholder.id}">${selectedLabel}</option>`;sel.value=String(placeholder.id);sel.disabled=true;}
+ updateCalcSide(side);
  let p;
- try{
-  p=await json(`${API}/pokemon/${item.id}`);
- }catch(e){
+ try{p=await json(`${API}/pokemon/${item.id}`)}catch(e){
   console.error('Pokémon:',e);
-  search.value=item.label||'';
-  search.disabled=false;
+  if(token===calcSelectionToken[key]){search.value=selectedLabel;updateCalcSide(side)}
   return;
  }
- // The Pokémon itself is the selection. Commit it BEFORE any optional
- // species/form/move requests so a secondary API error can never erase it.
+ if(token!==calcSelectionToken[key])return;
  p.speciesId=rid(p.species?.url)||item.id;
- p._formName=dataName('pokemon',p.speciesId,item.label||title(p.name))||item.label||title(p.name);
+ p._formName=dataName('pokemon',p.speciesId,selectedLabel)||selectedLabel||title(p.name);
  calcState[key]=p;
  search.value=calcDisplayName(p);
  updateCalcSide(side);
-
  try{
   const species=await json(`${API}/pokemon-species/${p.speciesId}`);
+  if(token!==calcSelectionToken[key])return;
   await loadCalcForms(side,species,p.id);
  }catch(e){
   console.warn('Species/forms:',e);
-  const sel=$(side==='atk'?'atkForm':'defForm');
-  if(sel){
-   sel.innerHTML=`<option value="${p.id}">${calcDisplayName(p)}</option>`;
-   sel.value=String(p.id);
-   sel.disabled=true;
-  }
+  if(token!==calcSelectionToken[key])return;
+  const fallback=$(side==='atk'?'atkForm':'defForm');
+  if(fallback){fallback.innerHTML=`<option value="${p.id}">${calcDisplayName(p)}</option>`;fallback.value=String(p.id);fallback.disabled=true;}
   calcState.forms[key]=[p];
  }
- if(side==='atk')await loadCalcMoves();
- search.disabled=false;
+ if(side==='atk' && token===calcSelectionToken[key])await loadCalcMoves();
 }
-
 async function loadCalcForms(side,species,selectedId){
  const key=side==='atk'?'attacker':'defender',forms=[];
  for(const v of species.varieties||[]){
