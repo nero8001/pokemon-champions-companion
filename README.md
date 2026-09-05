@@ -1,11 +1,9 @@
-# Pokémon Champions Companion v2.9
+# Pokémon Champions Companion v3.0
 
-Bilingual version based directly on the stable v1.9 codebase.
+Stable v1.9 calculator core with bilingual localization.
 
-## v2.9 focus
-- v1.9 Calculator selection logic restored unchanged as the foundation.
-- German and official English Pokémon/move/ability/type/item/form data via PokeAPI language data.
-- Language selector German / English.
-- Existing v1.9 damage calculator, field/weather, Status Points and HP/damage display retained.
-- Form naming uses the localized form-data layer where available.
-- No `.nojekyll` file.
+## Root-cause fix
+The calculator state object from v1.9 (`calcState`) was accidentally omitted during the bilingualization. The UI could render, but selecting a Pokémon then failed because calculator state did not exist. v3.0 restores the original v1.9 state object without changing the calculator selection logic.
+
+## Language
+German and English official localized data are kept separate from calculator state.

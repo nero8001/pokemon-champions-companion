@@ -6,6 +6,9 @@ const $=id=>document.getElementById(id);
 let mons=[],current=null,isShiny=false;
 const localized={de:{pokemon:{},move:{},ability:{},type:{},item:{},form:{}},en:{pokemon:{},move:{},ability:{},type:{},item:{},form:{}}};
 let uiLang=localStorage.getItem('ccc-language')==='en'?'en':'de';
+
+// v1.9 calculator state — intentionally kept separate from localization.
+const calcState={attacker:null,defender:null,forms:{attacker:[],defender:[]},moves:[],selectedMove:null};
 function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
 async function loadCSV(lang,kind,file,languageId){const c=new AbortController(),tm=setTimeout(()=>c.abort(),12000);let r;try{r=await fetch(LOCAL+file,{cache:'no-store',signal:c.signal})}finally{clearTimeout(tm)}if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(languageId))localized[lang][kind][row[0]]=row[2]}}
 async function loadLanguages(){const jobs=[];for(const [lang,id] of [['de',6],['en',9]])for(const [kind,file] of [['pokemon','pokemon_species_names.csv'],['move','move_names.csv'],['ability','ability_names.csv'],['type','type_names.csv'],['item','item_names.csv'],['form','pokemon_form_names.csv']])jobs.push(loadCSV(lang,kind,file,id));return Promise.allSettled(jobs)}
