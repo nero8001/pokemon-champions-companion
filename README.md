@@ -1,9 +1,10 @@
-# Pokémon Champions Companion v3.0
+# Pokémon Champions Companion v3.2
 
-Stable v1.9 calculator core with bilingual localization.
+## Neuerungen
+- Battle Calculator: Fähigkeiten-Auswahl für Angreifer und Verteidiger
+- Fähigkeit wird aus den tatsächlich für das gewählte Pokémon verfügbaren Fähigkeiten geladen
+- Lokalisierte deutsche/englische Fähigkeitsnamen
+- Vorläufige Schadensmodifikatoren für wichtige Champions-Fähigkeiten, u. a. Adaptions-/Typ- und Attackenverstärker wie Aerilate, Refrigerate, Pixilate, Galvanize, Dragonize, Iron Fist, Mega Launcher, Strong Jaw, Sharpness, Technician, Tough Claws, Sand Force, Solar Power, Water Bubble und Transistor sowie einige defensive Effekte
+- Versionsnummer 3.2
 
-## Root-cause fix
-The calculator state object from v1.9 (`calcState`) was accidentally omitted during the bilingualization. The UI could render, but selecting a Pokémon then failed because calculator state did not exist. v3.0 restores the original v1.9 state object without changing the calculator selection logic.
-
-## Language
-German and English official localized data are kept separate from calculator state.
+Die Schadensformel bleibt bis zur vollständigen Verifizierung von Regulation Set M-C ausdrücklich vorläufig.

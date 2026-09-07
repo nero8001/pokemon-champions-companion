@@ -8,7 +8,7 @@ const localized={de:{pokemon:{},move:{},ability:{},type:{},item:{},form:{}},en:{
 let uiLang=localStorage.getItem('ccc-language')==='en'?'en':'de';
 
 // v1.9 calculator state — intentionally kept separate from localization.
-const calcState={attacker:null,defender:null,forms:{attacker:[],defender:[]},moves:[],selectedMove:null};
+const calcState={attacker:null,defender:null,forms:{attacker:[],defender:[]},moves:[],selectedMove:null,abilities:{attacker:[],defender:[]},selectedAbility:{attacker:null,defender:null}};
 function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
 async function loadCSV(lang,kind,file,languageId){const c=new AbortController(),tm=setTimeout(()=>c.abort(),12000);let r;try{r=await fetch(LOCAL+file,{cache:'no-store',signal:c.signal})}finally{clearTimeout(tm)}if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(languageId))localized[lang][kind][row[0]]=row[2]}}
 async function loadLanguages(){const jobs=[];for(const [lang,id] of [['de',6],['en',9]])for(const [kind,file] of [['pokemon','pokemon_species_names.csv'],['move','move_names.csv'],['ability','ability_names.csv'],['type','type_names.csv'],['item','item_names.csv'],['form','pokemon_form_names.csv']])jobs.push(loadCSV(lang,kind,file,id));return Promise.allSettled(jobs)}
@@ -124,10 +124,14 @@ const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'
 const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','Paralyse','Eingefroren'];const stages=['0','+1','+2','+3','+4','+5','+6'];
 let calcItems=[];
 function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.innerHTML=calcStatKeys.map((k,i)=>`<label>${calcStatLabels[i]}<input id="${side}-${k}" type="number" min="0" max="32" step="1" value="0"></label>`).join('');calcStatKeys.forEach(k=>$(`${side}-${k}`).addEventListener('input',()=>{calcEV(side);updateCalcSide(side)}))}
-function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''))}
+function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));if(calcState.attacker)setAbilityOptions('atk',calcState.attacker);if(calcState.defender)setAbilityOptions('def',calcState.defender)}
+function abilityLabel(a){return dataName('ability',a.id,a.name)||title(a.name)}
+function setAbilityOptions(side,p){const key=side==='atk'?'attacker':'defender',sel=$(side==='atk'?'atkAbility':'defAbility');if(!sel)return;const list=(p?.abilities||[]).map(x=>({id:rid(x.ability?.url)||x.ability?.name,name:x.ability?.name||''})).filter(x=>x.id&&x.name);calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
+function selectedAbility(side){const key=side==='atk'?'attacker':'defender';return calcState.selectedAbility[key]||null}
+
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}const vals=calcLevel50Stats(p,side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div></div>`;calcEV(side)}
+function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);return}setAbilityOptions(side,p);const vals=calcLevel50Stats(p,side);const ab=selectedAbility(side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div><div class="abilityline">${uiLang==='en'?'Ability':'Fähigkeit'}: <strong>${ab?abilityLabel(ab):'—'}</strong></div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];let pickedKey='';function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;pickedKey=String(x.id);onPick(x)})}
@@ -147,6 +151,8 @@ async function selectCalcPokemon(side,item){
  const base=mons.find(x=>String(x.id)===selectedId)||item;
  const placeholder={id:Number(item.id),name:item.name||base.name,stats:[],types:[],speciesId:Number(item.id),_formName:item.label||dataName('pokemon',item.id,item.name||base.name)};
  calcState[key]=placeholder;
+ calcState.selectedAbility[key]=null;
+ calcState.abilities[key]=[];
  search.value=item.label||dataName('pokemon',item.id,item.name||base.name)||title(item.name);
  search.disabled=false;
  updateCalcSide(side);
@@ -158,6 +164,8 @@ async function selectCalcPokemon(side,item){
   // Ignore stale responses if the user selected another Pokémon meanwhile.
   if(String(calcState[key]?.id)!==selectedId)return;
   calcState[key]=p;
+  calcState.selectedAbility[key]=null;
+  setAbilityOptions(side,p);
   search.value=calcDisplayName(p);
   updateCalcSide(side);
   try{
@@ -191,6 +199,8 @@ async function changeCalcForm(side,id){
  const key=side==='atk'?'attacker':'defender';
  const p=(calcState.forms[key]||[]).find(x=>String(x.id)===String(id));if(!p)return;
  calcState[key]=p;
+ calcState.selectedAbility[key]=null;
+ setAbilityOptions(side,p);
  $(side==='atk'?'atkSearch':'defSearch').value=calcDisplayName(p);
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
@@ -240,6 +250,43 @@ function applyWeatherDefense(m,d,defense,physical){
   if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))return Math.floor(defense*1.5);
   return defense;
 }
+function moveAbilityTypeAndPower(m,a,d){
+ const ability=selectedAbility('atk');
+ let type=m.type?.name||'', powerMult=1, notes=[];
+ const name=String(m.name||'').toLowerCase();
+ const ab=String(ability?.name||'').toLowerCase();
+ const aTypes=(a?.types||[]).map(t=>t.type?.name).filter(Boolean);
+ if(ab==='aerilate'&&type==='normal'){type='flying';powerMult*=1.2;notes.push('Aerilate: Normal → Flying, ×1,2')}
+ if(ab==='refrigerate'&&type==='normal'){type='ice';powerMult*=1.2;notes.push('Refrigerate: Normal → Ice, ×1,2')}
+ if(ab==='pixilate'&&type==='normal'){type='fairy';powerMult*=1.2;notes.push('Pixilate: Normal → Fairy, ×1,2')}
+ if(ab==='galvanize'&&type==='normal'){type='electric';powerMult*=1.2;notes.push('Galvanize: Normal → Electric, ×1,2')}
+ if(ab==='dragonize'&&type==='normal'){type='dragon';powerMult*=1.2;notes.push('Dragonize: Normal → Dragon, ×1,2')}
+ if(ab==='liquid voice'&&['sound-based'].includes(name)){type='water';notes.push('Liquid Voice: Schall-Attacke → Wasser')}
+ if(ab==='iron fist'&&['drain punch','dynamic punch','focus punch','hammer arm','ice hammer','mach punch','meteor mash','power-up punch','shadow punch','sky uppercut','surging strikes','thunder punch','fire punch','bullet punch','double iron bash','plasma fists','wicked blow'].includes(name)){powerMult*=1.2;notes.push('Iron Fist: ×1,2')}
+ const pulse=['aura sphere','dark pulse','dragon pulse','origin pulse','terrain pulse','water pulse','heal pulse','focus blast'];
+ if(ab==='mega launcher'&&pulse.includes(name)){powerMult*=1.5;notes.push('Mega Launcher: ×1,5')}
+ const bite=['bite','crunch','fire fang','ice fang','thunder fang','poison fang','psychic fangs','jaw lock','fishious rend','hyper fang','super fang','strong jaw'];
+ if(ab==='strong jaw'&&bite.includes(name)){powerMult*=1.5;notes.push('Strong Jaw: ×1,5')}
+ const slicing=['aerial ace','air slash','behemoth blade','ceaseless edge','cut','cross poison','leaf blade','night slash','psycho cut','razor leaf','sacred sword','secret sword','slash','solar blade','stone axe','x-scissor','kowtow cleave','mighty cleave'];
+ if(ab==='sharpness'&&slicing.includes(name)){powerMult*=1.5;notes.push('Sharpness: ×1,5')}
+ if(ab==='technician'&&Number(m.power||0)<=60&&Number(m.power||0)>0){powerMult*=1.5;notes.push('Technician: ×1,5')}
+ if(ab==='tough claws'&&['physical'].includes(m.damage_class?.name)&&name!=='struggle'){powerMult*=1.3;notes.push('Tough Claws: Kontakt-Attacke ×1,3 (vorläufig)')}
+ if(ab==='reckless'&&/(recoil|crash)/i.test(String(m.effect_entries?.[0]?.short_effect||''))){powerMult*=1.2;notes.push('Reckless: ×1,2')}
+ if(ab==='sand force'&&$('weatherStatus')?.value==='sand'&&['ground','rock','steel'].includes(type)){powerMult*=1.3;notes.push('Sand Force: ×1,3')}
+ if(ab==='solar power'&&$('weatherStatus')?.value==='sun'&&m.damage_class?.name==='special'){powerMult*=1.5;notes.push('Solar Power: ×1,5')}
+ if(ab==='water bubble'&&type==='water'){powerMult*=2;notes.push('Water Bubble: Wasser ×2')}
+ if(ab==='transistor'&&type==='electric'){powerMult*=1.3;notes.push('Transistor: Elektro ×1,3')}
+ if(ab==='punk rock'&&['sound'].some(k=>name.includes(k))){powerMult*=1.3;notes.push('Punk Rock: Schall-Attacke ×1,3')}
+ return {type,powerMult,notes};
+}
+function abilityDefenseMultiplier(m,d){
+ const ability=selectedAbility('def');const ab=String(ability?.name||'').toLowerCase();const type=m.type?.name||'';let mult=1,notes=[];
+ if(ab==='thick fat'&&['fire','ice'].includes(type)){mult*=.5;notes.push('Speckschicht: ×0,5')}
+ if(ab==='water bubble'&&type==='fire'){mult*=.5;notes.push('Water Bubble: Feuer ×0,5')}
+ if(ab==='heatproof'&&type==='fire'){mult*=.5;notes.push('Heatproof: Feuer ×0,5')}
+ if(['filter','solid rock','prism armor'].includes(ab)){notes.push(`${abilityLabel(ability)}: Effekt bei Effektiv-Treffern wird in der vorläufigen Formel erst angewendet, wenn Typenwirkung vollständig modelliert ist`)}
+ return {mult,notes};
+}
 async function calculateDamage(){
  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
@@ -251,12 +298,18 @@ async function calculateDamage(){
   const attack=av[physical?1:3];
   let defense=dv[physical?2:4];
   defense=applyWeatherDefense(m,d,defense,physical);
+  const abilityMove=moveAbilityTypeAndPower(m,a,d);
+  const abilityDef=abilityDefenseMultiplier(m,d);
+  const abilityDamageMult=abilityDef.mult;
+  defense=Math.max(1,defense);
   let basePower=m.power;
-  const fw=fieldWeatherPowerMultiplier(m,a,d);
-  basePower=Math.floor(basePower*fw.mult);
+  const fw=fieldWeatherPowerMultiplier({...m,type:{name:abilityMove.type}},a,d);
+  basePower=Math.floor(basePower*fw.mult*abilityMove.powerMult);
+  let abilityPostMult=abilityDamageMult;
   let base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
+  base=Math.max(1,Math.floor(base*abilityPostMult));
   const field=getSelectedField(),weather=getSelectedWeather();
-  const notes=fw.notes.slice();
+  const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
   if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
   if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
   const hp=Math.max(1,dv[0]);
@@ -301,12 +354,16 @@ async function switchCombatantsV14(){
  const oldA=calcState.attacker,oldD=calcState.defender;
  const oldAForms=calcState.forms.attacker,oldDForms=calcState.forms.defender;
 
- const pairs=[['atkNature','defNature'],['atkItem','defItem'],['atkItemSearch','defItemSearch'],['atkStatus','defStatus'],['atkBoost','defBoost'],['atkSpABoost','defSpDBoost'],['atkSpeedBoost','defSpeedBoost']];
+ const pairs=[['atkNature','defNature'],['atkItem','defItem'],['atkItemSearch','defItemSearch'],['atkStatus','defStatus'],['atkBoost','defBoost'],['atkSpABoost','defSpDBoost'],['atkSpeedBoost','defSpeedBoost'],['atkAbility','defAbility']];
  for(const [a,b] of pairs){const A=$(a),B=$(b);if(A&&B){const v=A.value;A.value=B.value;B.value=v}}
  for(const k of calcStatKeys){const A=$(`atk-${k}`),B=$(`def-${k}`);if(A&&B){const v=A.value;A.value=B.value;B.value=v}}
 
  calcState.attacker=oldD;calcState.defender=oldA;
  calcState.forms.attacker=oldDForms;calcState.forms.defender=oldAForms;
+ const oldAAbility=calcState.selectedAbility.attacker, oldDAbility=calcState.selectedAbility.defender;
+ calcState.selectedAbility.attacker=oldDAbility;calcState.selectedAbility.defender=oldAAbility;
+ const oldAAbilities=calcState.abilities.attacker, oldDAbilities=calcState.abilities.defender;
+ calcState.abilities.attacker=oldDAbilities;calcState.abilities.defender=oldAAbilities;
  calcState.selectedMove=null;calcState.moves=[];
 
  async function refresh(side,p){
@@ -336,6 +393,8 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  setupSearchBox('defSearch','defSuggestions','def',pokemonSearchItems,x=>selectCalcPokemon('def',x));
  setupSearchBox('moveSearch','moveSuggestions','move',moveSearchItems,x=>{calcState.selectedMove=x.id;$('moveSearch').value=x.label;$('moveSuggestions').hidden=true;showMoveInfoById(x.id)});
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
+ $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateCalcSide('atk')});
+ $('defAbility').addEventListener('change',()=>{const x=calcState.abilities.defender.find(a=>String(a.id)===String($('defAbility').value));calcState.selectedAbility.defender=x||null;updateCalcSide('def')});
  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
  $('atkForm').addEventListener('change',()=>changeCalcForm('atk',$('atkForm').value));$('defForm').addEventListener('change',()=>changeCalcForm('def',$('defForm').value));$('calcButton').addEventListener('click',calculateDamage);
  setupItemSearchV14('atk');setupItemSearchV14('def');$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});
