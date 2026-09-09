@@ -202,8 +202,14 @@ function calcEV(side){const t=calcStatKeys.reduce((a,k)=>a+(Math.max(0,Math.min(
 const natureData=[['Hart','atk','spa'],['Solo','atk','def'],['Mutig','atk','spe'],['Frech','atk','spd'],['Kühn','def','atk'],['Pfiffig','def','spa'],['Locker','def','spe'],['Lasch','def','spd'],['Mäßig','spa','atk'],['Mild','spa','def'],['Ruhig','spa','spe'],['Hitzig','spa','spd'],['Scheu','spe','atk'],['Hastig','spe','def'],['Froh','spe','spa'],['Naiv','spe','spd'],['Still','spd','atk'],['Zart','spd','def'],['Sacht','spd','spa'],['Forsch','spd','spe'],['Robust','neutral','neutral'],['Ernst','neutral','neutral'],['Kauzig','neutral','neutral'],['Zaghaft','neutral','neutral'],['Doche','neutral','neutral']];const calcStatKeys=['hp','atk','def','spa','spd','spe'];const calcStatLabels=['KP','Angriff','Verteidigung','Sp. Angriff','Sp. Verteidigung','Initiative'];
 const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','Paralyse','Eingefroren'];const stages=['0','+1','+2','+3','+4','+5','+6'];
 let calcItems=[];
+// Pokémon Champions: currently equipable held items in Regulation M-C.
+// This deliberately excludes non-held PokéAPI items (medicine, battle items, key items, etc.).
+const CHAMPIONS_ITEM_SLUGS = new Set(`
+abomasite absolite absolite-z aerodactylite aggronite air-balloon alakazite altarianite ampharosite aspear-berry audinite babiri-berry banettite barbaracite baxcalibrite beedrillite big-root binding-band black-belt black-glasses blastoisinite blazikenite bright-powder cameruptite chandelurite charcoal charizardite-x charizardite-y charti-berry cheri-berry chesnaughtite chesto-berry chilan-berry chimechite choice-scarf chople-berry clefablite coba-berry colbur-berry crabominite damp-rock delphoxite dragalgite dragon-fang dragoninite drampanite eelektrossite eject-button electric-seed emboarite excadrite expert-belt fairy-feather falinksite feraligite floettite focus-band focus-sash froslassite galladite garchompite garchompite-z gardevoirite gengarite glalitite glimmoranite golisopite golurkite grassy-seed greninjite gyaradosite haban-berry hard-stone hawluchanite heat-rock heracronite houndoominite icy-rock iron-ball kangaskhanite kasib-berry kebia-berry kings-rock leek leftovers leppa-berry life-orb light-ball light-clay lopunnite lucarionite lucarionite-z lum-berry magnet malamarite manectite mawilite medichamite meganiumite mental-herb meowsticite metagrossite metal-coat metronome miracle-seed misty-seed muscle-band mystic-water never-melt-ice normal-gem occa-berry oran-berry passho-berry payapa-berry pecha-berry persim-berry pidgeotite pinsirite poison-barb psychic-seed pyroarite quick-claw raichunite-x raichunite-y rawst-berry red-card rindo-berry rocky-helmet roseli-berry sablenite salamencite sceptilite scizorite scolipite scope-lens scovillainite scraftinite sharp-beak sharpedonite shed-shell shell-bell shuca-berry silk-scarf silver-powder sitrus-berry skarmorite slowbronite smooth-rock soft-sand spell-tag staraptite starminite steelixite swampertite tanga-berry terrain-extender twisted-spoon tyranitarite venusaurite victreebelite wacan-berry white-herb wide-lens wise-glasses yache-berry zoom-lens`.trim().split(/\s+/));
+function normalizeItemName(name){return String(name||'').toLowerCase().replace(/[ _]+/g,'-').replace(/-+/g,'-').trim()}
+function selectedItem(side){const id=Number($(side==='atk'?'atkItem':'defItem')?.value||0);return calcItems.find(x=>Number(x.id)===id)||null}
 function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.innerHTML=calcStatKeys.map((k,i)=>`<label>${calcStatLabels[i]}<input id="${side}-${k}" type="number" min="0" max="32" step="1" value="0"></label>`).join('');calcStatKeys.forEach(k=>$(`${side}-${k}`).addEventListener('input',()=>{calcEV(side);updateCalcSide(side)}))}
-function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));if(calcState.attacker)setAbilityOptions('atk',calcState.attacker);if(calcState.defender)setAbilityOptions('def',calcState.defender)}
+function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=`<option value="">${uiLang==='en'?'No item':'Kein Item'}</option>`+calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));if(calcState.attacker)setAbilityOptions('atk',calcState.attacker);if(calcState.defender)setAbilityOptions('def',calcState.defender)}
 function normalizeAbilityName(name){return String(name||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim()}
 function abilityLabel(a){return dataName('ability',a.id,a.name)||title(a.name)}
 function setAbilityOptions(side,p){const key=side==='atk'?'attacker':'defender',sel=$(side==='atk'?'atkAbility':'defAbility');if(!sel)return;const list=(p?.abilities||[]).map(x=>({id:rid(x.ability?.url)||x.ability?.name,name:x.ability?.name||''})).filter(x=>x.id&&x.name);calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
@@ -399,6 +405,26 @@ function exactBaseDamage(level,power,attack,defense){
  x=Math.floor(x/50)+2;
  return Math.max(1,x);
 }
+function itemAttackMultiplier(item,moveType,physical,isSuperEffective){
+ const slug=normalizeItemName(item?.raw);
+ let mult=1,notes=[];
+ if(slug==='life-orb'){mult*=1.3;notes.push('Leben-Orb: ×1,3')}
+ if(slug==='expert-belt'&&isSuperEffective){mult*=1.2;notes.push('Expertengurt: ×1,2 (sehr effektiv)')}
+ if(slug==='muscle-band'&&physical){mult*=1.1;notes.push('Muskelband: physisch ×1,1')}
+ if(slug==='wise-glasses'&&!physical){mult*=1.1;notes.push('Zauberbrille: speziell ×1,1')}
+ const typeBoosts={'black-belt':'fighting','black-glasses':'dark','charcoal':'fire','dragon-fang':'dragon','fairy-feather':'fairy','hard-stone':'rock','magnet':'electric','metal-coat':'steel','miracle-seed':'grass','mystic-water':'water','never-melt-ice':'ice','poison-barb':'poison','sharp-beak':'flying','silk-scarf':'normal','silver-powder':'bug','soft-sand':'ground','spell-tag':'ghost','twisted-spoon':'psychic'};
+ if(typeBoosts[slug]===moveType){mult*=1.2;notes.push(`${itemLabel(item)}: ×1,2`)}
+ if(slug==='normal-gem'&&moveType==='normal'){mult*=1.3;notes.push('Normaljuwel: ×1,3')}
+ return {mult,notes};
+}
+function itemDefenseMultiplier(item,moveType,defender,isSuperEffective){
+ const slug=normalizeItemName(item?.raw);let mult=1,notes=[];
+ const berries={'chilan-berry':'normal','kebia-berry':'poison','shuca-berry':'ground','coba-berry':'flying','chople-berry':'fighting','kasib-berry':'ghost','colbur-berry':'dark','roseli-berry':'fairy','passho-berry':'water','occa-berry':'fire','rindo-berry':'grass','wacan-berry':'electric','yache-berry':'ice','haban-berry':'dragon','charti-berry':'rock','babiri-berry':'steel','tanga-berry':'bug','payapa-berry':'psychic'};
+ const berryType=berries[slug];
+ if(berryType===moveType&&isSuperEffective){mult*=.5;notes.push(`${itemLabel(item)}: ×0,5 (sehr effektiv)`)}
+ return {mult,notes};
+}
+function itemLabel(item){return item?(dataName('item',item.id,item.raw)||title(item.raw)):''}
 async function calculateDamage(){
  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
@@ -409,8 +435,10 @@ async function calculateDamage(){
   const physical=m.damage_class?.name==='physical';
   const attackStat=physical?'atk':'spa', defenseStat=physical?'def':'spd';
   const attackIndex=physical?1:3, defenseIndex=physical?2:4;
+  const atkItem=selectedItem('atk'),defItem=selectedItem('def');
   let attack=av[attackIndex]*stageMultiplier(getStage('atk',attackStat));
   let defense=dv[defenseIndex]*stageMultiplier(getStage('def',defenseStat));
+  if(normalizeItemName(atkItem?.raw)==='light-ball'&&String(a.name||'').toLowerCase()==='pikachu') attack*=2;
   const attackerStatus=$('atkStatus')?.value||'Keine';
   if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase())){
     attack=Math.floor(attack*.5);
@@ -425,13 +453,19 @@ async function calculateDamage(){
   if(getStage('atk',attackStat)!==0)notes.push(`Angriffs-Stufe: ${getStage('atk',attackStat)>0?'+':''}${getStage('atk',attackStat)}`);
   if(getStage('def',defenseStat)!==0)notes.push(`Verteidigungs-Stufe: ${getStage('def',defenseStat)>0?'+':''}${getStage('def',defenseStat)}`);
   const typeMult=await getTypeMultiplier(abilityMove.type,d);
+  const isSuperEffective=typeMult>1;
+  const itemAtk=itemAttackMultiplier(atkItem,abilityMove.type,physical,isSuperEffective);
+  const itemDef=itemDefenseMultiplier(defItem,abilityMove.type,d,isSuperEffective);
+  const itemNotes=[];
+  if(normalizeItemName(atkItem?.raw)==='light-ball'&&String(a.name||'').toLowerCase()==='pikachu')itemNotes.push('Kugelblitz: Angriff/Sp. Angriff ×2');
+  notes.push(...itemAtk.notes,...itemDef.notes,...itemNotes);
   if(typeMult===0){
     $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">0 KP</div><div class="damage-percent">Keine Wirkung</div><div class="damage-muted">${deM(mid)||title(m.name)} · ${physical?'physisch':'speziell'} · ${uiLang==='de'?'Typimmunität':'Type immunity'}</div></div>`;return;
   }
   const aTypes=(a.types||[]).map(x=>x.type?.name).filter(Boolean);
   const stab=aTypes.includes(abilityMove.type)?1.5:1;
   const base=exactBaseDamage(50,power,Math.floor(attack),Math.floor(defense));
-  const post=abilityDef.mult*stab*typeMult;
+  const post=abilityDef.mult*stab*typeMult*itemAtk.mult*itemDef.mult;
   const rolls=Array.from({length:16},(_,i)=>Math.max(1,Math.floor(base*post*(85+i)/100)));
   const min=Math.min(...rolls),max=Math.max(...rolls);
   const avg=rolls.reduce((x,y)=>x+y,0)/rolls.length;
@@ -453,7 +487,12 @@ async function calculateDamage(){
   </div>`;
  }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
 }
-async function loadAllItems(){const d=await json(`${API}/item?limit=10000`);calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:deI(id)||title(x.name),raw:x.name}}).sort((a,b)=>a.name.localeCompare(b.name,'de'));}
+async function loadAllItems(){
+ const d=await json(`${API}/item?limit=10000`);
+ calcItems=d.results.map((x,i)=>{const id=i+1;return{id,name:deI(id)||title(x.name),raw:x.name}})
+   .filter(x=>CHAMPIONS_ITEM_SLUGS.has(normalizeItemName(x.raw)))
+   .sort((a,b)=>a.name.localeCompare(b.name,'de'));
+}
 
 function setupItemSearchV14(side){
   const input=$(side==='atk'?'atkItemSearch':'defItemSearch');
