@@ -18,6 +18,14 @@ const MC_FORMS={
   768:[{key:'mega',label:'Mega-Tectass',types:['bug','steel'],stats:[75,150,175,70,120,40],ability:'Tough Claws',weight:148}],
   998:[{key:'mega',label:'Mega-Segargal',types:['dragon','ice'],stats:[115,175,117,105,101,87],ability:'Thermal Exchange',weight:315}]
 };
+const MC_ABILITY_NAMES={
+  'Aura Guard':{de:'Aura-Wache',en:'Aura Guard'},
+  'Sharpness':{de:'Scharfsinn',en:'Sharpness'},
+  'Levitate':{de:'Schwebe',en:'Levitate'},
+  'Aerilate':{de:'Zenithaut',en:'Aerilate'},
+  'Tough Claws':{de:'Krallenwucht',en:'Tough Claws'},
+  'Thermal Exchange':{de:'Thermowandel',en:'Thermal Exchange'}
+};
 const MC_ABILITY_DESCRIPTIONS={
   'Aura Guard':{
     de:'Halbiert den Schaden durch Attacken, die direkten Kontakt herstellen.',
@@ -30,7 +38,7 @@ const MC_ABILITY_DESCRIPTIONS={
   'Thermal Exchange':{de:'Erhöht den Angriff bei Treffern durch Feuer-Attacken und verhindert Verbrennungen.',en:'Raises Attack when hit by a Fire-type move and prevents burns.'}
 };
 function mcFormsForSpecies(speciesId){return MC_FORMS[String(speciesId)]||MC_FORMS[Number(speciesId)]||[]}
-function mcAbilityName(name){return name||''}
+function mcAbilityName(name){return MC_ABILITY_NAMES[name]?.[uiLang]||name||''}
 
 
 // v1.9 calculator state — intentionally kept separate from localization.
@@ -148,13 +156,13 @@ async function openMCForm(baseSpecies,form){
 }
 async function detail(p,s){
   const pname=p._mcLabel||deP(p.id)||deF(p.id)||title(p.name);
-   const abilities=p._mcForm?[p._mcAbility]:await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name)));
+   const abilities=p._mcForm?[mcAbilityName(p._mcAbility)]:await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name)));
   const grouped={};p.moves.forEach(x=>(x.version_group_details||[]).forEach(v=>{let key='Weitere';const m=v.move_learn_method?.name;if(m==='level-up')key='Durch Levelaufstieg';else if(m==='machine')key='TM / VM';else if(m==='tutor')key='Attacken-Lehrer';else if(m==='egg')key='Ei-Attacke';else if(m==='stadium-surfing-pikachu')key='Spezial';if(!grouped[key])grouped[key]=[];const entry={id:rid(x.move.url),name:x.move.name,level:v.level_learned_at||0};if(!grouped[key].some(a=>a.id===entry.id))grouped[key].push(entry)}));
   let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:deM(m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));const groupLabel=uiLang==='en'?({'Durch Levelaufstieg':'Level Up','TM / VM':'TM / HM','Attacken-Lehrer':'Move Tutor','Ei-Attacke':'Egg Move','Spezial':'Special','Weitere':'Other'}[group]||group):group;moveHtml+=`<div class="move-group"><h4>${groupLabel} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
   const langName=uiLang==='en'?'en':'de';const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name===langName)|| (s.flavor_text_entries||[]).find(x=>x.language?.name==='en');const genus=(s.genera||[]).find(x=>x.language?.name===langName)|| (s.genera||[]).find(x=>x.language?.name==='en');const mcAbilityText=p._mcForm?(MC_ABILITY_DESCRIPTIONS[p._mcAbility]?.[uiLang]||''):'';
   const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:uiLang==='en'?'HP':'KP',attack:uiLang==='en'?'Attack':'Angriff',defense:uiLang==='en'?'Defense':'Verteidigung','special-attack':uiLang==='en'?'Sp. Atk':'Sp. Angriff','special-defense':uiLang==='en'?'Sp. Def':'Sp. Verteidigung',speed:uiLang==='en'?'Speed':'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
-  const formRows=await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);if(!id)return '';let fp=null,formId=null;try{fp=await json(v.pokemon.url);formId=rid(fp?.forms?.[0]?.url||'')}catch(e){}const name=formDisplayName(fp||{id,name:v.pokemon.name},s.id,s.name,formId);return `<button type="button" class="form-choice ${!p._mcForm&&Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`;}));
-   const mcRows=mcFormsForSpecies(s.id).map(f=>`<button type="button" class="form-choice ${p._mcForm&&p._mcLabel===f.label?'active':''}" data-mc-form="${encodeURIComponent(JSON.stringify(f))}"><img src="${sprite(s.id)}" alt=""><span>${f.label}</span></button>`).join('');
+  const formRows=await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);if(!id)return '';let fp=null,formId=null;try{fp=await json(v.pokemon.url);formId=rid(fp?.forms?.[0]?.url||'')}catch(e){}const raw=String(fp?.name||v.pokemon.name||'').toLowerCase();const hasMC=mcFormsForSpecies(s.id).length>0;const isGenericMega=hasMC&&(raw===String(s.name||'').toLowerCase()+'-mega'||raw.endsWith('-mega'));if(isGenericMega)return '';const name=formDisplayName(fp||{id,name:v.pokemon.name},s.id,s.name,formId);return `<button type="button" class="form-choice ${!p._mcForm&&Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`;}));
+   const mcRows=mcFormsForSpecies(s.id).map(f=>{const label=uiLang==='en'?f.label:f.label.replace('Mega-Absol Z','Mega-Absol Z').replace('Mega-Knakrack Z','Mega-Knakrack Z').replace('Mega-Lucario Z','Mega-Lucario Z').replace('Mega-Brutalanda','Mega-Brutalanda').replace('Mega-Tectass','Mega-Tectass').replace('Mega-Segargal','Mega-Espinodon');return `<button type="button" class="form-choice ${p._mcForm&&p._mcLabel===f.label?'active':''}" data-mc-form="${encodeURIComponent(JSON.stringify(f))}"><img src="${sprite(s.id)}" alt=""><span>${label}</span></button>`}).join('');
    const allFormRows=formRows.filter(Boolean).join('')+mcRows;
   const forms=allFormRows;
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
