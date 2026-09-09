@@ -204,6 +204,7 @@ const calcStatuses=['Keine','Schlaf','Gift','Schwere Vergiftung','Verbrennung','
 let calcItems=[];
 function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.innerHTML=calcStatKeys.map((k,i)=>`<label>${calcStatLabels[i]}<input id="${side}-${k}" type="number" min="0" max="32" step="1" value="0"></label>`).join('');calcStatKeys.forEach(k=>$(`${side}-${k}`).addEventListener('input',()=>{calcEV(side);updateCalcSide(side)}))}
 function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));if(calcState.attacker)setAbilityOptions('atk',calcState.attacker);if(calcState.defender)setAbilityOptions('def',calcState.defender)}
+function normalizeAbilityName(name){return String(name||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim()}
 function abilityLabel(a){return dataName('ability',a.id,a.name)||title(a.name)}
 function setAbilityOptions(side,p){const key=side==='atk'?'attacker':'defender',sel=$(side==='atk'?'atkAbility':'defAbility');if(!sel)return;const list=(p?.abilities||[]).map(x=>({id:rid(x.ability?.url)||x.ability?.name,name:x.ability?.name||''})).filter(x=>x.id&&x.name);calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
 function selectedAbility(side){const key=side==='atk'?'attacker':'defender';return calcState.selectedAbility[key]||null}
@@ -333,7 +334,7 @@ function moveAbilityTypeAndPower(m,a,d){
  const ability=selectedAbility('atk');
  let type=m.type?.name||'', powerMult=1, notes=[];
  const name=String(m.name||'').toLowerCase();
- const ab=String(ability?.name||'').toLowerCase();
+ const ab=normalizeAbilityName(ability?.name);
  const aTypes=(a?.types||[]).map(t=>t.type?.name).filter(Boolean);
  if(ab==='aerilate'&&type==='normal'){type='flying';powerMult*=1.2;notes.push('Aerilate: Normal → Flying, ×1,2')}
  if(ab==='refrigerate'&&type==='normal'){type='ice';powerMult*=1.2;notes.push('Refrigerate: Normal → Ice, ×1,2')}
@@ -359,7 +360,7 @@ function moveAbilityTypeAndPower(m,a,d){
  return {type,powerMult,notes};
 }
 function abilityDefenseMultiplier(m,d){
- const ability=selectedAbility('def');const ab=String(ability?.name||'').toLowerCase();const type=m.type?.name||'';let mult=1,notes=[];
+ const ability=selectedAbility('def');const ab=normalizeAbilityName(ability?.name);const type=m.type?.name||'';let mult=1,notes=[];
  if(ab==='thick fat'&&['fire','ice'].includes(type)){mult*=.5;notes.push('Speckschicht: ×0,5')}
  if(ab==='water bubble'&&type==='fire'){mult*=.5;notes.push('Water Bubble: Feuer ×0,5')}
   const contactMoves=['tackle','scratch','quick attack','bite','crunch','shadow claw','dragon claw','iron head','meteor mash','close combat','high jump kick','bullet punch','extreme speed','aerial ace','night slash','sucker punch','play rough','iron tail','poison jab','earthquake'];
