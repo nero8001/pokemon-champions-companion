@@ -368,6 +368,36 @@ function abilityDefenseMultiplier(m,d){
  if(['filter','solid rock','prism armor'].includes(ab)){notes.push(`${abilityLabel(ability)}: Effekt bei Effektiv-Treffern wird in der vorläufigen Formel erst angewendet, wenn Typenwirkung vollständig modelliert ist`)}
  return {mult,notes};
 }
+function stageMultiplier(value){
+ const n=Math.max(-6,Math.min(6,Number(value)||0));
+ return n>=0?(2+n)/2:2/(2-n);
+}
+function getStage(side,kind){
+ const id=side==='atk'?(kind==='atk'?'atkBoost':'atkSpABoost'):(kind==='def'?(kind==='def'?'defBoost':'defSpDBoost'):'');
+ return Number($(id)?.value||0);
+}
+async function getTypeMultiplier(moveType,defender){
+ const types=defender?.types||[];
+ let mult=1;
+ for(const t of types){
+  const typeId=rid(t.type?.url);
+  if(!typeId)continue;
+  let rel=typeRelationsCache.get(String(typeId));
+  if(!rel){rel=await json(`${API}/type/${typeId}`);typeRelationsCache.set(String(typeId),rel)}
+  if((rel.damage_relations.double_damage_from||[]).some(x=>rid(x.url)===String(typeId))){/* noop: defensive type id is not the attacking type */}
+  const src=rel.damage_relations;
+  if((src.no_damage_from||[]).some(x=>x.name===moveType))mult*=0;
+  else if((src.double_damage_from||[]).some(x=>x.name===moveType))mult*=2;
+  else if((src.half_damage_from||[]).some(x=>x.name===moveType))mult*=.5;
+ }
+ return mult;
+}
+function exactBaseDamage(level,power,attack,defense){
+ let x=Math.floor((2*level)/5)+2;
+ x=Math.floor(x*power*attack/Math.max(1,defense));
+ x=Math.floor(x/50)+2;
+ return Math.max(1,x);
+}
 async function calculateDamage(){
  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
@@ -376,33 +406,48 @@ async function calculateDamage(){
   if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
   const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def');
   const physical=m.damage_class?.name==='physical';
-  const attack=av[physical?1:3];
-  let defense=dv[physical?2:4];
-  defense=applyWeatherDefense(m,d,defense,physical);
+  const attackStat=physical?'atk':'spa', defenseStat=physical?'def':'spd';
+  const attackIndex=physical?1:3, defenseIndex=physical?2:4;
+  let attack=av[attackIndex]*stageMultiplier(getStage('atk',attackStat));
+  let defense=dv[defenseIndex]*stageMultiplier(getStage('def',defenseStat));
+  const attackerStatus=$('atkStatus')?.value||'Keine';
+  if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase())){
+    attack=Math.floor(attack*.5);
+  }
+  defense=applyWeatherDefense(m,d,Math.floor(defense),physical);
   const abilityMove=moveAbilityTypeAndPower(m,a,d);
-  const abilityDef=abilityDefenseMultiplier(m,d);
-  const abilityDamageMult=abilityDef.mult;
-  defense=Math.max(1,defense);
-  let basePower=m.power;
+  const abilityDef=abilityDefenseMultiplier({...m,type:{name:abilityMove.type}},d);
   const fw=fieldWeatherPowerMultiplier({...m,type:{name:abilityMove.type}},a,d);
-  basePower=Math.floor(basePower*fw.mult*abilityMove.powerMult);
-  let abilityPostMult=abilityDamageMult;
-  let base=Math.floor(Math.floor(Math.floor((2*50/5+2)*basePower*attack/Math.max(1,defense))/50)+2);
-  base=Math.max(1,Math.floor(base*abilityPostMult));
-  const field=getSelectedField(),weather=getSelectedWeather();
+  let power=Math.floor(Number(m.power)*abilityMove.powerMult*fw.mult);
   const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
-  if(weather===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
-  if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
+  if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase()))notes.push('Verbrennung: Angriff ×0,5');
+  if(getStage('atk',attackStat)!==0)notes.push(`Angriffs-Stufe: ${getStage('atk',attackStat)>0?'+':''}${getStage('atk',attackStat)}`);
+  if(getStage('def',defenseStat)!==0)notes.push(`Verteidigungs-Stufe: ${getStage('def',defenseStat)>0?'+':''}${getStage('def',defenseStat)}`);
+  const typeMult=await getTypeMultiplier(abilityMove.type,d);
+  if(typeMult===0){
+    $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">0 KP</div><div class="damage-percent">Keine Wirkung</div><div class="damage-muted">${deM(mid)||title(m.name)} · ${physical?'physisch':'speziell'} · ${uiLang==='de'?'Typimmunität':'Type immunity'}</div></div>`;return;
+  }
+  const aTypes=(a.types||[]).map(x=>x.type?.name).filter(Boolean);
+  const stab=aTypes.includes(abilityMove.type)?1.5:1;
+  const base=exactBaseDamage(50,power,Math.floor(attack),Math.floor(defense));
+  const post=abilityDef.mult*stab*typeMult;
+  const rolls=Array.from({length:16},(_,i)=>Math.max(1,Math.floor(base*post*(85+i)/100)));
+  const min=Math.min(...rolls),max=Math.max(...rolls);
+  const avg=rolls.reduce((x,y)=>x+y,0)/rolls.length;
   const hp=Math.max(1,dv[0]);
-  const pct=Math.min(100,Math.max(0,(base/hp)*100));
-  const remaining=Math.max(0,hp-base);
+  const minPct=min/hp*100,maxPct=max/hp*100;
+  const avgPct=avg/hp*100;
   const label=deM(mid)||title(m.name);
-  const env=[field.label,weather.label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
+  const env=[getSelectedField().label,getSelectedWeather().label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
+  if(stab!==1)notes.push('STAB: ×1,5');
+  if(typeMult!==1)notes.push(`Typenwirkung: ×${typeMult}`);
+  if(getSelectedWeather()===weatherEffects.sand&&!physical&&(d.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
+  if(getSelectedWeather()===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
   $('damageResult').innerHTML=`<div class="damage-box">
-   <div class="damage-number">${base} KP</div>
-   <div class="damage-percent">${pct.toFixed(1).replace('.',',')} % Schaden</div>
-   <div class="hpbar-wrap"><div class="hpbar"><div class="hpbar-fill" style="width:${Math.max(0,100-pct)}%"></div></div><div class="hpbar-label">${remaining} / ${hp} KP verbleibend</div></div>
-   <div class="damage-muted">${label} · vorläufige Basisberechnung · ${physical?'physisch':'speziell'}${env?' · '+env:''}</div>
+   <div class="damage-number">${min}–${max} KP</div>
+   <div class="damage-percent">${minPct.toFixed(1).replace('.',',')}–${maxPct.toFixed(1).replace('.',',')} % Schaden · Ø ${avg.toFixed(1).replace('.',',')} KP</div>
+   <div class="hpbar-wrap"><div class="hpbar"><div class="hpbar-fill" style="width:${Math.max(0,100-maxPct)}%"></div></div><div class="hpbar-label">${Math.max(0,hp-max)}–${Math.max(0,hp-min)} KP verbleibend</div></div>
+   <div class="damage-muted">${label} · 16 Schadenswürfe (85–100 %) · ${physical?'physisch':'speziell'}${env?' · '+env:''}</div>
    ${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}
   </div>`;
  }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
