@@ -65,6 +65,8 @@ const formSuffixMap={
   hearthflame:'Ofenform', cornerstone:'Felsform', cornerstone:'Felsform', artful:'Prunkform'
 };
 function formDisplayName(fp,speciesId,speciesName,formResourceId=null){
+ const rawName=String(fp?.name||'').toLowerCase();
+ if(Number(speciesId)===998 && rawName.includes('mega')) return 'Mega-Espinodon';
  const pokemonId=fp?.id?String(fp.id):rid(fp?.url||'');
  const formId=formResourceId?String(formResourceId):String(fp?.formResourceId||'');
  const official=formId?dataName('form',formId,''):'';
@@ -161,8 +163,18 @@ async function detail(p,s){
   let moveHtml='';for(const group of ['Durch Levelaufstieg','TM / VM','Attacken-Lehrer','Ei-Attacke','Spezial','Weitere']){if(!grouped[group])continue;const entries=await Promise.all(grouped[group].map(async m=>({...m,de:deM(m.id)||title(m.name)})));entries.sort((a,b)=>group==='Durch Levelaufstieg'?(a.level-b.level||a.de.localeCompare(b.de,'de')):a.de.localeCompare(b.de,'de'));const groupLabel=uiLang==='en'?({'Durch Levelaufstieg':'Level Up','TM / VM':'TM / HM','Attacken-Lehrer':'Move Tutor','Ei-Attacke':'Egg Move','Spezial':'Special','Weitere':'Other'}[group]||group):group;moveHtml+=`<div class="move-group"><h4>${groupLabel} <span class="move-meta">(${entries.length})</span></h4><div class="move-list">${entries.map(m=>`<div class="move-item"><span class="move-name">${m.de}</span>${group==='Durch Levelaufstieg'?`<span class="move-meta">Lv. ${m.level}</span>`:''}</div>`).join('')}</div></div>`}
   const langName=uiLang==='en'?'en':'de';const flavor=(s.flavor_text_entries||[]).find(x=>x.language?.name===langName)|| (s.flavor_text_entries||[]).find(x=>x.language?.name==='en');const genus=(s.genera||[]).find(x=>x.language?.name===langName)|| (s.genera||[]).find(x=>x.language?.name==='en');const mcAbilityText=p._mcForm?(MC_ABILITY_DESCRIPTIONS[p._mcAbility]?.[uiLang]||''):'';
   const stats=p.stats.map(x=>`<div class="stat"><span>${({hp:uiLang==='en'?'HP':'KP',attack:uiLang==='en'?'Attack':'Angriff',defense:uiLang==='en'?'Defense':'Verteidigung','special-attack':uiLang==='en'?'Sp. Atk':'Sp. Angriff','special-defense':uiLang==='en'?'Sp. Def':'Sp. Verteidigung',speed:uiLang==='en'?'Speed':'Initiative'})[x.stat.name]}</span><div class="bar"><i style="width:${Math.min(100,x.base_stat/2)}%"></i></div><b>${x.base_stat}</b></div>`).join('');
-  const formRows=await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);if(!id)return '';let fp=null,formId=null;try{fp=await json(v.pokemon.url);formId=rid(fp?.forms?.[0]?.url||'')}catch(e){}const raw=String(fp?.name||v.pokemon.name||'').toLowerCase();const baseRaw=String(s.name||'').toLowerCase();const mcForms=mcFormsForSpecies(s.id);const isDuplicateMC=mcForms.some(f=>{const key=String(f.key||'').toLowerCase();return raw===baseRaw+'-'+key});if(isDuplicateMC)return '';const name=formDisplayName(fp||{id,name:v.pokemon.name},s.id,s.name,formId);return `<button type="button" class="form-choice ${!p._mcForm&&Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`;}));
-   const mcRows=mcFormsForSpecies(s.id).map(f=>{const label=f.label;return `<button type="button" class="form-choice ${p._mcForm&&p._mcLabel===f.label?'active':''}" data-mc-form="${encodeURIComponent(JSON.stringify(f))}"><img src="${sprite(s.id)}" alt=""><span>${label}</span></button>`}).join('');
+  const formMeta=[];
+  const formRows=await Promise.all((s.varieties||[]).map(async v=>{const id=rid(v.pokemon.url);if(!id)return '';let fp=null,formId=null;try{fp=await json(v.pokemon.url);formId=rid(fp?.forms?.[0]?.url||'')}catch(e){}const name=formDisplayName(fp||{id,name:v.pokemon.name},s.id,s.name,formId);formMeta.push({id:Number(id),name:String(name||'').trim().toLowerCase(),raw:String(fp?.name||v.pokemon.name||'').toLowerCase()});return `<button type="button" class="form-choice ${!p._mcForm&&Number(id)===Number(p.id)?'active':''}" data-form-url="${v.pokemon.url}" data-form-id="${id}"><img src="${sprite(id)}" alt=""><span>${name}</span></button>`;}));
+   // Keep the working PokéAPI form whenever M-C already supplies the same form.
+   // Only add our synthetic form if no corresponding API form exists. This prevents
+   // duplicate, non-selectable entries while preserving the original working forms.
+   const mcRows=mcFormsForSpecies(s.id).map((f,index)=>{
+     const label=String(f.label||'').trim();
+     const norm=label.toLowerCase();
+     const exists=formMeta.some(x=>x.name===norm || (norm.includes('z') && x.raw.includes('mega-z')) || (norm.startsWith('mega-') && x.raw.includes('mega')));
+     if(exists)return '';
+     return `<button type="button" class="form-choice ${p._mcForm&&p._mcLabel===label?'active':''}" data-mc-index="${index}"><img src="${sprite(s.id)}" alt=""><span>${label}</span></button>`;
+   }).join('');
    const allFormRows=formRows.filter(Boolean).join('')+mcRows;
   const forms=allFormRows;
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
@@ -170,11 +182,15 @@ async function detail(p,s){
   $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>${uiLang==='en'?'Select Form':'Form auswählen'}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Strengths & Weaknesses':'Stärken & Schwächen'}</h3><div class="relation-grid"><div><strong>${uiLang==='en'?'Resistances':'Stärken / Resistenzen'}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${uiLang==='en'?'Weaknesses':'Schwächen'}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${uiLang==='en'?'Immunities':'Immunitäten'}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${uiLang==='en'?'Pokédex Description':'Pokédex-Beschreibung'}</h3><p class="description">${p._mcForm?mcAbilityText:(flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):(uiLang==='en'?'No description available.':'Keine deutsche Beschreibung vorhanden.'))}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${uiLang==='en'?'Abilities':'Fähigkeiten'}</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>${uiLang==='en'?'Base Stats':'Basiswerte'}</h3>${stats}</div><div class="section"><h3>${uiLang==='en'?'Max Stats at Level 50':'Maximalwerte auf Level 50'}</h3><p class="muted">${uiLang==='en'?'IV 31 · 252 EVs in the selected stat · no item or battle bonuses':'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni'}</p><label class="nature-inline">${uiLang==='en'?'Nature':'Wesen'}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${uiLang==='en'?'Moves':'Attacken'}</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
   $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
   document.querySelectorAll('#forms .form-choice').forEach(btn=>btn.onclick=async()=>{
-     if(btn.dataset.mcForm){
-       try{const f=JSON.parse(decodeURIComponent(btn.dataset.mcForm));await openMCForm(s,f)}catch(e){console.error(e)}
-     }else{
-       try{const fp=await json(btn.dataset.formUrl);current={p:fp,s};isShiny=false;await detail(fp,s)}catch(e){console.error(e)}
-     }
+     try{
+       if(btn.dataset.mcIndex!==undefined){
+         const f=mcFormsForSpecies(s.id)[Number(btn.dataset.mcIndex)];
+         if(!f)throw Error('M-C-Form nicht gefunden');
+         await openMCForm(s,f);
+       }else{
+         const fp=await json(btn.dataset.formUrl);current={p:fp,s};isShiny=false;await detail(fp,s);
+       }
+     }catch(e){console.error('Formauswahl fehlgeschlagen',e)}
    })
   $('dexNature').addEventListener('change',()=>{
     const vals=maxLevel50Stats(p,$('dexNature').value);
