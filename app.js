@@ -433,6 +433,7 @@ function moveAbilityTypeAndPower(m,a,d){
  if(ab==='punk rock'&&['sound'].some(k=>name.includes(k))){powerMult*=1.3;notes.push('Punk Rock: Schall-Attacke ×1,3')}
  return {type,powerMult,notes};
 }
+function normalizeMoveName(name){return String(name||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim()}
 function abilityDefenseMultiplier(m,d){
  const ability=selectedAbility('def');const ab=normalizeAbilityName(ability?.name);const type=m.type?.name||'';let mult=1,notes=[];
  if(ab==='thick fat'&&['fire','ice'].includes(type)){mult*=.5;notes.push('Speckschicht: ×0,5')}
@@ -444,7 +445,7 @@ function abilityDefenseMultiplier(m,d){
    'bullet punch','crunch','cut','double iron bash','double shock','double-edge','drain punch','dragon claw',
    'dragon hammer','dragon rush','dragon tail','drill run','drum beating','dual wingbeat','dynamic punch',
    'earthquake','extreme speed','facade','false swipe','fire fang','fire punch','fishious rend','flame wheel',
-   'flare blitz','fly','focus punch','foul play','giga impact','glaive rush','grass knot','grassy glide',
+   'flare blitz','fly','focus punch','foul play','giga impact','glaive rush','grassy glide',
    'headbutt','headlong rush','head smash','heat crash','heavy slam','high horse power','high jump kick',
    'horn attack','horn leech','ice fang','ice punch','ice spinner','iron head','iron tail','jaw lock',
    'knock off','leaf blade','leech life','liquidation','low kick','low sweep','mach punch','mega kick',
@@ -458,7 +459,7 @@ function abilityDefenseMultiplier(m,d){
    'thunder punch','thunder shock','trailblaze','triple axel','triple dive','twin beam','u-turn',
    'vacuum wave','waterfall','wave crash','wicked blow','wild charge','wood hammer','zen headbutt'
   ]);
-  if(ab==='aura guard'&&contactMoves.has(String(m.name||'').toLowerCase())){
+  if(ab==='aura guard'&&contactMoves.has(normalizeMoveName(m.name))){
    mult*=.5;
    notes.push('Aura Guard: Kontaktschaden ×0,5');
   }
