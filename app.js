@@ -437,8 +437,31 @@ function abilityDefenseMultiplier(m,d){
  const ability=selectedAbility('def');const ab=normalizeAbilityName(ability?.name);const type=m.type?.name||'';let mult=1,notes=[];
  if(ab==='thick fat'&&['fire','ice'].includes(type)){mult*=.5;notes.push('Speckschicht: ×0,5')}
  if(ab==='water bubble'&&type==='fire'){mult*=.5;notes.push('Water Bubble: Feuer ×0,5')}
-  const contactMoves=['tackle','scratch','quick attack','bite','crunch','shadow claw','dragon claw','iron head','meteor mash','close combat','high jump kick','bullet punch','extreme speed','aerial ace','night slash','sucker punch','play rough','iron tail','poison jab','earthquake'];
-  if(ab==='aura guard'&&contactMoves.includes(String(m.name||'').toLowerCase())){mult*=.5;notes.push('Aura Guard: Kontaktschaden ×0,5')}
+  // Champions contact flag: Aura Guard only halves damage from moves that actually make contact.
+  // PokeAPI does not expose the contact flag, so keep a local Champions-compatible contact list.
+  const contactMoves=new Set([
+   'accelerock','acrobatics','assurance','astonish','body slam','body press','bite','brick break','bug bite',
+   'bullet punch','crunch','cut','double iron bash','double shock','double-edge','drain punch','dragon claw',
+   'dragon hammer','dragon rush','dragon tail','drill run','drum beating','dual wingbeat','dynamic punch',
+   'earthquake','extreme speed','facade','false swipe','fire fang','fire punch','fishious rend','flame wheel',
+   'flare blitz','fly','focus punch','foul play','giga impact','glaive rush','grass knot','grassy glide',
+   'headbutt','headlong rush','head smash','heat crash','heavy slam','high horse power','high jump kick',
+   'horn attack','horn leech','ice fang','ice punch','ice spinner','iron head','iron tail','jaw lock',
+   'knock off','leaf blade','leech life','liquidation','low kick','low sweep','mach punch','mega kick',
+   'mega punch','metal claw','meteor mash','mighty cleave','night slash','nuzzle','outrage','payback',
+   'peck','petal blizzard','phantom force','pin missile','play rough','poison fang','poison jab','poison tail',
+   'pounce','power gem','power whip','quick attack','rage fist','razor leaf','rock blast','rock slide',
+   'rock smash','rock throw','rock tomb','rollout','sacred sword','scratch','seed bomb','shadow claw',
+   'shadow force','shadow punch','shell smash','slam','slash','smack down','smelling salts','snap trap',
+   'solar blade','spirit shackle','steel wing','stone edge','stomp','stomping tantrum','struggle',
+   'sucker punch','supercell slam','superpower','tackle','take down','thief','throat chop','thunder fang',
+   'thunder punch','thunder shock','trailblaze','triple axel','triple dive','twin beam','u-turn',
+   'vacuum wave','waterfall','wave crash','wicked blow','wild charge','wood hammer','zen headbutt'
+  ]);
+  if(ab==='aura guard'&&contactMoves.has(String(m.name||'').toLowerCase())){
+   mult*=.5;
+   notes.push('Aura Guard: Kontaktschaden ×0,5');
+  }
  if(ab==='heatproof'&&type==='fire'){mult*=.5;notes.push('Heatproof: Feuer ×0,5')}
  if(['filter','solid rock','prism armor'].includes(ab)){notes.push(`${abilityLabel(ability)}: Effekt bei Effektiv-Treffern wird in der vorläufigen Formel erst angewendet, wenn Typenwirkung vollständig modelliert ist`)}
  return {mult,notes};
