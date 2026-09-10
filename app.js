@@ -212,7 +212,12 @@ function makeEVInputs(side){const target=$(side==='atk'?'atkEV':'defEV');target.
 function fillOptions(){const nat=natureData.map((n,i)=>`<option value="${i}">${natureLabel(n)}</option>`).join('');$('atkNature').innerHTML=nat;$('defNature').innerHTML=nat;const items=`<option value="">${uiLang==='en'?'No item':'Kein Item'}</option>`+calcItems.map(x=>`<option value="${x.id}">${dataName('item',x.id,x.raw)||x.raw}</option>`).join('');$('atkItem').innerHTML=items;$('defItem').innerHTML=items;const sts=statusOptions().map(x=>`<option>${x}</option>`).join('');['atkStatus','defStatus'].forEach(id=>$(id).innerHTML=sts);['atkBoost','atkSpABoost','atkSpeedBoost','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).innerHTML=stages.map(x=>`<option>${x}</option>`).join(''));if(calcState.attacker)setAbilityOptions('atk',calcState.attacker);if(calcState.defender)setAbilityOptions('def',calcState.defender)}
 function normalizeAbilityName(name){return String(name||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim()}
 function abilityLabel(a){return dataName('ability',a.id,a.name)||title(a.name)}
-function setAbilityOptions(side,p){const key=side==='atk'?'attacker':'defender',sel=$(side==='atk'?'atkAbility':'defAbility');if(!sel)return;const list=(p?.abilities||[]).map(x=>({id:rid(x.ability?.url)||x.ability?.name,name:x.ability?.name||''})).filter(x=>x.id&&x.name);calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
+function setAbilityOptions(side,p){
+ const key=side==='atk'?'attacker':'defender',sel=$(side==='atk'?'atkAbility':'defAbility');
+ if(!sel)return;
+ const rawList=(p?._mcAbility?[{ability:{name:p._mcAbility,url:''},is_hidden:false,slot:1}]:p?.abilities)||[];
+ const list=rawList.map(x=>({id:rid(x.ability?.url)||x.ability?.name,name:x.ability?.name||''})).filter(x=>x.id&&x.name);
+ calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
 function selectedAbility(side){const key=side==='atk'?'attacker':'defender';return calcState.selectedAbility[key]||null}
 
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
@@ -272,18 +277,47 @@ async function loadCalcForms(side,species,selectedId){
  const key=side==='atk'?'attacker':'defender',forms=[];
  for(const v of species.varieties||[]){
   const id=rid(v.pokemon.url);if(!id)continue;
-  try{const fp=await json(v.pokemon.url);fp.speciesId=species.id;fp._formName=formDisplayName(fp,species.id,species.name);forms.push(fp)}catch(e){}
+  try{
+   const fp=await json(v.pokemon.url);
+   fp.speciesId=species.id;
+   fp._formName=formDisplayName(fp,species.id,species.name);
+   if(Number(species.id)===998 && String(fp.name||'').toLowerCase().includes('mega')){
+    fp.abilities=[{ability:{name:'thermal-exchange',url:''},is_hidden:false,slot:1}];
+    fp._mcAbility='Thermal Exchange';
+   }
+   forms.push(fp);
+  }catch(e){}
+ }
+ const mcForms=mcFormsForSpecies(species.id);
+ if(mcForms.length){
+  let base=forms.find(fp=>Number(fp.id)===Number(species.id));
+  if(!base){
+   try{base=await json(`${API}/pokemon/${species.id}`);base.speciesId=species.id;}catch(e){base=null}
+  }
+  for(const f of mcForms){
+   const label=f.label;
+   const exists=forms.some(fp=>String(fp._formName||'').trim().toLowerCase()===String(label).trim().toLowerCase());
+   if(exists)continue;
+   if(base){
+    const fp=syntheticMCForm(base,f);
+    fp.speciesId=species.id;
+    fp._formName=label;
+    fp._calcFormId=`mc-${species.id}-${f.key}`;
+    forms.push(fp);
+   }
+  }
  }
  calcState.forms[key]=forms;
  const sel=$(side==='atk'?'atkForm':'defForm');
- sel.innerHTML=forms.map(fp=>`<option value="${fp.id}">${fp._formName}</option>`).join('');
+ sel.innerHTML=forms.map(fp=>`<option value="${fp._calcFormId||fp.id}">${fp._formName}</option>`).join('');
  sel.disabled=forms.length<=1;
- const wanted=String(selectedId??calcState[key]?.id??'');
- if(forms.some(fp=>String(fp.id)===wanted))sel.value=wanted;
+ const wanted=String(selectedId??calcState[key]?._calcFormId??calcState[key]?.id??'');
+ const wantedForm=forms.find(fp=>String(fp._calcFormId||fp.id)===wanted);
+ if(wantedForm)sel.value=String(wantedForm._calcFormId||wantedForm.id);
 }
 async function changeCalcForm(side,id){
  const key=side==='atk'?'attacker':'defender';
- const p=(calcState.forms[key]||[]).find(x=>String(x.id)===String(id));if(!p)return;
+ const p=(calcState.forms[key]||[]).find(x=>String(x._calcFormId||x.id)===String(id));if(!p)return;
  calcState[key]=p;
  calcState.selectedAbility[key]=null;
  setAbilityOptions(side,p);
@@ -291,7 +325,41 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  if(side==='atk')await loadCalcMoves();
 }
-async function loadCalcMoves(){const p=calcState.attacker;const input=$('moveSearch');calcState.moves=[];$('moveSuggestions').innerHTML='';$('moveInfo').textContent=p?`${t('moveSearch')} …`:(uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.');if(!p)return;try{const data=await json(`${API}/pokemon/${p.id}`),seen=new Set();for(const x of data.moves||[]){const id=rid(x.move.url);if(!id||seen.has(id))continue;seen.add(id);let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};calcState.moves.push(info)}calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));input.disabled=false;input.placeholder=t('moveSearch')+' …';input.value='';}catch(e){input.disabled=true;input.placeholder=uiLang==='en'?'Moves could not be loaded':'Attacken konnten nicht geladen werden'}}
+async function loadCalcMoves(){
+ const p=calcState.attacker;
+ const input=$('moveSearch');
+ calcState.moves=[];
+ $('moveSuggestions').innerHTML='';
+ $('moveInfo').textContent=p?`${t('moveSearch')} …`:(uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.');
+ if(!p)return;
+ try{
+  const data=await json(`${API}/pokemon/${p.id}`);
+  const moveSources=[...(data.moves||[])];
+  if(!moveSources.length || p._mcForm || p._formName?.toLowerCase().includes('mega')){
+   const baseId=p.speciesId||p.id;
+   if(String(baseId)!==String(p.id) || p._mcForm){
+    try{
+     const base=await json(`${API}/pokemon/${baseId}`);
+     moveSources.push(...(base.moves||[]));
+    }catch(e){}
+   }
+  }
+  const seen=new Set();
+  for(const x of moveSources){
+   const id=rid(x.move.url);if(!id||seen.has(id))continue;
+   seen.add(id);
+   let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};
+   calcState.moves.push(info);
+  }
+  calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));
+  input.disabled=false;
+  input.placeholder=t('moveSearch')+' …';
+  input.value='';
+ }catch(e){
+  input.disabled=true;
+  input.placeholder=uiLang==='en'?'Moves could not be loaded':'Attacken konnten nicht geladen werden';
+ }
+}
 async function showMoveInfoById(id){if(!id)return;calcState.selectedMove=id;try{const m=await json(`${API}/move/${id}`);const type=deT(rid(m.type?.url))||title(m.type?.name||'—');const cls=m.damage_class?.name==='physical'?'Physisch':m.damage_class?.name==='special'?'Speziell':'Status';$('moveInfo').innerHTML=`<b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · Stärke: ${m.power??'—'} · Genauigkeit: ${m.accuracy??'—'}`;const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}}catch(e){$('moveInfo').textContent=uiLang==='en'?'Move data could not be loaded.':'Attackendaten konnten nicht geladen werden.'}}
 const fieldEffects={
   none:{label:'Kein Feld'},
