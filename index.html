@@ -26,7 +26,7 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <nav><button class="nav active" data-page="dex">Pokédex</button><button class="nav" data-page="calc">Battle Calculator</button></nav>
+  <nav><button class="nav active" data-page="dex">Pokédex</button><button class="nav" data-page="calc">Battle Calculator</button><button class="nav" data-page="randomizer">Randomizer</button></nav>
 </header>
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
@@ -150,6 +150,20 @@
   <button id="calcButton" class="primary" type="button">Attacke</button>
   <div id="damageResult" class="damage-result"></div>
 </div>
+</section>
+<section id="randomizer" class="page">
+  <div class="hero"><small>VERSION 3.3</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="card randomizer-controls">
+    <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
+    <select id="randomizerMega">
+      <option value="0" data-i18n="randomizerNoMega">Nein</option>
+      <option value="1" data-i18n="randomizerOneMega">Eine Mega-Entwicklung</option>
+      <option value="2" data-i18n="randomizerTwoMega">Zwei Mega-Entwicklungen</option>
+    </select>
+    <button id="randomizeButton" class="primary" type="button" data-i18n="randomize">Randomize</button>
+    <p class="randomizer-help" data-i18n="randomizerHelp">Jedes Team enthält sechs verschiedene Pokémon. Wenn Mega-Entwicklungen gewählt werden, wird die konkrete Mega-Form direkt angezeigt.</p>
+  </div>
+  <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div>
