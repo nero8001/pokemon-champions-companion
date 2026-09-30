@@ -471,20 +471,31 @@ async function loadShowdownMoves(){
   showdownMovesPromise=fetch(SHOWDOWN_MOVES_URL,{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error(r.status);return r.text()}).then(t=>showdownMovesText=t).catch(()=>{showdownMovesText='';return ''});
   return showdownMovesPromise;
 }
+const CHAMPIONS_CONTACT_MOVES=new Set(["accelerock","acrobatics","aerial ace","anchor shot","aqua jet","aqua step","aqua tail","arm thrust","assurance","astonish","avalanche","axe kick","behemoth bash","behemoth blade","bide","bind","bite","bitter blade","blaze kick","body press","body slam","bolt beak","bolt strike","bounce","branch poke","brave bird","breaking swipe","brick break","brutal swing","bullet punch","catastropika","ceaseless edge","chip away","circle throw","clamp","close combat","collision course","comet punch","comeuppance","constrict","counter","covet","crabhammer","cross chop","cross poison","crunch","crush claw","crush grip","cut","darkest lariat","dig","dire claw","dive","dizzy punch","double hit","double iron bash","double kick","double shock","double slap","double-edge","dragon ascent","dragon claw","dragon hammer","dragon rush","dragon tail","drain punch","draining kiss","drill peck","drill run","dual chop","dual wingbeat","dynamic punch","electro drift","endeavor","extreme speed","facade","fake out","false surrender","false swipe","fell stinger","fire fang","fire lash","fire punch","first impression","fishious rend","flail","flame charge","flame wheel","flare blitz","flip turn","floaty fall","fly","flying press","focus punch","force palm","foul play","frustration","fury attack","fury cutter","fury swipes","gear grind","giga impact","glaive rush","grassy glide","guillotine","gyro ball","hammer arm","hard press","head charge","head smash","headbutt","headlong rush","heart stamp","heat crash","heavy slam","high horsepower","high jump kick","hold back","horn attack","horn drill","horn leech","hyper drill","hyper fang","ice ball","ice fang","ice hammer","ice punch","ice spinner","infestation","iron head","iron tail","jaw lock","jet punch","jump kick","karate chop","knock off","kowtow cleave","lash out","last resort","leaf blade","leech life","let's snuggle forever","lick","liquidation","low kick","low sweep","lunge","mach punch","malicious moonsault","mega kick","mega punch","megahorn","metal claw","meteor mash","mighty cleave","mortal spin","multi-attack","needle arm","night slash","nuzzle","outrage","payback","peck","petal dance","phantom force","plasma fists","play rough","pluck","poison fang","poison jab","poison tail","population bomb","pounce","pound","power trip","power whip","power-up punch","psyblade","psychic fangs","psyshield bash","pulverizing pancake","punishment","pursuit","quick attack","rage","rage fist","raging bull","rapid spin","razor shell","retaliate","return","revenge","reversal","rock climb","rock smash","rolling kick","rollout","sacred sword","scratch","searing sunraze smash","seismic toss","shadow claw","shadow force","shadow punch","shadow sneak","sizzly slide","skitter smack","skull bash","sky drop","sky uppercut","slam","slash","smart strike","smelling salts","snap trap","solar blade","soul-stealing 7-star strike","spark","spectral thief","spin out","spirit break","steamroller","steel roller","steel wing","stomp","stomping tantrum","stone axe","storm throw","strength","struggle","submission","sucker punch","sunsteel strike","super fang","supercell slam","superpower","surging strikes","tackle","tail slap","take down","temper flare","thief","thrash","throat chop","thunder fang","thunder punch","thunderous kick","trailblaze","triple axel","triple dive","triple kick","trop kick","trump card","u-turn","upper hand","v-create","veevee volley","vine whip","vise grip","vital throw","volt tackle","wake-up slap","waterfall","wave crash","wicked blow","wild charge","wing attack","wood hammer","wrap","wring out","x-scissor","zen headbutt","zing zap","zippy zap"]);
+const CHAMPIONS_SLICING_MOVES=new Set(['cut','razor leaf','slash','fury cutter','metal claw','crush claw','air cutter','aerial ace','dragon claw','leaf blade','night slash','air slash','x-scissor','shadow claw','psycho cut','cross poison','sacred sword','razor shell','secret sword','solar blade','behemoth blade','dire claw','stone axe','ceaseless edge','population bomb','kowtow cleave','psyblade','bitter blade','aqua cutter','mighty cleave','tachyon cutter']);
 function showdownMoveFlags(id){
-  if(!showdownMovesText||!id)return {};
   const key=normMoveName(id);
-  const re=new RegExp(`${key}:\\s*\\{`,'i')
-  const m=re.exec(showdownMovesText);if(!m)return {};
-  let i=m.index+m[0].length,depth=1;
-  for(;i<showdownMovesText.length&&depth>0;i++){
-    const c=showdownMovesText[i];
-    if(c==='{')depth++;else if(c==='}')depth--;
+  const out={};
+  if(showdownMovesText&&key){
+    const re=new RegExp(`${key}:\\s*\\{`,'i');
+    const m=re.exec(showdownMovesText);
+    if(m){
+      let i=m.index+m[0].length,depth=1;
+      for(;i<showdownMovesText.length&&depth>0;i++){
+        const c=showdownMovesText[i];
+        if(c==='{')depth++;else if(c==='}')depth--;
+      }
+      const block=showdownMovesText.slice(m.index,i);
+      const fm=block.match(/flags\\s*:\\s*\\{([\\s\\S]*?)\\}/);
+      if(fm)(fm[1].match(/([a-z]+)\\s*:/gi)||[]).forEach(x=>{const k=x.split(':')[0].trim();out[k]=1});
+    }
   }
-  const block=showdownMovesText.slice(m.index,i);
-  const fm=block.match(/flags\\s*:\\s*\\{([\\s\\S]*?)\\}/);
-  if(!fm)return {};
-  const out={};(fm[1].match(/([a-z]+)\\s*:/gi)||[]).forEach(x=>{const k=x.split(':')[0].trim();out[k]=1});return out;
+  // Offline/failed Showdown loading fallback. These lists are also used by the
+  // calculator, so the move-info popup remains correct even when the optional
+  // Showdown metadata request is unavailable.
+  if(CHAMPIONS_CONTACT_MOVES.has(key))out.contact=1;
+  if(CHAMPIONS_SLICING_MOVES.has(key))out.slicing=1;
+  return out;
 }
 const MOVE_FLAG_LABELS={
   contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt/Hieb',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
@@ -539,34 +550,65 @@ function translateMoveEffectToGerman(text){
   const exact={
     'Has a higher chance for a critical hit.':'Hat eine erhöhte Volltrefferquote.',
     'No additional effect.':'Keine zusätzlichen Effekte.',
-    'The user recovers 1/2 the HP lost by the target, rounded half up.':'Der Anwender heilt 1/2 der dem Ziel zugefügten KP-Schadensmenge, aufgerundet.',
-    'The user recovers 1/2 the HP lost by the target.':'Der Anwender heilt 1/2 der dem Ziel zugefügten KP-Schadensmenge.',
+    'The user recovers 1/2 the HP lost by the target, rounded half up.':'Der Anwender heilt 1/2 der vom Ziel verlorenen KP, aufgerundet.',
+    'The user recovers 1/2 the HP lost by the target.':'Der Anwender heilt 1/2 der vom Ziel verlorenen KP.',
     'The user restores 1/2 of its maximum HP.':'Der Anwender stellt 1/2 seiner maximalen KP wieder her.'
   };
   if(exact[s])return exact[s];
-  s=s.replace(/\bthe target\b/gi,'das Ziel').replace(/\bthe user\b/gi,'der Anwender').replace(/\buser'?s\b/gi,'des Anwenders');
-  s=s.replace(/Has a (\d+)% chance to burn the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen.')
-   .replace(/Has a (\d+)% chance to poison the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu vergiften.')
-   .replace(/Has a (\d+)% chance to paralyze the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu paralysieren.')
-   .replace(/Has a (\d+)% chance to make the target flinch\.?/i,'Hat eine Chance von $1 %, das Ziel zurückschrecken zu lassen.')
-   .replace(/Has a (\d+)% chance to confuse the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu verwirren.')
-   .replace(/Has a (\d+)% chance to lower the target's Special Defense by (\d+) stage\.?/i,'Hat eine Chance von $1 %, die Spezial-Verteidigung des Ziels um $2 Stufe zu senken.')
-   .replace(/Has a (\d+)% chance to lower the target's Defense by (\d+) stage\.?/i,'Hat eine Chance von $1 %, die Verteidigung des Ziels um $2 Stufe zu senken.')
-   .replace(/Has a (\d+)% chance to raise the user's (.+?) by (\d+) stage\.?/i,'Hat eine Chance von $1 %, den $2 des Anwenders um $3 Stufe zu erhöhen.')
-   .replace(/Raises the user's (.+?) by (\d+) stages?\.?/i,'Erhöht den $1 des Anwenders um $2 Stufen.')
-   .replace(/Lowers the target's (.+?) by (\d+) stages?\.?/i,'Senkt den $1 des Ziels um $2 Stufen.')
-   .replace(/Damage is doubled if the target has used Minimize while active\.?/i,'Der Schaden wird verdoppelt, wenn das Ziel während des Kampfes Komprimator eingesetzt hat.')
-   .replace(/Power doubles if the user was hit by the target this turn\.?/i,'Die Stärke verdoppelt sich, wenn der Anwender in dieser Runde vom Ziel getroffen wurde.')
-   .replace(/Power doubles if the user moves before the target\.?/i,'Die Stärke verdoppelt sich, wenn der Anwender vor dem Ziel handelt.')
-   .replace(/The user faints upon using this move\.?/i,'Der Anwender wird nach Einsatz dieser Attacke kampfunfähig.')
-   .replace(/The user swaps positions with its ally\.?/i,'Der Anwender tauscht die Position mit seinem Mitstreiter.')
-   .replace(/Cannot be selected the turn after it's used\.?/i,'Kann in der Runde nach dem Einsatz nicht erneut ausgewählt werden.')
-   .replace(/The user is protected from most attacks made by other Pokemon during this turn\.?/i,'Der Anwender ist in dieser Runde vor den meisten Attacken anderer Pokémon geschützt.')
-   .replace(/Hits one time for the user and one time for each unfainted Pokemon without a non-volatile status condition in the user's party\.?/i,'Greift einmal für den Anwender und einmal für jedes kampffähige Pokémon ohne anhaltende Statusveränderung im Team an.')
-   .replace(/\bPhysical\b/g,'Physisch').replace(/\bSpecial\b/g,'Speziell').replace(/\bStatus\b/g,'Status')
-   .replace(/\bAttack\b/g,'Angriff').replace(/\bDefense\b/g,'Verteidigung').replace(/\bSpecial Attack\b/g,'Spezial-Angriff').replace(/\bSpecial Defense\b/g,'Spezial-Verteidigung').replace(/\bSpeed\b/g,'Initiative')
-   .replace(/\bHP\b/g,'KP').replace(/\bchance\b/gi,'Chance');
-  return s;
+
+  // Champions-specific secondary effects first, before generic word replacements.
+  s=s.replace(/Has a (\d+)% chance to burn (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen.')
+   .replace(/Has a (\d+)% chance to poison (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel zu vergiften.')
+   .replace(/Has a (\d+)% chance to badly poison (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel schwer zu vergiften.')
+   .replace(/Has a (\d+)% chance to paralyze (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel zu paralysieren.')
+   .replace(/Has a (\d+)% chance to freeze (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel einzufrieren.')
+   .replace(/Has a (\d+)% chance to confuse (?:the target|das Ziel)\.?/i,'Hat eine Chance von $1 %, das Ziel zu verwirren.')
+   .replace(/Has a (\d+)% chance to make (?:the target|das Ziel) flinch\.?/i,'Hat eine Chance von $1 %, das Ziel zurückschrecken zu lassen.')
+   .replace(/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Special Defense by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, die Spezial-Verteidigung des Ziels um $2 Stufe(n) zu senken.')
+   .replace(/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Defense by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, die Verteidigung des Ziels um $2 Stufe(n) zu senken.')
+   .replace(/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Attack by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, den Angriff des Ziels um $2 Stufe(n) zu senken.')
+   .replace(/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Special Attack by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, den Spezial-Angriff des Ziels um $2 Stufe(n) zu senken.')
+   .replace(/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Speed by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, die Initiative des Ziels um $2 Stufe(n) zu senken.')
+   .replace(/Raises the user's (.+?) by (\d+) stage[s]?\.?/i,'Erhöht $1 des Anwenders um $2 Stufe(n).')
+   .replace(/Lowers the target's (.+?) by (\d+) stage[s]?\.?/i,'Senkt $1 des Ziels um $2 Stufe(n).')
+   .replace(/Has a (\d+)% chance to raise the user's (.+?) by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, $2 des Anwenders um $3 Stufe(n) zu erhöhen.')
+   .replace(/Has a (\d+)% chance to lower the target's (.+?) by (\d+) stage[s]?\.?/i,'Hat eine Chance von $1 %, $2 des Ziels um $3 Stufe(n) zu senken.');
+
+  const replacements=[
+    [/Has a higher chance for a critical hit\.?/gi,'Hat eine erhöhte Volltrefferquote.'],
+    [/The user recovers (\d+\/\d+) the HP lost by the target, rounded half up\.?/gi,'Der Anwender heilt $1 der vom Ziel verlorenen KP, aufgerundet.'],
+    [/The user recovers (\d+\/\d+) the HP lost by the target\.?/gi,'Der Anwender heilt $1 der vom Ziel verlorenen KP.'],
+    [/The user recovers (\d+\/\d+) of the damage dealt(?: to the target)?\.?/gi,'Der Anwender heilt $1 des verursachten Schadens.'],
+    [/The user restores (\d+\/\d+) of its maximum HP\.?/gi,'Der Anwender stellt $1 seiner maximalen KP wieder her.'],
+    [/The user restores (\d+)% of its maximum HP\.?/gi,'Der Anwender stellt $1 % seiner maximalen KP wieder her.'],
+    [/The user takes recoil damage equal to (\d+\/\d+) of the damage dealt\.?/gi,'Der Anwender erleidet Rückstoßschaden in Höhe von $1 des verursachten Schadens.'],
+    [/The user heals (\d+\/\d+) of the damage dealt\.?/gi,'Der Anwender heilt $1 des verursachten Schadens.'],
+    [/If Big Root is held by the user, the HP recovered is 1\.3x normal, rounded half down\.?/gi,'Wenn der Anwender Großwurzel trägt, beträgt die geheilte KP-Menge das 1,3-Fache des normalen Werts, abgerundet.'],
+    [/If Big Root is held by the user, the HP recovered is 1\.3x normal\.?/gi,'Wenn der Anwender Großwurzel trägt, beträgt die geheilte KP-Menge das 1,3-Fache des normalen Werts.'],
+    [/The user faints upon using this move\.?/gi,'Der Anwender wird nach Einsatz dieser Attacke kampfunfähig.'],
+    [/The user swaps positions with its ally\.?/gi,'Der Anwender tauscht die Position mit seinem Mitstreiter.'],
+    [/Cannot be selected the turn after it's used\.?/gi,'Kann in der Runde nach dem Einsatz nicht erneut ausgewählt werden.'],
+    [/Power doubles if the user was hit by the target this turn\.?/gi,'Die Stärke verdoppelt sich, wenn der Anwender in dieser Runde vom Ziel getroffen wurde.'],
+    [/Power doubles if the user moves before the target\.?/gi,'Die Stärke verdoppelt sich, wenn der Anwender vor dem Ziel handelt.'],
+    [/Damage is doubled if the target has used Minimize while active\.?/gi,'Der Schaden wird verdoppelt, wenn das Ziel während des Kampfes Komprimator eingesetzt hat.'],
+    [/The user is protected from most attacks made by other Pokemon during this turn\.?/gi,'Der Anwender ist in dieser Runde vor den meisten Attacken anderer Pokémon geschützt.'],
+    [/No additional effect\.?/gi,'Keine zusätzlichen Effekte.']
+  ];
+  for(const [re,to] of replacements)s=s.replace(re,to);
+
+  const words=[
+    [/\bthe target\b/gi,'das Ziel'],[/\bthe user's\b/gi,'des Anwenders'],[/\bthe user\b/gi,'der Anwender'],[/\btarget's\b/gi,'des Ziels'],
+    [/\bSpecial Attack\b/g,'Spezial-Angriff'],[/\bSpecial Defense\b/g,'Spezial-Verteidigung'],[/\bPhysical\b/g,'Physisch'],[/\bSpecial\b/g,'Speziell'],
+    [/\bAttack\b/g,'Angriff'],[/\bDefense\b/g,'Verteidigung'],[/\bSpeed\b/g,'Initiative'],[/\bHP\b/g,'KP'],
+    [/\bcritical hit\b/gi,'Volltreffer'],[/\bchance\b/gi,'Chance'],[/\bdamage\b/gi,'Schaden'],[/\bpower\b/gi,'Stärke'],[/\baccuracy\b/gi,'Genauigkeit'],
+    [/\bmoves\b/gi,'Attacken'],[/\bmove\b/gi,'Attacke'],[/\bturns\b/gi,'Runden'],[/\bturn\b/gi,'Runde'],[/\bstages\b/gi,'Stufen'],[/\bstage\b/gi,'Stufe'],
+    [/\bally\b/gi,'Mitstreiter'],[/\bopponent\b/gi,'Gegner'],[/\bfoe\b/gi,'Gegner'],[/\bparty\b/gi,'Team'],[/\bheld\b/gi,'getragenen'],[/\bitem\b/gi,'Item'],
+    [/\brecover[s]?\b/gi,'heilt'],[/\brestore[s]?\b/gi,'stellt wieder her'],[/\bheal[s]?\b/gi,'heilt'],[/\bburn\b/gi,'verbrennen'],[/\bpoison\b/gi,'vergiften'],[/\bparaly[sz]e\b/gi,'paralysieren'],[/\bfreeze\b/gi,'einfrieren'],[/\bconfuse\b/gi,'verwirren'],[/\bflinch\b/gi,'zurückschrecken'],
+    [/\bmaximum\b/gi,'maximalen'],[/\brounded half up\b/gi,'aufgerundet'],[/\brounded half down\b/gi,'abgerundet'],[/\bNo additional effect\b/gi,'Keine zusätzlichen Effekte'],[/\bthe\b/gi,'das'],[/\bThe\b/g,'Das'],
+    [/\band\b/gi,'und'],[/\bor\b/gi,'oder'],[/\bif\b/gi,'wenn'],[/\bwhen\b/gi,'wenn'],[/\bwith\b/gi,'mit'],[/\bwithout\b/gi,'ohne'],[/\bfor\b/gi,'für'],[/\bof\b/gi,'von'],[/\bto\b/gi,'zu'],[/\bby\b/gi,'um']
+  ];
+  for(const [re,to] of words)s=s.replace(re,to);
+  return s.replace(/\s+/g,' ').trim();
 }
 function germanMoveDescription(champMove,api){
   const english=String(champMove?.description||'').trim();
@@ -582,7 +624,12 @@ async function getMoveInfo(champMove){
   const promise=(async()=>{
     let api=null;const id=champMove?.id||championsMoveId(champMove);if(id){try{api=await json(`${API}/move/${id}`)}catch(e){}}
     const description=champMove?.description||'';const amounts=extractMoveAmounts(description);await loadShowdownMoves();
-    const flags=showdownMoveFlags(key);
+    // Use the canonical English move name/ID for Showdown flags. The Champions
+    // data uses English names here, while the UI/localization can be German.
+    // Passing the localized display name caused flags such as slicing/contact
+    // to be missed (e.g. Dunkelklaue -> Shadow Claw).
+    const showdownKey=api?.name||api?.id||champMove?.name||id;
+    const flags=showdownMoveFlags(showdownKey);
     return {champMove,api,description,amounts,flags};
   })();moveInfoCache.set(key,promise);return promise;
 }
