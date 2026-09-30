@@ -500,7 +500,7 @@ function showdownMoveFlags(id){
   return out;
 }
 const MOVE_FLAG_LABELS={
-  contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt/Hieb',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
+  contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
   sound:{de:'Schall',en:'Sound'},powder:{de:'Pulver',en:'Powder'},pulse:{de:'Puls',en:'Pulse'},bullet:{de:'Projektil/Ball',en:'Bullet/Ball'},
   dance:{de:'Tanz',en:'Dance'},wind:{de:'Wind',en:'Wind'}
 };
@@ -516,7 +516,7 @@ const MOVE_TARGET_LABELS={
   allyTeam:{de:'eigenes Team',en:'the user’s party'},foeSide:{de:'gegnerische Seite',en:'the opposing side'},allySide:{de:'eigene Seite',en:'the user’s side'},randomNormal:{de:'zufälliger Gegner',en:'a random opposing Pokémon'},scripted:{de:'spezielles Ziel',en:'special target'}
 };
 const MOVE_EFFECT_TERMS=[
-  {key:'burn',terms:['Verbrennung','Verbrennungen','verbrennt','verbrannt','burn','burns','burned']},
+  {key:'burn',terms:['Verbrennung','Verbrennungen','verbrennt','verbrennen','verbrannt','burn','burns','burned']},
   {key:'poison',terms:['Vergiftung','Vergiftungen','vergiftet','poison','poisoned']},
   {key:'paralysis',terms:['Paralyse','paralysiert','paralyzed','paralyze','paralysis']},
   {key:'sleep',terms:['Schlaf','einschläft','eingeschläfert','sleep','asleep']},
@@ -562,8 +562,17 @@ function translateMoveEffectToGerman(text){
   // where translating individual words first produced sentences such as
   // "das first Runde" or "das Ziel's side".
   const phrases=[
-    [/This attack charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
-    [/This attack charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
+    [/^Has a (\d+)% chance to burn the target\. The target thaws out when it is frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/^Has a (\d+)% chance to burn the target\. The target thaws out when frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/^Has a (\d+)% chance to burn the target\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen.'],
+    [/^The target thaws out when it is frozen\.?$/i,'Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/^The target thaws out when frozen\.?$/i,'Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/^This move never misses\.?$/i,'Diese Attacke trifft immer.'],
+    [/^The user loses its focus and does nothing if it is hit by a damaging attack this turn before it can be executed\.?$/i,'Der Anwender verliert die Konzentration und führt die Attacke nicht aus, wenn er in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird.'],
+    [/^The user loses its focus and does nothing if it is hit by a damaging attack this turn before it can be used\.?$/i,'Der Anwender verliert die Konzentration und führt die Attacke nicht aus, wenn er in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird.'],
+    [/^This attack charges on the first turn and executes on the second\. Power is halved when the weather is (.+?) and the user is not holding Utility Umbrella\. When the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the attack completes in one turn\. When the user is holding Utility Umbrella and the weather is Desolate Land or Sunny Day, the attack still requires a turn to charge up\.?$/i,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt. Die Stärke wird bei bestimmten Wetterbedingungen halbiert, wenn der Anwender keinen Wetterumhang trägt. Trägt der Anwender ein Energiekraut oder ist Dürre bzw. Sonnentag aktiv, wird die Attacke in einer Runde ausgeführt. Trägt der Anwender einen Wetterumhang und ist Dürre bzw. Sonnentag aktiv, benötigt die Attacke weiterhin eine Runde zum Aufladen.'],
+    [/This (?:attack|move) charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
+    [/This (?:attack|move) charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
     [/if the weather is Primordial Sea, Rain Dance, Sandstorm, or Snow and the user is not holding Utility Umbrella/gi,'wenn das Wetter Urmeer, Regentanz, Sandsturm oder Schnee aktiv ist und der Anwender keinen Wetterumhang trägt'],
     [/if the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the attack completes in one turn/gi,'wenn der Anwender ein Energiekraut trägt oder Dürre bzw. Sonnentag aktiv ist, wird die Attacke in einer Runde ausgeführt'],
     [/Strength is halved when the weather is Primordial Sea, Rain Dance, Sandstorm, or Snow and the user is not holding Utility Umbrella/gi,'Die Stärke wird halbiert, wenn Urmeer, Regentanz, Sandsturm oder Schnee aktiv ist und der Anwender keinen Wetterumhang trägt'],
@@ -604,6 +613,16 @@ function translateMoveEffectToGerman(text){
     [/Power doubles if the user moves before the target\.?/gi,'Die Stärke verdoppelt sich, wenn der Anwender vor dem Ziel handelt.'],
     [/Damage is doubled if the target has used Minimize while active\.?/gi,'Der Schaden wird verdoppelt, wenn das Ziel während des Kampfes Komprimator eingesetzt hat.'],
     [/The user is protected from most attacks made by other Pokemon during this turn\.?/gi,'Der Anwender ist in dieser Runde vor den meisten Attacken anderer Pokémon geschützt.'],
+    [/does not check accuracy\.?/gi,'prüft die Genauigkeit nicht.'],
+    [/This attack does not check accuracy\.?/gi,'Diese Attacke prüft die Genauigkeit nicht.'],
+    [/This move does not check accuracy\.?/gi,'Diese Attacke prüft die Genauigkeit nicht.'],
+    [/The target thaws out when it is frozen\.?/gi,'Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/The target thaws out when frozen\.?/gi,'Das Ziel taut auf, wenn es eingefroren ist.'],
+    [/if it is hit by a damaging attack this turn before it can be (?:used|executed)/gi,'wenn der Anwender in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird'],
+    [/loses its focus/gi,'verliert die Konzentration'],
+    [/damaging attack/gi,'schadensverursachenden Attacke'],
+    [/can be selected/gi,'kann ausgewählt werden'],
+    [/cannot be selected/gi,'kann nicht ausgewählt werden'],
     [/No additional effect\.?/gi,'Keine zusätzlichen Effekte.']
   ];
   for(const [re,to] of phrases)s=s.replace(re,to);
@@ -632,12 +651,17 @@ function translateMoveEffectToGerman(text){
 }
 function germanMoveDescription(champMove,api){
   const english=String(champMove?.description||'').trim();
-  const translated=translateMoveEffectToGerman(english);
   if(uiLang!=='de')return english;
-  // If we translated the Champions description, keep it because it reflects Champions changes.
-  if(translated && translated!==english)return translated;
+  const translated=translateMoveEffectToGerman(english);
   const flavor=(api?.flavor_text_entries||[]).find(x=>x.language?.name==='de')?.flavor_text;
-  return flavor?String(flavor).replace(/[\n\f]+/g,' ').trim():(translated||english);
+  const cleanFlavor=flavor?String(flavor).replace(/[\n\f]+/g,' ').trim():'';
+  // Never leave obvious English fragments in the German UI. Champions-specific
+  // descriptions are preferred when our complete-sentence translator handled them;
+  // otherwise use the official German PokéAPI flavor text instead of Denglish.
+  const englishLeak=/\b(?:the|this|that|when|if|and|or|with|without|is|are|has|have|does|do|not|target|user|attack|move|damage|chance|frozen|burn|burned|thaws|accuracy|focus|damaging|before|after|turn|first|second|requires|holding|held|power|strength|effects?|field|side)\b/i;
+  if(translated && translated!==english && !englishLeak.test(translated))return translated;
+  if(cleanFlavor)return cleanFlavor;
+  return translated||english;
 }
 async function getMoveInfo(champMove){
   const key=normMoveName(champMove?.name);if(moveInfoCache.has(key))return moveInfoCache.get(key);
