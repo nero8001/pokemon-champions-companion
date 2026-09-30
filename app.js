@@ -474,8 +474,7 @@ async function loadShowdownMoves(){
 function showdownMoveFlags(id){
   if(!showdownMovesText||!id)return {};
   const key=normMoveName(id);
-  const re=new RegExp(`\
-${key}:\\s*\\{`,'i');
+  const re=new RegExp(`${key}:\\s*\\{`,'i')
   const m=re.exec(showdownMovesText);if(!m)return {};
   let i=m.index+m[0].length,depth=1;
   for(;i<showdownMovesText.length&&depth>0;i++){
@@ -489,9 +488,14 @@ ${key}:\\s*\\{`,'i');
 }
 const MOVE_FLAG_LABELS={
   contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt/Hieb',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
-  sound:{de:'Schall',en:'Sound'},powder:{de:'Pulver',en:'Powder'},pulse:{de:'Puls',en:'Pulse'},bullet:{de:'Projektil',en:'Bullet'},
+  sound:{de:'Schall',en:'Sound'},powder:{de:'Pulver',en:'Powder'},pulse:{de:'Puls',en:'Pulse'},bullet:{de:'Projektil/Ball',en:'Bullet/Ball'},
   dance:{de:'Tanz',en:'Dance'},wind:{de:'Wind',en:'Wind'}
 };
+const MOVE_CATEGORY_LABELS={
+  physical:{de:'Physisch',en:'Physical'},special:{de:'Speziell',en:'Special'},status:{de:'Status',en:'Status'},
+  Physical:{de:'Physisch',en:'Physical'},Special:{de:'Speziell',en:'Special'},Status:{de:'Status',en:'Status'}
+};
+function moveCategoryLabel(category){return MOVE_CATEGORY_LABELS[String(category||'')]?.[uiLang]||category||'—'}
 const MOVE_TARGET_LABELS={
   normal:{de:'ein einzelnes Ziel',en:'one target'},any:{de:'ein einzelnes Ziel',en:'one target'},self:{de:'Anwender selbst',en:'the user'},
   ally:{de:'ein Verbündeter',en:'one ally'},adjacentAlly:{de:'ein angrenzender Verbündeter',en:'one adjacent ally'},adjacentAllyOrSelf:{de:'Anwender oder angrenzender Verbündeter',en:'the user or an adjacent ally'},
@@ -529,6 +533,50 @@ function extractMoveAmounts(text){
   return out;
 }
 function moveInfoFlags(flags){return Object.keys(MOVE_FLAG_LABELS).filter(k=>flags?.[k]).map(k=>MOVE_FLAG_LABELS[k][uiLang])}
+function translateMoveEffectToGerman(text){
+  let s=String(text||'').trim();
+  if(!s)return '';
+  const exact={
+    'Has a higher chance for a critical hit.':'Hat eine erhöhte Volltrefferquote.',
+    'No additional effect.':'Keine zusätzlichen Effekte.',
+    'The user recovers 1/2 the HP lost by the target, rounded half up.':'Der Anwender heilt 1/2 der dem Ziel zugefügten KP-Schadensmenge, aufgerundet.',
+    'The user recovers 1/2 the HP lost by the target.':'Der Anwender heilt 1/2 der dem Ziel zugefügten KP-Schadensmenge.',
+    'The user restores 1/2 of its maximum HP.':'Der Anwender stellt 1/2 seiner maximalen KP wieder her.'
+  };
+  if(exact[s])return exact[s];
+  s=s.replace(/\bthe target\b/gi,'das Ziel').replace(/\bthe user\b/gi,'der Anwender').replace(/\buser'?s\b/gi,'des Anwenders');
+  s=s.replace(/Has a (\d+)% chance to burn the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen.')
+   .replace(/Has a (\d+)% chance to poison the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu vergiften.')
+   .replace(/Has a (\d+)% chance to paralyze the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu paralysieren.')
+   .replace(/Has a (\d+)% chance to make the target flinch\.?/i,'Hat eine Chance von $1 %, das Ziel zurückschrecken zu lassen.')
+   .replace(/Has a (\d+)% chance to confuse the target\.?/i,'Hat eine Chance von $1 %, das Ziel zu verwirren.')
+   .replace(/Has a (\d+)% chance to lower the target's Special Defense by (\d+) stage\.?/i,'Hat eine Chance von $1 %, die Spezial-Verteidigung des Ziels um $2 Stufe zu senken.')
+   .replace(/Has a (\d+)% chance to lower the target's Defense by (\d+) stage\.?/i,'Hat eine Chance von $1 %, die Verteidigung des Ziels um $2 Stufe zu senken.')
+   .replace(/Has a (\d+)% chance to raise the user's (.+?) by (\d+) stage\.?/i,'Hat eine Chance von $1 %, den $2 des Anwenders um $3 Stufe zu erhöhen.')
+   .replace(/Raises the user's (.+?) by (\d+) stages?\.?/i,'Erhöht den $1 des Anwenders um $2 Stufen.')
+   .replace(/Lowers the target's (.+?) by (\d+) stages?\.?/i,'Senkt den $1 des Ziels um $2 Stufen.')
+   .replace(/Damage is doubled if the target has used Minimize while active\.?/i,'Der Schaden wird verdoppelt, wenn das Ziel während des Kampfes Komprimator eingesetzt hat.')
+   .replace(/Power doubles if the user was hit by the target this turn\.?/i,'Die Stärke verdoppelt sich, wenn der Anwender in dieser Runde vom Ziel getroffen wurde.')
+   .replace(/Power doubles if the user moves before the target\.?/i,'Die Stärke verdoppelt sich, wenn der Anwender vor dem Ziel handelt.')
+   .replace(/The user faints upon using this move\.?/i,'Der Anwender wird nach Einsatz dieser Attacke kampfunfähig.')
+   .replace(/The user swaps positions with its ally\.?/i,'Der Anwender tauscht die Position mit seinem Mitstreiter.')
+   .replace(/Cannot be selected the turn after it's used\.?/i,'Kann in der Runde nach dem Einsatz nicht erneut ausgewählt werden.')
+   .replace(/The user is protected from most attacks made by other Pokemon during this turn\.?/i,'Der Anwender ist in dieser Runde vor den meisten Attacken anderer Pokémon geschützt.')
+   .replace(/Hits one time for the user and one time for each unfainted Pokemon without a non-volatile status condition in the user's party\.?/i,'Greift einmal für den Anwender und einmal für jedes kampffähige Pokémon ohne anhaltende Statusveränderung im Team an.')
+   .replace(/\bPhysical\b/g,'Physisch').replace(/\bSpecial\b/g,'Speziell').replace(/\bStatus\b/g,'Status')
+   .replace(/\bAttack\b/g,'Angriff').replace(/\bDefense\b/g,'Verteidigung').replace(/\bSpecial Attack\b/g,'Spezial-Angriff').replace(/\bSpecial Defense\b/g,'Spezial-Verteidigung').replace(/\bSpeed\b/g,'Initiative')
+   .replace(/\bHP\b/g,'KP').replace(/\bchance\b/gi,'Chance');
+  return s;
+}
+function germanMoveDescription(champMove,api){
+  const english=String(champMove?.description||'').trim();
+  const translated=translateMoveEffectToGerman(english);
+  if(uiLang!=='de')return english;
+  // If we translated the Champions description, keep it because it reflects Champions changes.
+  if(translated && translated!==english)return translated;
+  const flavor=(api?.flavor_text_entries||[]).find(x=>x.language?.name==='de')?.flavor_text;
+  return flavor?String(flavor).replace(/[\n\f]+/g,' ').trim():(translated||english);
+}
 async function getMoveInfo(champMove){
   const key=normMoveName(champMove?.name);if(moveInfoCache.has(key))return moveInfoCache.get(key);
   const promise=(async()=>{
@@ -543,11 +591,11 @@ async function showMoveInfo(raw){
   const info=await getMoveInfo(champMove);const m=info.champMove||{};const a=info.api||{};const accuracy=m.accuracy??a.accuracy;const power=m.power??a.power;const category=m.category||({physical:'Physical',special:'Special',status:'Status'}[a.damage_class?.name])||'—';const type=m.type||a.type?.name||'—';const target=m.target||a.target?.name||'';const flags=moveInfoFlags(info.flags);const amount=info.amounts;
   const labels=uiLang==='en'?{type:'Type',power:'Power',accuracy:'Accuracy',category:'Category',target:'Target',pp:'PP',priority:'Priority',traits:'Move traits',effect:'Effect',healing:'Healing',drain:'Life steal'}:{type:'Typ',power:'Stärke',accuracy:'Genauigkeit',category:'Kategorie',target:'Ziel',pp:'AP',priority:'Priorität',traits:'Eigenschaften',effect:'Effekt',healing:'Heilung',drain:'Lebensentzug'};
   const acc=accuracy===null||accuracy===true? (uiLang==='en'?'does not check accuracy':'prüft Genauigkeit nicht'):(accuracy==null?'—':`${accuracy}%`);
-  const detailRows=[`<div class="move-info-grid"><div><span>${labels.type}</span><b>${escapeHtml(championsTypeLabel(type))}</b></div><div><span>${labels.power}</span><b>${power||'—'}</b></div><div><span>${labels.accuracy}</span><b>${acc}</b></div><div><span>${labels.category}</span><b>${escapeHtml(category)}</b></div><div><span>${labels.target}</span><b>${escapeHtml(moveTargetLabel(target))}</b></div>${m.pp!=null?`<div><span>${labels.pp}</span><b>${m.pp}</b></div>`:''}${m.priority!=null?`<div><span>${labels.priority}</span><b>${m.priority>0?'+'+m.priority:m.priority}</b></div>`:''}</div>`];
+  const detailRows=[`<div class="move-info-grid"><div><span>${labels.type}</span><b>${escapeHtml(championsTypeLabel(type))}</b></div><div><span>${labels.power}</span><b>${power||'—'}</b></div><div><span>${labels.accuracy}</span><b>${acc}</b></div><div><span>${labels.category}</span><b>${escapeHtml(moveCategoryLabel(category))}</b></div><div><span>${labels.target}</span><b>${escapeHtml(moveTargetLabel(target))}</b></div>${m.pp!=null?`<div><span>${labels.pp}</span><b>${m.pp}</b></div>`:''}${m.priority!=null?`<div><span>${labels.priority}</span><b>${m.priority>0?'+'+m.priority:m.priority}</b></div>`:''}</div>`];
   if(flags.length)detailRows.push(`<div class="move-info-block"><strong>${labels.traits}</strong><div class="move-traits">${flags.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join('')}</div></div>`);
   if(amount.heal)detailRows.push(`<div class="move-info-block"><strong>${labels.healing}</strong><p>${uiLang==='en'?`Restores ${escapeHtml(amount.heal)} of maximum HP.`:`Heilt ${escapeHtml(amount.heal)} der maximalen KP.`}</p></div>`);
   if(amount.drain)detailRows.push(`<div class="move-info-block"><strong>${labels.drain}</strong><p>${uiLang==='en'?`Recovers ${escapeHtml(amount.drain)} of the damage dealt.`:`Heilt ${escapeHtml(amount.drain)} des verursachten Schadens.`}</p></div>`);
-  detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(info.description|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
+  detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(germanMoveDescription(m,a)|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
   $('infoBody').innerHTML=detailRows.join('');$('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
 }
 async function detail(p,s){
