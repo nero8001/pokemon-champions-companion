@@ -282,8 +282,14 @@ const ABILITY_LOCAL_ALIASES={
   'psycho-erzeuger':{de:'Erzeugt bei Kampfantritt auf dem gesamten Kampffeld ein Psychofeld, das 5 Runden lang anhält.',en:'Creates Psychic Terrain across the battlefield for 5 turns when the Pokémon enters battle.'}
 };
 async function getAbilityInfo(id,name,customDescription){
-  const key=String(id||name||'').toLowerCase();
-  const local=ABILITY_LOCAL_DESCRIPTIONS[key]||ABILITY_LOCAL_ALIASES[String(name||'').toLowerCase()];
+  // Check every available identifier so Champions abilities cannot fall back to
+  // an English API description just because the internal id is numeric.
+  const candidates=[id,name,String(id||'').replace(/_/g,'-'),String(name||'').replace(/_/g,'-')]
+    .filter(Boolean).map(x=>String(x).toLowerCase().trim());
+  const local=candidates.map(k=>ABILITY_LOCAL_DESCRIPTIONS[k]||ABILITY_LOCAL_ALIASES[k]).find(Boolean);
+  // For known Champions abilities, the local German text always wins over an
+  // API/custom fallback when German is selected.
+  if(local && uiLang==='de')return {name:dataName('ability',id,name)||name||'',description:local.de,short:local.de};
   if(customDescription)return {name:name||'',description:customDescription,short:customDescription};
   if(local)return {name:dataName('ability',id,name)||name||'',description:local[uiLang]||local.de,short:local[uiLang]||local.de};
   const cacheKey=abilityCacheKey(id,name);
