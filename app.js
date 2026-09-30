@@ -117,6 +117,7 @@ function championsFormOverrideKey(p,s){
 function championsTypeLabel(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return uiLang==='en'?type:meta[0]}
 function championsTypeBadge(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return `<span class="champ-type champ-type-${String(type).toLowerCase()}"><span class="champ-type-symbol">${meta[1]}</span><span>${championsTypeLabel(type)}</span></span>`}
 const championsMoveLabelCache={de:new Map(),en:new Map()};
+const championsMoveInfoRegistry=new Map();
 function championsMoveLabel(m){
   const english=String(m?.name||'').trim();
   if(!english)return '';
@@ -130,13 +131,20 @@ function championsMoveLabel(m){
   championsMoveLabelCache[lang].set(key,label||english);
   return label||english;
 }
+function championsMoveId(m){
+  if(m?.id)return Number(m.id);
+  const key=normMoveName(m?.name);
+  const src=localized.en.move||{};
+  const id=Object.keys(src).find(x=>normMoveName(src[x])===key);
+  return id?Number(id):null;
+}
 function championsMoveHtml(moves){
   const groups={};
   for(const m of moves){const type=m.type||'Normal';(groups[type] ||= []).push(m)}
   const order=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
   return order.filter(t=>groups[t]?.length).concat(Object.keys(groups).filter(t=>!order.includes(t)).sort()).map(type=>{
     const entries=groups[type].slice().sort((a,b)=>{const an=championsMoveLabel(a),bn=championsMoveLabel(b);return an.localeCompare(bn,uiLang==='de'?'de':'en')});
-    return `<div class="champ-move-type"><div class="champ-type-header">${championsTypeBadge(type)} <span class="move-meta">(${entries.length})</span></div><div class="champ-move-list">${entries.map(m=>`<div class="champ-move-item"><span class="champ-move-type-mini">${championsTypeBadge(type)}</span><span class="move-name">${escapeHtml(championsMoveLabel(m))}</span><span class="move-meta">${m.category||'—'}${m.power?` · ${m.power}`:''}</span></div>`).join('')}</div></div>`;
+    return `<div class="champ-move-type"><div class="champ-type-header">${championsTypeBadge(type)} <span class="move-meta">(${entries.length})</span></div><div class="champ-move-list">${entries.map(m=>{const mid=championsMoveId(m);const key=normMoveName(m.name);championsMoveInfoRegistry.set(key,{id:mid,name:m.name,type:m.type,category:m.category,power:m.power,accuracy:m.accuracy,target:m.target,description:m.description,pp:m.pp,priority:m.priority});return `<div class="champ-move-item"><span class="champ-move-type-mini">${championsTypeBadge(type)}</span><button type="button" class="move-info-link" data-champ-move-key="${escapeHtml(key)}">${escapeHtml(championsMoveLabel(m))}</button><span class="move-meta">${m.category||'—'}${m.power?` · ${m.power}`:''}</span></div>`}).join('')}</div></div>`;
   }).join('');
 }
 const sprite=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
@@ -454,6 +462,94 @@ async function showAbilityInfo(id,name,customDescription){
   const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';$('infoBody').innerHTML=`<p>${abilityEffectLinks(info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.'))}</p>`;
   $('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
 }
+const moveInfoCache=new Map();
+const SHOWDOWN_MOVES_URL='https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/moves.ts';
+let showdownMovesText=null,showdownMovesPromise=null;
+async function loadShowdownMoves(){
+  if(showdownMovesText)return showdownMovesText;
+  if(showdownMovesPromise)return showdownMovesPromise;
+  showdownMovesPromise=fetch(SHOWDOWN_MOVES_URL,{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error(r.status);return r.text()}).then(t=>showdownMovesText=t).catch(()=>{showdownMovesText='';return ''});
+  return showdownMovesPromise;
+}
+function showdownMoveFlags(id){
+  if(!showdownMovesText||!id)return {};
+  const key=normMoveName(id);
+  const re=new RegExp(`\
+${key}:\\s*\\{`,'i');
+  const m=re.exec(showdownMovesText);if(!m)return {};
+  let i=m.index+m[0].length,depth=1;
+  for(;i<showdownMovesText.length&&depth>0;i++){
+    const c=showdownMovesText[i];
+    if(c==='{')depth++;else if(c==='}')depth--;
+  }
+  const block=showdownMovesText.slice(m.index,i);
+  const fm=block.match(/flags\\s*:\\s*\\{([\\s\\S]*?)\\}/);
+  if(!fm)return {};
+  const out={};(fm[1].match(/([a-z]+)\\s*:/gi)||[]).forEach(x=>{const k=x.split(':')[0].trim();out[k]=1});return out;
+}
+const MOVE_FLAG_LABELS={
+  contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt/Hieb',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
+  sound:{de:'Schall',en:'Sound'},powder:{de:'Pulver',en:'Powder'},pulse:{de:'Puls',en:'Pulse'},bullet:{de:'Projektil',en:'Bullet'},
+  dance:{de:'Tanz',en:'Dance'},wind:{de:'Wind',en:'Wind'}
+};
+const MOVE_TARGET_LABELS={
+  normal:{de:'ein einzelnes Ziel',en:'one target'},any:{de:'ein einzelnes Ziel',en:'one target'},self:{de:'Anwender selbst',en:'the user'},
+  ally:{de:'ein Verbündeter',en:'one ally'},adjacentAlly:{de:'ein angrenzender Verbündeter',en:'one adjacent ally'},adjacentAllyOrSelf:{de:'Anwender oder angrenzender Verbündeter',en:'the user or an adjacent ally'},
+  allAdjacentFoes:{de:'alle Gegner',en:'all opposing Pokémon'},allAdjacent:{de:'alle angrenzenden Pokémon',en:'all adjacent Pokémon'},all:{de:'alle Pokémon auf dem Feld',en:'all Pokémon on the field'},
+  allyTeam:{de:'eigenes Team',en:'the user’s party'},foeSide:{de:'gegnerische Seite',en:'the opposing side'},allySide:{de:'eigene Seite',en:'the user’s side'},randomNormal:{de:'zufälliger Gegner',en:'a random opposing Pokémon'},scripted:{de:'spezielles Ziel',en:'special target'}
+};
+const MOVE_EFFECT_TERMS=[
+  {key:'burn',terms:['Verbrennung','Verbrennungen','verbrennt','verbrannt','burn','burns','burned']},
+  {key:'poison',terms:['Vergiftung','Vergiftungen','vergiftet','poison','poisoned']},
+  {key:'paralysis',terms:['Paralyse','paralysiert','paralyzed','paralyze','paralysis']},
+  {key:'sleep',terms:['Schlaf','einschläft','eingeschläfert','sleep','asleep']},
+  {key:'freeze',terms:['Einfrieren','eingefroren','friert','freeze','frozen']},
+  {key:'confusion',terms:['Verwirrung','verwirrt','confusion','confused']}
+];
+MOVE_EFFECT_TERMS.forEach(x=>{if(!EFFECT_TERM_LINKS.some(y=>y.key===x.key)){EFFECT_TERM_LINKS.push(x)}});
+ABILITY_EFFECTS.poison={de:{title:'Vergiftung',duration:'Bis die Statusveränderung geheilt oder entfernt wird',effect:'Das Pokémon erleidet regelmäßig Schaden durch den Status. Bei normaler Vergiftung steigt der Schaden im Verlauf des Kampfes nicht automatisch wie bei schwerer Vergiftung.',note:'Bestimmte Fähigkeiten und Effekte können Vergiftung verhindern oder entfernen.'},en:{title:'Poison',duration:'Until the status is cured or removed',effect:'The Pokémon takes recurring damage from the status. Regular poison does not automatically ramp up like badly poisoned status.',note:'Certain abilities and effects can prevent or remove poison.'}};
+ABILITY_EFFECTS.paralysis={de:{title:'Paralyse',duration:'Bis die Statusveränderung geheilt oder entfernt wird',effect:'Das Pokémon kann in seinem Handlungsvermögen eingeschränkt sein und seine Initiative wird beeinflusst.',note:'Bestimmte Fähigkeiten und Effekte können Paralyse verhindern oder entfernen.'},en:{title:'Paralysis',duration:'Until the status is cured or removed',effect:'The Pokémon can be prevented from acting and its Speed is affected.',note:'Certain abilities and effects can prevent or remove paralysis.'}};
+ABILITY_EFFECTS.sleep={de:{title:'Schlaf',duration:'Bis der Status endet oder entfernt wird',effect:'Das Pokémon kann während des Schlafs normalerweise keine Attacke ausführen.',note:'Einige Fähigkeiten und Attacken verändern die Schlafmechanik.'},en:{title:'Sleep',duration:'Until the status ends or is removed',effect:'A sleeping Pokémon normally cannot use moves while asleep.',note:'Some abilities and moves modify sleep mechanics.'}};
+ABILITY_EFFECTS.freeze={de:{title:'Einfrieren',duration:'Bis der Status endet oder entfernt wird',effect:'Das Pokémon kann normalerweise keine Attacke ausführen, solange es eingefroren ist.',note:'Feuer-Effekte und bestimmte Mechaniken können den Status entfernen.'},en:{title:'Freeze',duration:'Until the status ends or is removed',effect:'A frozen Pokémon normally cannot use moves while frozen.',note:'Fire effects and certain mechanics can remove the status.'}};
+ABILITY_EFFECTS.confusion={de:{title:'Verwirrung',duration:'Vorübergehend',effect:'Das Pokémon kann sich selbst statt des Ziels treffen und dadurch seine Aktion verlieren.',note:'Der Effekt endet nach Ablauf seiner Dauer oder durch bestimmte Wechsel-/Heileffekte.'},en:{title:'Confusion',duration:'Temporary',effect:'The Pokémon can hurt itself instead of successfully executing its selected move.',note:'The effect ends after its duration or through certain switching or curing effects.'}};
+function moveEffectLinks(text){
+  let out=escapeHtml(text);const stash=[];const replacements=[];
+  EFFECT_TERM_LINKS.forEach(({key,terms})=>terms.forEach(term=>replacements.push({key,term})));
+  replacements.sort((a,b)=>b.term.length-a.term.length);
+  replacements.forEach(({key,term})=>{const re=new RegExp(`(?<![\\w-])${term.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?![\\w-])`,'gi');out=out.replace(re,match=>{const token=`___MOVE_EFFECT_${stash.length}___`;stash.push(`<button type="button" class="effect-link" data-effect="${key}">${escapeHtml(match)}</button>`);return token})});
+  stash.forEach((html,i)=>{out=out.replace(`___MOVE_EFFECT_${i}___`,html)});return out;
+}
+function moveTargetLabel(target){return (MOVE_TARGET_LABELS[target]?.[uiLang])||target|| (uiLang==='en'?'special target':'spezielles Ziel')}
+function extractMoveAmounts(text){
+  const out={};const s=String(text||'');
+  let m=s.match(/recovers?\s+(\d+\/\d+)\s+(?:the |its |of the user'?s )?HP lost by the target/i);if(m)out.drain=m[1];
+  m=s.match(/(?:recovers?|restores?|heals?|recover)\s+(\d+\/\d+)\s+(?:of (?:the )?(?:user'?s|its) maximum HP|its maximum HP|the user's maximum HP)/i);if(m)out.heal=m[1];
+  m=s.match(/(?:heals?|restores?|recovers?)\s+(\d+)%\s+(?:of (?:the )?(?:user'?s|its) maximum HP|its maximum HP)/i);if(m)out.heal=`${m[1]}%`;
+  if(!out.drain){m=s.match(/(\d+\/\d+)\s+of the damage dealt/i);if(m)out.drain=m[1]}
+  return out;
+}
+function moveInfoFlags(flags){return Object.keys(MOVE_FLAG_LABELS).filter(k=>flags?.[k]).map(k=>MOVE_FLAG_LABELS[k][uiLang])}
+async function getMoveInfo(champMove){
+  const key=normMoveName(champMove?.name);if(moveInfoCache.has(key))return moveInfoCache.get(key);
+  const promise=(async()=>{
+    let api=null;const id=champMove?.id||championsMoveId(champMove);if(id){try{api=await json(`${API}/move/${id}`)}catch(e){}}
+    const description=champMove?.description||'';const amounts=extractMoveAmounts(description);await loadShowdownMoves();
+    const flags=showdownMoveFlags(key);
+    return {champMove,api,description,amounts,flags};
+  })();moveInfoCache.set(key,promise);return promise;
+}
+async function showMoveInfo(raw){
+  const champMove=typeof raw==='string'?{name:raw}:raw;const name=championsMoveLabel(champMove);$('infoTitle').textContent=name||champMove.name||'';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Move data are loading …':'Attackendaten werden geladen …'}</p>`;$('infoModal').hidden=false;
+  const info=await getMoveInfo(champMove);const m=info.champMove||{};const a=info.api||{};const accuracy=m.accuracy??a.accuracy;const power=m.power??a.power;const category=m.category||({physical:'Physical',special:'Special',status:'Status'}[a.damage_class?.name])||'—';const type=m.type||a.type?.name||'—';const target=m.target||a.target?.name||'';const flags=moveInfoFlags(info.flags);const amount=info.amounts;
+  const labels=uiLang==='en'?{type:'Type',power:'Power',accuracy:'Accuracy',category:'Category',target:'Target',pp:'PP',priority:'Priority',traits:'Move traits',effect:'Effect',healing:'Healing',drain:'Life steal'}:{type:'Typ',power:'Stärke',accuracy:'Genauigkeit',category:'Kategorie',target:'Ziel',pp:'AP',priority:'Priorität',traits:'Eigenschaften',effect:'Effekt',healing:'Heilung',drain:'Lebensentzug'};
+  const acc=accuracy===null||accuracy===true? (uiLang==='en'?'does not check accuracy':'prüft Genauigkeit nicht'):(accuracy==null?'—':`${accuracy}%`);
+  const detailRows=[`<div class="move-info-grid"><div><span>${labels.type}</span><b>${escapeHtml(championsTypeLabel(type))}</b></div><div><span>${labels.power}</span><b>${power||'—'}</b></div><div><span>${labels.accuracy}</span><b>${acc}</b></div><div><span>${labels.category}</span><b>${escapeHtml(category)}</b></div><div><span>${labels.target}</span><b>${escapeHtml(moveTargetLabel(target))}</b></div>${m.pp!=null?`<div><span>${labels.pp}</span><b>${m.pp}</b></div>`:''}${m.priority!=null?`<div><span>${labels.priority}</span><b>${m.priority>0?'+'+m.priority:m.priority}</b></div>`:''}</div>`];
+  if(flags.length)detailRows.push(`<div class="move-info-block"><strong>${labels.traits}</strong><div class="move-traits">${flags.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join('')}</div></div>`);
+  if(amount.heal)detailRows.push(`<div class="move-info-block"><strong>${labels.healing}</strong><p>${uiLang==='en'?`Restores ${escapeHtml(amount.heal)} of maximum HP.`:`Heilt ${escapeHtml(amount.heal)} der maximalen KP.`}</p></div>`);
+  if(amount.drain)detailRows.push(`<div class="move-info-block"><strong>${labels.drain}</strong><p>${uiLang==='en'?`Recovers ${escapeHtml(amount.drain)} of the damage dealt.`:`Heilt ${escapeHtml(amount.drain)} des verursachten Schadens.`}</p></div>`);
+  detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(info.description|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
+  $('infoBody').innerHTML=detailRows.join('');$('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
+}
 async function detail(p,s){
   const pname=p._mcLabel||deP(p.id)||deF(p.id)||title(p.name);
    const abilities=p._mcForm?[mcAbilityName(p._mcAbility)]:((Number(s.id)===998&&String(p.name||'').toLowerCase().includes('mega'))?['Thermowandel']:await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name))));
@@ -491,6 +587,7 @@ async function detail(p,s){
         $('dexChampionsMoves').innerHTML=`<p class="muted">${uiLang==='en'?'Loading Champions move pool …':'Champions-Attacken werden geladen …'}</p>`;
         const cm=await getChampionsMovesForPokemon(p,s);
         championsMoves.innerHTML=cm.length?championsMoveHtml(cm):`<p>${uiLang==='en'?'No Champions moves found for this Pokémon/form.':'Für dieses Pokémon/diese Form wurden keine Champions-Attacken gefunden.'}</p>`;
+        championsMoves.querySelectorAll('.move-info-link').forEach(btn=>{btn.onclick=()=>{try{showMoveInfo(championsMoveInfoRegistry.get(btn.dataset.champMoveKey)||{name:btn.textContent})}catch(e){console.error('Move info',e)}}});
         championsMoves.dataset.loaded='1';
       }
     });
