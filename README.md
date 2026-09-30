@@ -1,4 +1,4 @@
-# Pokémon Champions Companion v3.3
+# Pokémon Champions Companion v4.0
 
 ## Neuerungen
 - Battle Calculator: Fähigkeiten-Auswahl für Angreifer und Verteidiger
@@ -23,3 +23,7 @@ Version 3.3: Der Pokédex zeigt zunächst nur die ersten 24 Pokémon für einen 
   - Mega-Tectass — Tough Claws
   - Mega-Segargal — Thermal Exchange
 - Die Z-Mega-Formen verwenden die verifizierten Champions-Statwerte und Typen.
+
+
+## v4.0
+Pokédex-Fähigkeiten sind anklickbare Info-Buttons. Fähigkeitsbeschreibungen öffnen sich in einem separaten Info-Popup; erkannte Wetter-/Effektbegriffe wie Sonnenschein können ebenfalls geöffnet werden.

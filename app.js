@@ -219,6 +219,55 @@ async function openMCForm(baseSpecies,form){
     current={p,s}; isShiny=false; await detail(p,s);
   }catch(e){console.error(e);}
 }
+const abilityInfoCache=new Map();
+const ABILITY_EFFECT_LINKS={
+  drought:{key:'sun',de:'Sonnenschein',en:'Sun'},drizzle:{key:'rain',de:'Regen',en:'Rain'},
+  'sand-stream':{key:'sand',de:'Sandsturm',en:'Sandstorm'},'snow-warning':{key:'snow',de:'Schnee',en:'Snow'},
+  'primordial-sea':{key:'rain',de:'Starkregen',en:'Heavy Rain'},'desolate-land':{key:'sun',de:'Extremsonne',en:'Harsh Sunlight'},
+  'delta-stream':{key:'wind',de:'Delta-Wind',en:'Strong Winds'}
+};
+const ABILITY_EFFECTS={
+  sun:{de:{title:'Sonnenschein',duration:'5 Runden (Standard)',effect:'Feuer-Attacken werden um 50 % verstärkt und Wasser-Attacken um 50 % abgeschwächt. Solarstrahl und Solar-Klinge benötigen keine Aufladephase.',note:'Sehr starke Sonne kann bestimmte Wasser-Attacken zusätzlich verhindern.'},en:{title:'Sun',duration:'5 turns (standard)',effect:'Fire-type moves are boosted by 50% and Water-type moves are reduced by 50%. Solar Beam and Solar Blade do not need a charging turn.',note:'Extremely harsh sunlight can additionally prevent certain Water-type moves.'}},
+  rain:{de:{title:'Regen',duration:'5 Runden (Standard)',effect:'Wasser-Attacken werden um 50 % verstärkt und Feuer-Attacken um 50 % abgeschwächt. Donner und Orkan treffen unter Regen zuverlässiger.',note:'Sehr starker Regen kann bestimmte Feuer-Attacken zusätzlich verhindern.'},en:{title:'Rain',duration:'5 turns (standard)',effect:'Water-type moves are boosted by 50% and Fire-type moves are reduced by 50%. Thunder and Hurricane become more reliable in rain.',note:'Extremely heavy rain can additionally prevent certain Fire-type moves.'}},
+  sand:{de:{title:'Sandsturm',duration:'5 Runden (Standard)',effect:'Pokémon vom Typ Gestein, Boden und Stahl erleiden durch den Sandsturm keinen direkten Schaden. Gestein-Pokémon erhalten zusätzlich einen Bonus auf ihre Spezial-Verteidigung. Andere Pokémon können am Ende einer Runde Schaden erleiden.',note:'Einige Fähigkeiten und Items verändern die Auswirkungen des Sandsturms.'},en:{title:'Sandstorm',duration:'5 turns (standard)',effect:'Rock-, Ground- and Steel-type Pokémon do not take direct sandstorm damage. Rock-type Pokémon also gain a Special Defense bonus. Other Pokémon can take damage at the end of a turn.',note:'Some abilities and items modify sandstorm effects.'}},
+  snow:{de:{title:'Schnee',duration:'5 Runden (Standard)',effect:'Eis-Pokémon erhalten einen Bonus auf ihre Verteidigung. Andere Pokémon können je nach Regelsatz am Ende einer Runde Schaden erleiden.',note:'Der genaue Effekt kann je nach Regelsatz variieren.'},en:{title:'Snow',duration:'5 turns (standard)',effect:'Ice-type Pokémon gain a Defense bonus. Other Pokémon can take end-of-turn damage depending on the ruleset.',note:'The exact effect can vary by ruleset.'}},
+  wind:{de:{title:'Starke Winde',duration:'Solange das Wetter aktiv ist',effect:'Schwächen bestimmte sehr effektive Typenwirkungen ab und verändert damit die Typenberechnung.',note:'Dieser Effekt ist regelfest abhängig von der konkreten Spielmechanik.'},en:{title:'Strong Winds',duration:'While active',effect:'Reduces certain super-effective type interactions and therefore changes type effectiveness calculations.',note:'The exact behavior depends on the ruleset.'}}
+};
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function abilityEffectLinks(text){
+  let out=escapeHtml(text);
+  Object.entries(ABILITY_EFFECT_LINKS).forEach(([slug,e])=>{
+    const label=uiLang==='en'?e.en:e.de;
+    const re=new RegExp(`(?<![\\w-])${label.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?![\\w-])`,'gi');
+    out=out.replace(re,`<button type="button" class="effect-link" data-effect="${e.key}">${label}</button>`);
+  });
+  return out;
+}
+async function getAbilityInfo(id,name,customDescription){
+  const key=String(id||name||'').toLowerCase();
+  if(customDescription)return {name:name||'',description:customDescription,short:customDescription};
+  if(abilityInfoCache.has(key))return abilityInfoCache.get(key);
+  const promise=(async()=>{
+    try{
+      const a=await json(id?`${API}/ability/${id}`:`${API}/ability/${encodeURIComponent(String(name).toLowerCase())}`);
+      const lang=uiLang==='en'?'en':'de';
+      const entries=a.effect_entries||[];
+      const entry=entries.find(x=>x.language?.name===lang)||entries.find(x=>x.language?.name==='en');
+      const short=(a.flavor_text_entries||[]).find(x=>x.language?.name===lang)?.flavor_text || (a.flavor_text_entries||[]).find(x=>x.language?.name==='en')?.flavor_text || '';
+      return {name:dataName('ability',a.id,a.name)||title(a.name),description:(entry?.effect||short||''),short};
+    }catch(e){return {name:name||'',description:'',short:''}}
+  })();
+  abilityInfoCache.set(key,promise);return promise;
+}
+function showEffectInfo(key){
+  const data=ABILITY_EFFECTS[key]?.[uiLang]||ABILITY_EFFECTS[key]?.de;if(!data)return;
+  $('infoTitle').textContent=data.title;$('infoBody').innerHTML=`<div class="effect-info"><p><strong>${uiLang==='en'?'Duration':'Dauer'}:</strong> ${data.duration}</p><p>${data.effect}</p><p class="muted">${data.note}</p></div>`;$('infoModal').hidden=false;
+}
+async function showAbilityInfo(id,name,customDescription){
+  $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';$('infoModal').hidden=false;
+  const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';$('infoBody').innerHTML=`<p>${abilityEffectLinks(info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.'))}</p>`;
+  $('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
+}
 async function detail(p,s){
   const pname=p._mcLabel||deP(p.id)||deF(p.id)||title(p.name);
    const abilities=p._mcForm?[mcAbilityName(p._mcAbility)]:((Number(s.id)===998&&String(p.name||'').toLowerCase().includes('mega'))?['Thermowandel']:await Promise.all(p.abilities.map(async x=>deA(rid(x.ability.url))||title(x.ability.name))));
@@ -242,7 +291,7 @@ async function detail(p,s){
   const forms=allFormRows;
   const types=p.types.map(t=>`<span class="pill">${deT(rid(t.type.url))||title(t.type.name)}</span>`).join('');
   const relations=await getTypeRelations(p);
-  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>${uiLang==='en'?'Select Form':'Form auswählen'}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Strengths & Weaknesses':'Stärken & Schwächen'}</h3><div class="relation-grid"><div><strong>${uiLang==='en'?'Resistances':'Stärken / Resistenzen'}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${uiLang==='en'?'Weaknesses':'Schwächen'}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${uiLang==='en'?'Immunities':'Immunitäten'}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${uiLang==='en'?'Pokédex Description':'Pokédex-Beschreibung'}</h3><p class="description">${p._mcForm?mcAbilityText:(flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):(uiLang==='en'?'No description available.':'Keine deutsche Beschreibung vorhanden.'))}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${uiLang==='en'?'Abilities':'Fähigkeiten'}</h3><p>${abilities.join(', ')||'—'}</p></div><div class="section"><h3>${uiLang==='en'?'Base Stats':'Basiswerte'}</h3>${stats}</div><div class="section"><h3>${uiLang==='en'?'Max Stats at Level 50':'Maximalwerte auf Level 50'}</h3><p class="muted">${uiLang==='en'?'IV 31 · 252 EVs in the selected stat · no item or battle bonuses':'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni'}</p><label class="nature-inline">${uiLang==='en'?'Nature':'Wesen'}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${uiLang==='en'?'Moves':'Attacken'}</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
+  $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>${uiLang==='en'?'Select Form':'Form auswählen'}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Strengths & Weaknesses':'Stärken & Schwächen'}</h3><div class="relation-grid"><div><strong>${uiLang==='en'?'Resistances':'Stärken / Resistenzen'}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${uiLang==='en'?'Weaknesses':'Schwächen'}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${uiLang==='en'?'Immunities':'Immunitäten'}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${uiLang==='en'?'Pokédex Description':'Pokédex-Beschreibung'}</h3><p class="description">${p._mcForm?mcAbilityText:(flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):(uiLang==='en'?'No description available.':'Keine deutsche Beschreibung vorhanden.'))}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${uiLang==='en'?'Abilities':'Fähigkeiten'}</h3><div class="ability-buttons">${abilities.map((name,i)=>`<button type="button" class="ability-button" data-ability-index="${i}">${escapeHtml(name)}</button>`).join('')||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Base Stats':'Basiswerte'}</h3>${stats}</div><div class="section"><h3>${uiLang==='en'?'Max Stats at Level 50':'Maximalwerte auf Level 50'}</h3><p class="muted">${uiLang==='en'?'IV 31 · 252 EVs in the selected stat · no item or battle bonuses':'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni'}</p><label class="nature-inline">${uiLang==='en'?'Nature':'Wesen'}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${uiLang==='en'?'Moves':'Attacken'}</h3><div class="move-groups">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div></div>`;
   $('sh').onclick=()=>{isShiny=!isShiny;$('ds').src=isShiny?shiny(p.id):sprite(p.id);$('sh').classList.toggle('active',isShiny)};
   document.querySelectorAll('#forms .form-choice').forEach(btn=>btn.onclick=async()=>{
      try{
@@ -255,6 +304,12 @@ async function detail(p,s){
        }
      }catch(e){console.error('Formauswahl fehlgeschlagen',e)}
    })
+  document.querySelectorAll('.ability-button').forEach((btn)=>btn.onclick=async()=>{
+    const idx=Number(btn.dataset.abilityIndex);const raw=p._mcForm?{name:mcAbilityName(p._mcAbility),id:null,custom:MC_ABILITY_DESCRIPTIONS[p._mcAbility]?.[uiLang]}:(p.abilities||[])[idx];
+    if(!raw)return;
+    const aid=rid(raw?.ability?.url)||raw?.ability?.name;const aname=raw?.ability?.name||abilities[idx];
+    await showAbilityInfo(aid,aname,raw?.custom);
+  });
   $('dexNature').addEventListener('change',()=>{
     const vals=maxLevel50Stats(p,$('dexNature').value);
     vals.forEach((v,i)=>$(`dexMaxStat${i}`).textContent=v);
@@ -1018,7 +1073,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  setupItemSearchV14('atk');setupItemSearchV14('def');$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove)});
 }
 async function init(){nav();$('randomizeButton')?.addEventListener('click',randomizeTeam);$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(showAllPokemon?mons:mons.slice(0,24));$('search').focus()};$('showAllPokemon').onclick=()=>{showAllPokemon=!showAllPokemon;showMCOnly=false;$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');if($('showMCPokemon'))$('showMCPokemon').textContent=t('showMC');$('suggestions').innerHTML='';if($('search').value.trim())$('search').value='';render(showAllPokemon?mons:mons.slice(0,24));};
-  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(showMCOnly?mons.filter(p=>MC_NEW_POKEMON_IDS.includes(Number(p.id))):mons.slice(0,24));});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('modal').hidden=true;document.body.style.overflow=''}});
+  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(showMCOnly?mons.filter(p=>MC_NEW_POKEMON_IDS.includes(Number(p.id))):mons.slice(0,24));});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
  try{await loadLanguages();const d=await json(`${API}/pokemon?limit=1025`);mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=uiLang==='en'?`${mons.length} Pokémon loaded`:`${mons.length} Pokémon geladen`;render(showAllPokemon?mons:mons.slice(0,24));setupCalculator();applyLanguage();$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value));}catch(e){console.error(e);$('status').textContent=t('loadError');setupCalculator();applyLanguage();$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value))}
  loadAllItems().then(()=>{fillOptions();setupItemSearchV14('atk');setupItemSearchV14('def')}).catch(e=>console.warn('Items:',e));
 }
