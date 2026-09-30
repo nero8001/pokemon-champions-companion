@@ -546,101 +546,61 @@ function extractMoveAmounts(text){
   return out;
 }
 function moveInfoFlags(flags){return Object.keys(MOVE_FLAG_LABELS).filter(k=>flags?.[k]).map(k=>MOVE_FLAG_LABELS[k][uiLang])}
-const CHAMPIONS_GERMAN_MOVE_CACHE=new Map();
-const CHAMPIONS_GERMAN_MOVE_PENDING=new Map();
-const CHAMPIONS_GERMAN_SOURCE='https://op.gg/de/pokemon-champions/moves/';
-
-// The old implementation translated the English Showdown description word by
-// word. That was the source of the recurring "Denglish". Champions has its own
-// German wording, so German mode now uses a German Champions source first and
-// never mixes English fragments into that text.
-const CHAMPIONS_GERMAN_EFFECTS={
-  flamethrower:'Starke Feuer-Attacke, durch die das Ziel eventuell Verbrennungen erleidet.',
-  scorchingands:'Das Ziel erleidet mit 30%iger Wahrscheinlichkeit Verbrennungen. Bei Einsatz werden der Anwender und das Ziel aufgetaut.',
-  drainpunch:'Die KP des Anwenders werden um die Hälfte des verursachten Schadens aufgefüllt.',
-  shadowclaw:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
-  aerialace:'Diese Attacke trifft garantiert.',
-  crosschop:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
-  steelwing:'Die Verteidigung des Anwenders wird mit 10%iger Wahrscheinlichkeit um 1 Stufe erhöht.'
-};
-function championsMoveSlug(champMove){
-  const raw=String(champMove?.slug||champMove?.name||'').trim().toLowerCase();
-  return raw.replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-}
-function textClean(s){return String(s||'').replace(/\\n/g,' ').replace(/\s+/g,' ').trim()}
-function parseGermanChampionsMovePage(html,displayName){
-  try{
-    const doc=new DOMParser().parseFromString(html,'text/html');
-    const headings=[...doc.querySelectorAll('h1,h2,h3')].map(x=>textClean(x.textContent));
-    const wanted=textClean(displayName).toLowerCase();
-    // OP.GG renders the move name in an h1/h2 and the localized effect directly
-    // below the stat block. We use the page's own text rather than translating
-    // the English Showdown description.
-    const body=textClean(doc.body?.innerText||doc.body?.textContent||'');
-    const idx=body.toLowerCase().indexOf(wanted);
-    if(idx<0)return null;
-    const tail=body.slice(idx,idx+5000);
-    const marker=/Eigenschaften:\s*([^\n]+?)\s+(?:Status:\s*[^\n]+\s+)?([^\n]{10,500}?)(?=\s+\d+\s+Pokémon|\s+##? Zustände|$)/i;
-    const m=tail.match(marker);
-    let effect='';
-    if(m)effect=textClean(m[2]);
-    // More robust fallback: locate the stat/target block and take the first
-    // full sentence after it. This handles pages with no Status line.
-    if(!effect){
-      const lines=(doc.body?.innerText||'').split(/\r?\n/).map(textClean).filter(Boolean);
-      const wi=lines.findIndex(x=>x.toLowerCase()===wanted);
-      if(wi>=0){
-        const stats=/^(Stärke:|Gen:|AP:|Priorität:|Ziel:|Eigenschaften:|Status:)/i;
-        let seenTarget=false;
-        for(let i=wi+1;i<Math.min(lines.length,wi+30);i++){
-          if(/^Ziel:/i.test(lines[i])){seenTarget=true;continue}
-          if(seenTarget && !stats.test(lines[i]) && !/^\d+ Pokémon$/i.test(lines[i]) && lines[i].length>12){effect=lines[i];break}
-        }
-      }
-    }
-    return effect?{effect}:null;
-  }catch(e){return null}
-}
-async function loadGermanChampionsMove(champMove){
-  const key=normMoveName(champMove?.name||'');
-  if(!key)return null;
-  if(CHAMPIONS_GERMAN_MOVE_CACHE.has(key))return CHAMPIONS_GERMAN_MOVE_CACHE.get(key);
-  if(CHAMPIONS_GERMAN_MOVE_PENDING.has(key))return CHAMPIONS_GERMAN_MOVE_PENDING.get(key);
-  const fallback=CHAMPIONS_GERMAN_EFFECTS[key]||'';
-  const slug=championsMoveSlug(champMove);
-  if(!slug){return fallback?{effect:fallback}:null}
-  const promise=(async()=>{
+// v6.7 – Move effects use the original English Champions wording.
+// Serebii is the primary reference for Champions move effects. If the browser
+// cannot fetch Serebii (for example because of CORS), we fall back to the
+// English effect already shipped with the Champions move dataset. We never
+// translate or mix languages here: English is intentionally preferred over
+// broken/missing German text.
+const SEREBII_CHAMPIONS_MOVES_SOURCE='https://www.serebii.net/pokemonchampions/moves.shtml';
+let serebiiChampionsMovesCache=null;
+let serebiiChampionsMovesPromise=null;
+async function loadSerebiiChampionsMoves(){
+  if(serebiiChampionsMovesCache)return serebiiChampionsMovesCache;
+  if(serebiiChampionsMovesPromise)return serebiiChampionsMovesPromise;
+  serebiiChampionsMovesPromise=(async()=>{
     try{
-      const r=await fetch(CHAMPIONS_GERMAN_SOURCE+encodeURIComponent(slug),{cache:'force-cache',mode:'cors'});
+      const r=await fetch(SEREBII_CHAMPIONS_MOVES_SOURCE,{cache:'force-cache',mode:'cors'});
       if(!r.ok)throw Error(r.status);
       const html=await r.text();
-      const parsed=parseGermanChampionsMovePage(html,championsMoveLabel(champMove));
-      const result=parsed|| (fallback?{effect:fallback}:null);
-      if(result)CHAMPIONS_GERMAN_MOVE_CACHE.set(key,result);
-      return result;
+      const doc=new DOMParser().parseFromString(html,'text/html');
+      const map=new Map();
+      doc.querySelectorAll('tr').forEach(tr=>{
+        const cells=[...tr.querySelectorAll('th,td')].map(x=>String(x.textContent||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+        if(cells.length<2)return;
+        const name=cells[0];
+        const effect=cells[cells.length-1];
+        if(!name||!effect||/^(Name|Effect)$/i.test(name))return;
+        // The Serebii table contains the complete Champions move list.
+        map.set(normMoveName(name),effect);
+      });
+      serebiiChampionsMovesCache=map;
+      return map;
     }catch(e){
-      const result=fallback?{effect:fallback}:null;
-      if(result)CHAMPIONS_GERMAN_MOVE_CACHE.set(key,result);
-      return result;
-    }finally{CHAMPIONS_GERMAN_MOVE_PENDING.delete(key)}
+      console.warn('Serebii Champions move effects unavailable:',e);
+      serebiiChampionsMovesCache=new Map();
+      return serebiiChampionsMovesCache;
+    }finally{serebiiChampionsMovesPromise=null}
   })();
-  CHAMPIONS_GERMAN_MOVE_PENDING.set(key,promise);return promise;
+  return serebiiChampionsMovesPromise;
 }
-function isClearlyEnglishMoveText(text){
-  const s=String(text||'').trim();
-  if(!s)return false;
-  return /\b(the|this|that|when|if|and|or|user|target|attack|move|weather|damage|power|accuracy|first|second|turn|round|holding|frozen|burned|burn|poisoned|paralyzed|confused|flinched|does|cannot|will|is|are|has|have)\b/i.test(s);
+async function getSerebiiChampionsMoveEffect(champMove){
+  const key=normMoveName(champMove?.name||'');
+  if(!key)return '';
+  const map=await loadSerebiiChampionsMoves();
+  return map.get(key)||'';
 }
 async function germanMoveDescription(champMove,api){
-  if(uiLang!=='de')return String(champMove?.description||'').trim();
-  const remote=await loadGermanChampionsMove(champMove);
-  if(remote?.effect && !isClearlyEnglishMoveText(remote.effect))return remote.effect;
-  const key=normMoveName(champMove?.name||'');
-  const local=CHAMPIONS_GERMAN_EFFECTS[key]||'';
-  if(local)return local;
-  // Deliberately do not fall back to the English Showdown description in German
-  // mode. Showing no description is preferable to corrupting it with Denglish.
-  return 'Keine deutsche Champions-Beschreibung verfügbar.';
+  // Deliberately keep the effect in its original English Champions wording.
+  // This avoids the recurring Denglish caused by automatic translation and is
+  // preferable to showing an empty/placeholder effect.
+  const serebii=await getSerebiiChampionsMoveEffect(champMove);
+  if(serebii)return serebii;
+  const localEnglish=String(champMove?.description||'').trim();
+  if(localEnglish)return localEnglish;
+  const apiEnglish=String(api?.flavor_text_entries?.find?.(x=>x?.language?.name==='en')?.flavor_text||'').replace(/[\n\f]/g,' ').trim();
+  if(apiEnglish)return apiEnglish;
+  return uiLang==='en'?'No additional effect.':'Effect data unavailable.';
 }
 async function getMoveInfo(champMove){
   const key=normMoveName(champMove?.name);if(moveInfoCache.has(key))return moveInfoCache.get(key);

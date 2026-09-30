@@ -24,7 +24,7 @@ Lizenz laut Repository: CC BY 4.0.
 Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen ausdrücklich vorläufig.
 
 
-### v6.6 – Deutsche Champions-Move-Lokalisierung
+### v6.7 – Deutsche Champions-Move-Lokalisierung
 - Die alte Wort-für-Wort-Übersetzung der englischen Move-Effekte wurde entfernt.
 - Im deutschen Modus wird zuerst die deutsche Pokémon-Champions-Move-Seite von OP.GG als aktuelle Referenz geladen.
 - Englische Effekttexte werden im deutschen Modus nicht mehr als Fallback angezeigt, damit kein Denglisch entsteht.
@@ -32,3 +32,11 @@ Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen au
 - Statusbegriffe wie Verbrennung und Eingefroren bleiben über die bestehende Effektverlinkung anklickbar.
 
 Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht als offizieller Datendienst von The Pokémon Company gekennzeichnet. Die Spielanzeige von Pokémon Champions bleibt die maßgebliche Referenz.
+
+
+## v6.7 – Move effects: original English Champions text
+- Removed the unreliable OP.GG German move-effect scraping and the old German fallback/translation layer.
+- Serebii's Pokémon Champions Available Moves page is now the primary move-effect reference.
+- If Serebii cannot be fetched by the browser, the app falls back to the English effect already contained in the Champions move dataset.
+- No automatic translation is performed, so German mode can show an English effect rather than Denglish or a missing-description placeholder.
+- Existing Champions move properties such as Kontakt, Hieb and Schnitt remain unchanged.
