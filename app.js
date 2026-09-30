@@ -220,32 +220,66 @@ async function openMCForm(baseSpecies,form){
   }catch(e){console.error(e);}
 }
 const abilityInfoCache=new Map();
+// v4.1 – effect links are semantic rather than dependent on one exact wording.
 const ABILITY_EFFECT_LINKS={
   drought:{key:'sun',de:'Sonnenschein',en:'Sun'},drizzle:{key:'rain',de:'Regen',en:'Rain'},
   'sand-stream':{key:'sand',de:'Sandsturm',en:'Sandstorm'},'snow-warning':{key:'snow',de:'Schnee',en:'Snow'},
   'primordial-sea':{key:'rain',de:'Starkregen',en:'Heavy Rain'},'desolate-land':{key:'sun',de:'Extremsonne',en:'Harsh Sunlight'},
-  'delta-stream':{key:'wind',de:'Delta-Wind',en:'Strong Winds'}
+  'delta-stream':{key:'wind',de:'Delta-Wind',en:'Strong Winds'},
+  'psychic-surge':{key:'psychic',de:'Psychofeld',en:'Psychic Terrain'},
+  'electric-surge':{key:'electric',de:'Elektrofeld',en:'Electric Terrain'},
+  'grassy-surge':{key:'grassy',de:'Grasfeld',en:'Grassy Terrain'},
+  'misty-surge':{key:'misty',de:'Nebelfeld',en:'Misty Terrain'}
 };
+const EFFECT_TERM_LINKS=[
+  {key:'sun',terms:['Sonnenschein','Sonnenlicht','starkes Sonnenlicht','gleißendes Sonnenlicht','starke Sonne','Sun','Sunlight','Sunshine','harsh sunlight']},
+  {key:'rain',terms:['Regen','Niesel','Rain','Drizzle']},
+  {key:'sand',terms:['Sandsturm','Sandstorm']},
+  {key:'snow',terms:['Schnee','Hagel','Snow','Hail']},
+  {key:'psychic',terms:['Psychofeld','Psychic Terrain']},
+  {key:'electric',terms:['Elektrofeld','Electric Terrain']},
+  {key:'grassy',terms:['Grasfeld','Grassy Terrain']},
+  {key:'misty',terms:['Nebelfeld','Misty Terrain']},
+  {key:'burn',terms:['Verbrennung','Verbrennungen','verbrannt','verbrennt','Burn','burns','burned','Burned']}
+];
 const ABILITY_EFFECTS={
   sun:{de:{title:'Sonnenschein',duration:'5 Runden (Standard)',effect:'Feuer-Attacken werden um 50 % verstärkt und Wasser-Attacken um 50 % abgeschwächt. Solarstrahl und Solar-Klinge benötigen keine Aufladephase.',note:'Sehr starke Sonne kann bestimmte Wasser-Attacken zusätzlich verhindern.'},en:{title:'Sun',duration:'5 turns (standard)',effect:'Fire-type moves are boosted by 50% and Water-type moves are reduced by 50%. Solar Beam and Solar Blade do not need a charging turn.',note:'Extremely harsh sunlight can additionally prevent certain Water-type moves.'}},
   rain:{de:{title:'Regen',duration:'5 Runden (Standard)',effect:'Wasser-Attacken werden um 50 % verstärkt und Feuer-Attacken um 50 % abgeschwächt. Donner und Orkan treffen unter Regen zuverlässiger.',note:'Sehr starker Regen kann bestimmte Feuer-Attacken zusätzlich verhindern.'},en:{title:'Rain',duration:'5 turns (standard)',effect:'Water-type moves are boosted by 50% and Fire-type moves are reduced by 50%. Thunder and Hurricane become more reliable in rain.',note:'Extremely heavy rain can additionally prevent certain Fire-type moves.'}},
   sand:{de:{title:'Sandsturm',duration:'5 Runden (Standard)',effect:'Pokémon vom Typ Gestein, Boden und Stahl erleiden durch den Sandsturm keinen direkten Schaden. Gestein-Pokémon erhalten zusätzlich einen Bonus auf ihre Spezial-Verteidigung. Andere Pokémon können am Ende einer Runde Schaden erleiden.',note:'Einige Fähigkeiten und Items verändern die Auswirkungen des Sandsturms.'},en:{title:'Sandstorm',duration:'5 turns (standard)',effect:'Rock-, Ground- and Steel-type Pokémon do not take direct sandstorm damage. Rock-type Pokémon also gain a Special Defense bonus. Other Pokémon can take damage at the end of a turn.',note:'Some abilities and items modify sandstorm effects.'}},
-  snow:{de:{title:'Schnee',duration:'5 Runden (Standard)',effect:'Eis-Pokémon erhalten einen Bonus auf ihre Verteidigung. Andere Pokémon können je nach Regelsatz am Ende einer Runde Schaden erleiden.',note:'Der genaue Effekt kann je nach Regelsatz variieren.'},en:{title:'Snow',duration:'5 turns (standard)',effect:'Ice-type Pokémon gain a Defense bonus. Other Pokémon can take end-of-turn damage depending on the ruleset.',note:'The exact effect can vary by ruleset.'}},
+  snow:{de:{title:'Schnee / früher Hagel',duration:'5 Runden (Standard)',effect:'Eis-Pokémon erhalten einen Bonus auf ihre Verteidigung. Andere Pokémon können je nach Regelsatz am Ende einer Runde Schaden erleiden.',note:'In älteren Spielen wurde dieser Wettereffekt als Hagel bezeichnet; die moderne Bezeichnung ist Schnee.'},en:{title:'Snow / formerly Hail',duration:'5 turns (standard)',effect:'Ice-type Pokémon gain a Defense bonus. Other Pokémon can take end-of-turn damage depending on the ruleset.',note:'Older games called this weather effect Hail; the modern name is Snow.'}},
+  psychic:{de:{title:'Psychofeld',duration:'5 Runden (Standard)',effect:'Psycho-Attacken werden um 30 % verstärkt. Pokémon, die den Boden berühren, sind vor Attacken mit erhöhter Priorität geschützt.',note:'Ein Feldverstärker kann die Dauer auf 8 Runden erhöhen.'},en:{title:'Psychic Terrain',duration:'5 turns (standard)',effect:'Psychic-type moves are boosted by 30%. Grounded Pokémon are protected from moves with increased priority.',note:'A terrain-extending item can increase the duration to 8 turns.'}},
+  electric:{de:{title:'Elektrofeld',duration:'5 Runden (Standard)',effect:'Elektro-Attacken werden um 30 % verstärkt. Pokémon, die den Boden berühren, können nicht einschlafen.',note:'Ein Feldverstärker kann die Dauer auf 8 Runden erhöhen.'},en:{title:'Electric Terrain',duration:'5 turns (standard)',effect:'Electric-type moves are boosted by 30%. Grounded Pokémon cannot fall asleep.',note:'A terrain-extending item can increase the duration to 8 turns.'}},
+  grassy:{de:{title:'Grasfeld',duration:'5 Runden (Standard)',effect:'Pflanze-Attacken werden um 30 % verstärkt. Bodenberührende Pokémon erhalten am Ende jeder Runde etwas KP zurück; bestimmte Boden-Attacken werden abgeschwächt.',note:'Ein Feldverstärker kann die Dauer auf 8 Runden erhöhen.'},en:{title:'Grassy Terrain',duration:'5 turns (standard)',effect:'Grass-type moves are boosted by 30%. Grounded Pokémon recover some HP at the end of each turn; certain Ground-type moves are weakened.',note:'A terrain-extending item can increase the duration to 8 turns.'}},
+  misty:{de:{title:'Nebelfeld',duration:'5 Runden (Standard)',effect:'Bodenberührende Pokémon werden vor bestimmten Statusproblemen geschützt und erleiden weniger Schaden durch Drachen-Attacken.',note:'Ein Feldverstärker kann die Dauer auf 8 Runden erhöhen.'},en:{title:'Misty Terrain',duration:'5 turns (standard)',effect:'Grounded Pokémon are protected from certain status conditions and take reduced damage from Dragon-type moves.',note:'A terrain-extending item can increase the duration to 8 turns.'}},
+  burn:{de:{title:'Verbrennung',duration:'Bis die Statusveränderung geheilt oder entfernt wird',effect:'Eine verbrannte Einheit erleidet regelmäßigen Schaden und ihr physischer Angriff wird normalerweise halbiert.',note:'Bestimmte Fähigkeiten oder Effekte können Verbrennungen verhindern oder ihre Auswirkungen verändern.'},en:{title:'Burn',duration:'Until the status is cured or removed',effect:'A burned Pokémon takes residual damage and its physical Attack is normally halved.',note:'Certain abilities or effects can prevent burns or modify their effects.'}},
   wind:{de:{title:'Starke Winde',duration:'Solange das Wetter aktiv ist',effect:'Schwächen bestimmte sehr effektive Typenwirkungen ab und verändert damit die Typenberechnung.',note:'Dieser Effekt ist regelfest abhängig von der konkreten Spielmechanik.'},en:{title:'Strong Winds',duration:'While active',effect:'Reduces certain super-effective type interactions and therefore changes type effectiveness calculations.',note:'The exact behavior depends on the ruleset.'}}
 };
+const ABILITY_LOCAL_DESCRIPTIONS={
+  drought:{de:'Erzeugt beim Betreten des Kampfes 5 Runden lang starkes Sonnenlicht.',en:'Creates harsh sunlight for 5 turns when the Pokémon enters battle.'},
+  'psychic-surge':{de:'Erzeugt bei Kampfantritt auf dem gesamten Kampffeld ein Psychofeld, das 5 Runden lang anhält.',en:'Creates Psychic Terrain across the battlefield for 5 turns when the Pokémon enters battle.'},
+  'spicy-spray':{de:'Wenn das Pokémon durch eine Attacke Schaden erleidet, verbrennt es den Angreifer.',en:'When the Pokémon takes damage from a move, it burns the attacker.'}
+};
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function effectKeyForAbility(id,name){const raw=String(id||name||'').toLowerCase();return ABILITY_EFFECT_LINKS[raw]?.key||null}
 function abilityEffectLinks(text){
   let out=escapeHtml(text);
-  Object.entries(ABILITY_EFFECT_LINKS).forEach(([slug,e])=>{
-    const label=uiLang==='en'?e.en:e.de;
-    const re=new RegExp(`(?<![\\w-])${label.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?![\\w-])`,'gi');
-    out=out.replace(re,`<button type="button" class="effect-link" data-effect="${e.key}">${label}</button>`);
+  // Longest terms first so phrases such as "starkes Sonnenlicht" are not split before linking.
+  const replacements=[];
+  EFFECT_TERM_LINKS.forEach(({key,terms})=>terms.forEach(term=>replacements.push({key,term})));
+  replacements.sort((a,b)=>b.term.length-a.term.length);
+  const stash=[];
+  replacements.forEach(({key,term})=>{
+    const re=new RegExp(`(?<![\\w-])${term.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?![\\w-])`,'gi');
+    out=out.replace(re,match=>{const token=`___EFFECT_${stash.length}___`;stash.push(`<button type="button" class="effect-link" data-effect="${key}">${escapeHtml(match)}</button>`);return token});
   });
+  stash.forEach((html,i)=>{out=out.replace(`___EFFECT_${i}___`,html)});
   return out;
 }
 async function getAbilityInfo(id,name,customDescription){
   const key=String(id||name||'').toLowerCase();
+  const local=ABILITY_LOCAL_DESCRIPTIONS[key];
   if(customDescription)return {name:name||'',description:customDescription,short:customDescription};
+  if(local)return {name:dataName('ability',id,name)||name||'',description:local[uiLang]||local.de,short:local[uiLang]||local.de};
   if(abilityInfoCache.has(key))return abilityInfoCache.get(key);
   const promise=(async()=>{
     try{
