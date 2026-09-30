@@ -20,6 +20,20 @@ async function loadChampionsData(){
 }
 function normMoveName(v){return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');}
 function normFormName(v){return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');}
+// v5.5 – robust regional-form learnset separation for all Champions regional forms.
+const CHAMPIONS_REGIONAL_MARKERS={
+  alola:['alola','alolan'],
+  galar:['galar','galarian'],
+  hisui:['hisui','hisuian'],
+  paldea:['paldea','paldean']
+};
+function detectChampionsRegion(p,s){
+  const raw=[p?._mcLabel,p?.name,p?.form?.name,p?.forms?.[0]?.name].filter(Boolean).join(' ').toLowerCase();
+  for(const [region,markers] of Object.entries(CHAMPIONS_REGIONAL_MARKERS)){
+    if(markers.some(marker=>raw.includes(marker)))return region;
+  }
+  return '';
+}
 function championsFormCandidates(p,s){
   const raw=String(p?._mcLabel||p?.name||'').toLowerCase();
   const species=String(s?.name||p?.species?.name||'').toLowerCase();
@@ -34,10 +48,10 @@ function championsFormCandidates(p,s){
     if(raw.includes('-y')||raw.includes(' y'))candidates.push(`Mega ${species} Y`);
     if(raw.includes('-z')||raw.includes(' z'))candidates.push(`Mega ${species} Z`);
   }
-  if(raw.includes('alola'))candidates.push(`Alolan ${species}`);
-  if(raw.includes('galar'))candidates.push(`Galarian ${species}`);
-  if(raw.includes('hisui'))candidates.push(`Hisuian ${species}`);
-  if(raw.includes('paldea'))candidates.push(`Paldean ${species}`);
+  if(raw.includes('alola'))candidates.push(`Alolan ${species}`,`${species} Alolan Form`);
+  if(raw.includes('galar'))candidates.push(`Galarian ${species}`,`${species} Galarian Form`);
+  if(raw.includes('hisui'))candidates.push(`Hisuian ${species}`,`${species} Hisuian Form`);
+  if(raw.includes('paldea'))candidates.push(`Paldean ${species}`,`${species} Paldean Form`);
   return [...new Set(candidates.map(normFormName).filter(Boolean))];
 }
 async function getChampionsMovesForPokemon(p,s){
@@ -48,6 +62,25 @@ async function getChampionsMovesForPokemon(p,s){
   if(!entries.length)return [];
   const candidates=championsFormCandidates(p,s);
   let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
+
+  // Regional forms are separate permanent forms in Champions. The external
+  // dataset stores them as e.g. "Galarian Slowbro" / "Slowbro Galarian Form",
+  // while PokeAPI gives us names such as "slowbro-galar". Match by region +
+  // species before falling back to Base, so a regional form can never inherit
+  // the base form (or another regional form) just because the Pokédex number
+  // is shared.
+  if(!chosen){
+    const region=detectChampionsRegion(p,s);
+    const speciesKey=normFormName(s?.name||p?.species?.name||'');
+    if(region&&speciesKey){
+      const markers=CHAMPIONS_REGIONAL_MARKERS[region]||[];
+      chosen=entries.find(([key,v])=>{
+        if(v?.form!=='Regional')return false;
+        const nk=normFormName(key);
+        return nk.includes(speciesKey)&&markers.some(marker=>nk.includes(normFormName(marker)));
+      });
+    }
+  }
   if(!chosen){
     const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
     chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
