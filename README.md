@@ -1,29 +1,24 @@
-# Pokémon Champions Companion v4.0
+# Pokémon Champions Companion v5.0
 
-## Neuerungen
-- Battle Calculator: Fähigkeiten-Auswahl für Angreifer und Verteidiger
-- Fähigkeit wird aus den tatsächlich für das gewählte Pokémon verfügbaren Fähigkeiten geladen
-- Lokalisierte deutsche/englische Fähigkeitsnamen
-- Vorläufige Schadensmodifikatoren für wichtige Champions-Fähigkeiten, u. a. Adaptions-/Typ- und Attackenverstärker wie Aerilate, Refrigerate, Pixilate, Galvanize, Dragonize, Iron Fist, Mega Launcher, Strong Jaw, Sharpness, Technician, Tough Claws, Sand Force, Solar Power, Water Bubble und Transistor sowie einige defensive Effekte
-- Versionsnummer 3.2
+## v5.0 – Champions-Pokédex
+- Bei Pokémon, die in Pokémon Champions spielbar sind, gibt es im Pokédex über den Attacken ein Auswahlfeld zwischen „Normal erlernbare Attacken“ und „Verfügbare Attacken in Champions“.
+- Die normale Attackenliste bleibt unverändert und verwendet weiterhin die PokéAPI-Learnsets.
+- Die Champions-Ansicht verwendet Pokémon-spezifische Champions-Learnsets und zeigt nur die dort verfügbaren Attacken.
+- Champions-Attacken werden nach Typ gruppiert und mit Typ-Symbolen sowie typbezogenen Markierungen dargestellt.
+- Mega- und regionale Formen werden, sofern im Champions-Datensatz separat erfasst, mit ihrem eigenen Learnset verwendet.
+- Champions-Daten werden beim Öffnen der Champions-Ansicht geladen und zwischengespeichert.
 
-Die Schadensformel bleibt bis zur vollständigen Verifizierung von Regulation Set M-C ausdrücklich vorläufig.
+## Datenquelle für Champions-Learnsets
+Die Champions-Learnsets und Move-Daten stammen aus dem öffentlich strukturierten Datensatz „Pokemon Champions Data“ von otterlyclueless/pokemon-champions-data. Der Datensatz enthält Pokémon-spezifische Learnsets sowie die Kennzeichnung, welche Attacken in Champions verfügbar sind.
 
+Quelle: https://github.com/otterlyclueless/pokemon-champions-data
+Lizenz laut Repository: CC BY 4.0.
 
-Version 3.3: Der Pokédex zeigt zunächst nur die ersten 24 Pokémon für einen schnellen Start. Über „Alle Pokémon anzeigen“ können auf Wunsch alle geladenen Pokémon eingeblendet werden. Der Button kann wieder auf die kompakte Ansicht zurückschalten und ist lokalisiert.
+## Vorherige Erweiterungen
+- Battle Calculator mit Champions-Regelsatz M-C, Status-/Feld-/Wetterberechnung und Mehrfachtreffer-Auswahl.
+- Pokédex-Fähigkeiten als anklickbare Info-Buttons.
+- Verknüpfte Infofenster für Wetter, Felder und Status-Effekte inklusive Schadens-/Heilungswerten.
+- Deutsche/englische Lokalisierung.
+- Randomizer mit Champions-Roster und Mega-Entwicklungen.
 
-
-## Regelsatz M-C
-- M-C-Neuzugänge können im Pokédex direkt über „M-C-Neuzugänge anzeigen“ gefiltert werden.
-- Die sechs neu zugelassenen Mega-Formen sind als Champions-spezifische Formen in den jeweiligen Pokédex-Einträgen hinterlegt:
-  - Mega-Absol Z — Sharpness
-  - Mega-Knakrack Z — Levitate
-  - Mega-Lucario Z — Aura Guard
-  - Mega-Brutalanda — Aerilate
-  - Mega-Tectass — Tough Claws
-  - Mega-Segargal — Thermal Exchange
-- Die Z-Mega-Formen verwenden die verifizierten Champions-Statwerte und Typen.
-
-
-## v4.0
-Pokédex-Fähigkeiten sind anklickbare Info-Buttons. Fähigkeitsbeschreibungen öffnen sich in einem separaten Info-Popup; erkannte Wetter-/Effektbegriffe wie Sonnenschein können ebenfalls geöffnet werden.
+Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen ausdrücklich vorläufig.

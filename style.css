@@ -44,3 +44,18 @@
 .hit-count{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0 0;color:#c9d1e6;font-weight:750}.hit-count select{min-width:120px;height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}.hit-count small{flex-basis:100%;color:#8f9ab5;font-weight:500}
 
 #infoModal[hidden]{display:none!important}#infoModal{position:fixed;inset:0;z-index:130;display:grid;place-items:center;padding:16px}.info-modal{position:relative;z-index:1;width:min(520px,100%);max-height:75vh;overflow:auto;background:#10182a;border:1px solid #435173;border-radius:20px;padding:22px;box-shadow:0 25px 80px #000c}.info-modal h2{margin:0 45px 16px 0;font-size:26px}.info-modal p{line-height:1.6;color:#d6ddef}.ability-buttons{display:flex;flex-wrap:wrap;gap:8px}.ability-button{border:1px solid #39496f;background:#182440;color:#eef2ff;border-radius:11px;padding:9px 12px;font-weight:750}.ability-button:hover{background:#223154;border-color:#657bb2}.effect-link{border:0;background:none;color:#8fa9ff;text-decoration:underline;text-decoration-style:dotted;padding:0;cursor:pointer;font:inherit}.effect-link:hover{color:#c2d0ff}.effect-info p{margin:10px 0}
+
+/* v5.0 – Pokémon Champions move list */
+.move-mode-label{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-weight:700;color:#e8edfb}
+.move-mode-label select{flex:1;max-width:430px;background:#111b30;color:#eef2ff;border:1px solid #39496f;border-radius:10px;padding:10px 12px;font:inherit}
+.champions-moves{display:grid;gap:12px}
+.champ-move-type{border:1px solid #263452;background:#10182a;border-radius:15px;overflow:hidden}
+.champ-type-header{display:flex;align-items:center;gap:9px;padding:11px 13px;background:#17223a;font-weight:800}
+.champ-type{display:inline-flex;align-items:center;gap:6px;min-width:92px;border-radius:999px;padding:4px 9px;border:1px solid #39496f;background:#1a2640;color:#f4f6ff;font-size:12px;font-weight:800}
+.champ-type-symbol{width:18px;text-align:center}
+.champ-type-normal{border-color:#9b9b86}.champ-type-fire{border-color:#e06a42}.champ-type-water{border-color:#4d8bd6}.champ-type-electric{border-color:#d7b842}.champ-type-grass{border-color:#62a85c}.champ-type-ice{border-color:#67bfc8}.champ-type-fighting{border-color:#b85c58}.champ-type-poison{border-color:#9b62aa}.champ-type-ground{border-color:#bd9656}.champ-type-flying{border-color:#8497d8}.champ-type-psychic{border-color:#d56a9d}.champ-type-bug{border-color:#83a94e}.champ-type-rock{border-color:#9e875c}.champ-type-ghost{border-color:#74699d}.champ-type-dragon{border-color:#7164c1}.champ-type-dark{border-color:#69606a}.champ-type-steel{border-color:#8190a5}.champ-type-fairy{border-color:#c47fb0}
+.champ-move-list{display:grid}
+.champ-move-item{display:grid;grid-template-columns:115px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #202b44}
+.champ-move-type-mini .champ-type{font-size:11px;min-width:0;padding:3px 7px}
+.champ-move-item .move-name{font-weight:650}
+@media(max-width:600px){.champ-move-item{grid-template-columns:92px minmax(0,1fr);}.champ-move-item>.move-meta{grid-column:2;font-size:11px}.move-mode-label{align-items:stretch;flex-direction:column}.move-mode-label select{max-width:none}}
