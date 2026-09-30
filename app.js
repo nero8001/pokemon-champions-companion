@@ -89,7 +89,20 @@ async function getChampionsMovesForPokemon(p,s){
   const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
   const names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
   const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
-  return names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  // The public Champions dataset currently contains unioned learnsets for a
+  // number of regional-form pairs (e.g. Slowbro/Galarian Slowbro).  Never let
+  // that union leak into the Pokédex: the actual PokéAPI form object already
+  // contains the form-specific learnable moves across the supported games.
+  // Use it as a compatibility gate while retaining the Champions dataset as
+  // the authoritative source for whether a move is available in Champions.
+  const formMoveNames=new Set((p?.moves||[]).map(x=>normMoveName(x?.move?.name)).filter(Boolean));
+  const isRegional=!!detectChampionsRegion(p,s);
+  const gated=names.map(name=>moveMap.get(normMoveName(name))||{name})
+    .filter(m=>m.inChampions!==false);
+  if(isRegional&&formMoveNames.size){
+    return gated.filter(m=>formMoveNames.has(normMoveName(m.name)));
+  }
+  return gated;
 }
 // v5.2 – form-specific Champions learnset corrections.
 // The current community dataset exposes Ninetales and Alolan Ninetales with the
