@@ -88,8 +88,14 @@ const CHAMPIONS_FORM_MOVE_OVERRIDES={
 function championsFormOverrideKey(p,s){
   const raw=String(p?._mcLabel||p?.name||'').toLowerCase();
   const species=String(s?.name||p?.species?.name||'').toLowerCase();
-  if(raw.includes('alola')||raw.includes('alolan')||raw.includes('-alola')) return normFormName(raw.includes('ninetales')?'Alolan Ninetales':raw);
-  if(species==='ninetales' && (raw.includes('alola')||raw.includes('alolan'))) return 'alolanninetales';
+  // Ninetales has two distinct Champions learnsets. The base form must use
+  // the Kantonian list explicitly; otherwise the generic Champions source can
+  // fall back to its combined/unioned entry and leak Alolan moves into it.
+  if(species==='ninetales' || raw.includes('ninetales')){
+    if(raw.includes('alola')||raw.includes('alolan')||raw.includes('-alola')) return 'alolanninetales';
+    return 'ninetales';
+  }
+  if(raw.includes('alola')||raw.includes('alolan')||raw.includes('-alola')) return normFormName(raw);
   return '';
 }
 function championsTypeLabel(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return uiLang==='en'?type:meta[0]}
