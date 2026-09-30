@@ -20,20 +20,6 @@ async function loadChampionsData(){
 }
 function normMoveName(v){return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');}
 function normFormName(v){return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');}
-// v5.5 – robust regional-form learnset separation for all Champions regional forms.
-const CHAMPIONS_REGIONAL_MARKERS={
-  alola:['alola','alolan'],
-  galar:['galar','galarian'],
-  hisui:['hisui','hisuian'],
-  paldea:['paldea','paldean']
-};
-function detectChampionsRegion(p,s){
-  const raw=[p?._mcLabel,p?.name,p?.form?.name,p?.forms?.[0]?.name].filter(Boolean).join(' ').toLowerCase();
-  for(const [region,markers] of Object.entries(CHAMPIONS_REGIONAL_MARKERS)){
-    if(markers.some(marker=>raw.includes(marker)))return region;
-  }
-  return '';
-}
 function championsFormCandidates(p,s){
   const raw=String(p?._mcLabel||p?.name||'').toLowerCase();
   const species=String(s?.name||p?.species?.name||'').toLowerCase();
@@ -48,63 +34,11 @@ function championsFormCandidates(p,s){
     if(raw.includes('-y')||raw.includes(' y'))candidates.push(`Mega ${species} Y`);
     if(raw.includes('-z')||raw.includes(' z'))candidates.push(`Mega ${species} Z`);
   }
-  if(raw.includes('alola'))candidates.push(`Alolan ${species}`,`${species} Alolan Form`);
-  if(raw.includes('galar'))candidates.push(`Galarian ${species}`,`${species} Galarian Form`);
-  if(raw.includes('hisui'))candidates.push(`Hisuian ${species}`,`${species} Hisuian Form`);
-  if(raw.includes('paldea'))candidates.push(`Paldean ${species}`,`${species} Paldean Form`);
+  if(raw.includes('alola'))candidates.push(`Alolan ${species}`);
+  if(raw.includes('galar'))candidates.push(`Galarian ${species}`);
+  if(raw.includes('hisui'))candidates.push(`Hisuian ${species}`);
+  if(raw.includes('paldea'))candidates.push(`Paldean ${species}`);
   return [...new Set(candidates.map(normFormName).filter(Boolean))];
-}
-const regionalLearnsetCache=new Map();
-let regionalLearnsetsData=null;
-let regionalLearnsetsPromise=null;
-const REGIONAL_LEARNSETS_URL='https://raw.githubusercontent.com/nonz250/ai-rotom/main/data/champions/learnsets.json';
-async function loadRegionalLearnsets(){
-  if(regionalLearnsetsData)return regionalLearnsetsData;
-  if(regionalLearnsetsPromise)return regionalLearnsetsPromise;
-  regionalLearnsetsPromise=fetch(REGIONAL_LEARNSETS_URL,{cache:'force-cache'})
-    .then(r=>{if(!r.ok)throw Error('Regional learnsets '+r.status);return r.json()})
-    .then(data=>{regionalLearnsetsData=data||{};return regionalLearnsetsData})
-    .catch(e=>{console.warn('Regional learnsets unavailable:',e);regionalLearnsetsData={};return regionalLearnsetsData});
-  return regionalLearnsetsPromise;
-}
-function championsRegionalLearnsetKey(p,s){
-  const raw=[p?.name,p?._mcLabel,p?._formName,p?.form?.name,p?.forms?.[0]?.name].filter(Boolean).join(' ').toLowerCase();
-  const species=String(s?.name||p?.species?.name||'').toLowerCase();
-  const region=detectChampionsRegion(p,s);
-  if(!region)return '';
-  const compact=v=>String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');
-  const direct=compact(p?.name||'');
-  const speciesKey=compact(species);
-  if(direct.includes(region)||raw.includes(region)){
-    if(region==='alola')return direct.includes('alola')?direct:`${speciesKey}alola`;
-    if(region==='galar')return direct.includes('galar')?direct:`${speciesKey}galar`;
-    if(region==='hisui')return direct.includes('hisui')?direct:`${speciesKey}hisui`;
-    if(region==='paldea'){
-      if(raw.includes('blaze'))return `${speciesKey}paldeablaze`;
-      if(raw.includes('aqua'))return `${speciesKey}paldeaaqua`;
-      if(raw.includes('combat'))return `${speciesKey}paldeacombat`;
-      return `${speciesKey}paldea`;
-    }
-  }
-  return '';
-}
-async function loadRegionalMovesForPokemon(p,s){
-  const key=championsRegionalLearnsetKey(p,s);
-  if(!key)return null;
-  if(regionalLearnsetCache.has(key))return regionalLearnsetCache.get(key);
-  const data=await loadRegionalLearnsets();
-  let moves=data?.[key];
-  if(!moves && data){
-    const found=Object.keys(data).find(k=>normMoveName(k)===normMoveName(key));
-    if(found)moves=data[found];
-  }
-  if(Array.isArray(moves)){
-    const result=moves.map(x=>typeof x==='string'?x:x?.move||x?.name).filter(Boolean);
-    regionalLearnsetCache.set(key,result);
-    return result;
-  }
-  regionalLearnsetCache.set(key,null);
-  return null;
 }
 async function getChampionsMovesForPokemon(p,s){
   await loadChampionsData();
@@ -115,25 +49,28 @@ async function getChampionsMovesForPokemon(p,s){
   const candidates=championsFormCandidates(p,s);
   let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
   if(!chosen){
-    const region=detectChampionsRegion(p,s);
-    const speciesKey=normFormName(s?.name||p?.species?.name||'');
-    if(region&&speciesKey){
-      const markers=CHAMPIONS_REGIONAL_MARKERS[region]||[];
-      chosen=entries.find(([key,v])=>{
-        if(v?.form!=='Regional')return false;
-        const nk=normFormName(key);
-        return nk.includes(speciesKey)&&markers.some(marker=>nk.includes(normFormName(marker)));
-      });
-    }
-  }
-  if(!chosen){
     const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
     chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
   }
   const overrideKey=championsFormOverrideKey(p,s);
   const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
-  const regionalNames=await loadRegionalMovesForPokemon(p,s);
-  const names=(regionalNames||overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
+  let names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
+
+  // IMPORTANT: the Champions community dataset currently exposes a few
+  // regional-form learnsets as a union of the base + regional form. Ninetales
+  // already has an explicit hand-checked override above. For every other
+  // species with a permanent regional form, use the actual PokéAPI form's
+  // move list as a form-specific filter. This keeps the Champions move pool
+  // while removing moves that this exact form cannot learn.
+  // We intentionally use the already-loaded `p.moves` object here, so there
+  // is no extra network request and no additional loading delay.
+  const regionalSpeciesIds=new Set([26,38,53,59,80,128,157,199,503,571,618,706,713,724]);
+  const isRealApiForm=!p?._mcForm && regionalSpeciesIds.has(dex);
+  if(isRealApiForm && !overrideNames){
+    const apiMoveNames=new Set((p.moves||[]).map(x=>normMoveName(x?.move?.name||x?.name)).filter(Boolean));
+    if(apiMoveNames.size) names=names.filter(name=>apiMoveNames.has(normMoveName(name)));
+  }
+
   const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
   return names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
 }
