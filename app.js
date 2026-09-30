@@ -58,13 +58,27 @@ async function getChampionsMovesForPokemon(p,s){
 }
 function championsTypeLabel(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return uiLang==='en'?type:meta[0]}
 function championsTypeBadge(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return `<span class="champ-type champ-type-${String(type).toLowerCase()}"><span class="champ-type-symbol">${meta[1]}</span><span>${championsTypeLabel(type)}</span></span>`}
+const championsMoveLabelCache={de:new Map(),en:new Map()};
+function championsMoveLabel(m){
+  const english=String(m?.name||'').trim();
+  if(!english)return '';
+  const lang=uiLang==='en'?'en':'de';
+  const key=normMoveName(english);
+  if(championsMoveLabelCache[lang].has(key))return championsMoveLabelCache[lang].get(key);
+  if(m?.id){const direct=lang==='de'?deM(m.id):localized.en.move[String(m.id)];if(direct){championsMoveLabelCache[lang].set(key,direct);return direct}}
+  const source=localized.en.move||{};
+  const foundId=Object.keys(source).find(id=>normMoveName(source[id])===key);
+  const label=foundId?(lang==='de'?deM(foundId):source[foundId]):english;
+  championsMoveLabelCache[lang].set(key,label||english);
+  return label||english;
+}
 function championsMoveHtml(moves){
   const groups={};
   for(const m of moves){const type=m.type||'Normal';(groups[type] ||= []).push(m)}
   const order=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
   return order.filter(t=>groups[t]?.length).concat(Object.keys(groups).filter(t=>!order.includes(t)).sort()).map(type=>{
-    const entries=groups[type].slice().sort((a,b)=>{const an=deM(a.id)||a.name,bn=deM(b.id)||b.name;return an.localeCompare(bn,uiLang==='de'?'de':'en')});
-    return `<div class="champ-move-type"><div class="champ-type-header">${championsTypeBadge(type)} <span class="move-meta">(${entries.length})</span></div><div class="champ-move-list">${entries.map(m=>`<div class="champ-move-item"><span class="champ-move-type-mini">${championsTypeBadge(type)}</span><span class="move-name">${escapeHtml(deM(m.id)||m.name)}</span><span class="move-meta">${m.category||'—'}${m.power?` · ${m.power}`:''}</span></div>`).join('')}</div></div>`;
+    const entries=groups[type].slice().sort((a,b)=>{const an=championsMoveLabel(a),bn=championsMoveLabel(b);return an.localeCompare(bn,uiLang==='de'?'de':'en')});
+    return `<div class="champ-move-type"><div class="champ-type-header">${championsTypeBadge(type)} <span class="move-meta">(${entries.length})</span></div><div class="champ-move-list">${entries.map(m=>`<div class="champ-move-item"><span class="champ-move-type-mini">${championsTypeBadge(type)}</span><span class="move-name">${escapeHtml(championsMoveLabel(m))}</span><span class="move-meta">${m.category||'—'}${m.power?` · ${m.power}`:''}</span></div>`).join('')}</div></div>`;
   }).join('');
 }
 const sprite=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
@@ -409,12 +423,17 @@ async function detail(p,s){
   $('modalbody').innerHTML=`<div class="detail"><div class="detailpic"><img id="ds" src="${isShiny?shiny(p.id):sprite(p.id)}" alt="${pname}"></div><div><h2>${pname}</h2><div>#${String(p.id).padStart(4,'0')} · ${p.height/10} m · ${p.weight/10} kg</div><p>${types}</p><button id="sh" class="pill ${isShiny?'active':''}">✨ Shiny</button></div></div><div class="section"><h3>${uiLang==='en'?'Select Form':'Form auswählen'}</h3><div class="form-buttons" id="forms">${forms||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Strengths & Weaknesses':'Stärken & Schwächen'}</h3><div class="relation-grid"><div><strong>${uiLang==='en'?'Resistances':'Stärken / Resistenzen'}</strong><div>${relationPills(relations.resist,true)}</div></div><div><strong>${uiLang==='en'?'Weaknesses':'Schwächen'}</strong><div>${relationPills(relations.weak,true)}</div></div><div><strong>${uiLang==='en'?'Immunities':'Immunitäten'}</strong><div>${relationPills(relations.immune)}</div></div></div></div><div class="section"><h3>${uiLang==='en'?'Pokédex Description':'Pokédex-Beschreibung'}</h3><p class="description">${p._mcForm?mcAbilityText:(flavor?flavor.flavor_text.replace(/[\n\f]/g,' '):(uiLang==='en'?'No description available.':'Keine deutsche Beschreibung vorhanden.'))}</p>${genus?`<p class="flavor">${genus.genus}</p>`:''}</div><div class="section"><h3>${uiLang==='en'?'Abilities':'Fähigkeiten'}</h3><div class="ability-buttons">${abilities.map((name,i)=>`<button type="button" class="ability-button" data-ability-index="${i}">${escapeHtml(name)}</button>`).join('')||'—'}</div></div><div class="section"><h3>${uiLang==='en'?'Base Stats':'Basiswerte'}</h3>${stats}</div><div class="section"><h3>${uiLang==='en'?'Max Stats at Level 50':'Maximalwerte auf Level 50'}</h3><p class="muted">${uiLang==='en'?'IV 31 · 252 EVs in the selected stat · no item or battle bonuses':'IV 31 · 252 EVs im jeweiligen Statuswert · ohne Item- oder Kampfboni'}</p><label class="nature-inline">${uiLang==='en'?'Nature':'Wesen'}<select id="dexNature">${natureOptionsHtml(0)}</select></label>${maxStatsHtml(p)}</div><div class="section"><h3>${uiLang==='en'?'Moves':'Attacken'}</h3>${isChampionsPokemon?`<label class="move-mode-label">${uiLang==='en'?'Move list':'Attackenliste'}<select id="dexMoveMode"><option value="normal">${uiLang==='en'?'Normally learnable moves':'Normal erlernbare Attacken'}</option><option value="champions">${uiLang==='en'?'Available moves in Champions':'Verfügbare Attacken in Champions'}</option></select></label>`:''}<div class="move-groups" id="dexNormalMoves">${moveHtml||'<p>Keine Attacken gefunden.</p>'}</div>${isChampionsPokemon?`<div id="dexChampionsMoves" class="champions-moves" hidden><p class="muted">${uiLang==='en'?'Loading Champions move pool …':'Champions-Attacken werden geladen …'}</p></div>`:''}</div>`;
   if(isChampionsPokemon){
     $('dexMoveMode').addEventListener('change',async e=>{
-      const champions=e.target.value==='champions';$('dexNormalMoves').hidden=champions;$('dexChampionsMoves').hidden=!champions;
-      if(champions&&!$('dexChampionsMoves').dataset.loaded){
+      const champions=e.target.value==='champions';
+      const normalMoves=$('dexNormalMoves'),championsMoves=$('dexChampionsMoves');
+      // Explicit display switching is intentional: some mobile/browser CSS engines
+      // can keep grid containers visible despite the HTML hidden attribute.
+      normalMoves.hidden=champions;normalMoves.style.display=champions?'none':'';
+      championsMoves.hidden=!champions;championsMoves.style.display=champions?'':'none';
+      if(champions&&!championsMoves.dataset.loaded){
         $('dexChampionsMoves').innerHTML=`<p class="muted">${uiLang==='en'?'Loading Champions move pool …':'Champions-Attacken werden geladen …'}</p>`;
         const cm=await getChampionsMovesForPokemon(p,s);
-        $('dexChampionsMoves').innerHTML=cm.length?championsMoveHtml(cm):`<p>${uiLang==='en'?'No Champions moves found for this Pokémon/form.':'Für dieses Pokémon/diese Form wurden keine Champions-Attacken gefunden.'}</p>`;
-        $('dexChampionsMoves').dataset.loaded='1';
+        championsMoves.innerHTML=cm.length?championsMoveHtml(cm):`<p>${uiLang==='en'?'No Champions moves found for this Pokémon/form.':'Für dieses Pokémon/diese Form wurden keine Champions-Attacken gefunden.'}</p>`;
+        championsMoves.dataset.loaded='1';
       }
     });
   }

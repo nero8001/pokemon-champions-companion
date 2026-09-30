@@ -59,3 +59,5 @@
 .champ-move-type-mini .champ-type{font-size:11px;min-width:0;padding:3px 7px}
 .champ-move-item .move-name{font-weight:650}
 @media(max-width:600px){.champ-move-item{grid-template-columns:92px minmax(0,1fr);}.champ-move-item>.move-meta{grid-column:2;font-size:11px}.move-mode-label{align-items:stretch;flex-direction:column}.move-mode-label select{max-width:none}}
+/* v5.1: the Pokédex move mode is a true view switch, never a stacked view. */
+#dexNormalMoves[hidden],#dexChampionsMoves[hidden]{display:none!important}
