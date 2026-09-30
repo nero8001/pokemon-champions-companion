@@ -429,14 +429,25 @@ async function showMoveInfoById(id){
   const m=await json(`${API}/move/${id}`);
   const type=deT(rid(m.type?.url))||title(m.type?.name||'—');
   const cls=m.damage_class?.name==='physical'?(uiLang==='en'?'Physical':'Physisch'):m.damage_class?.name==='special'?(uiLang==='en'?'Special':'Speziell'):(uiLang==='en'?'Status':'Status');
-  const minHits=Math.max(1,Number(m.meta?.min_hits)||1),maxHits=Math.max(minHits,Number(m.meta?.max_hits)||minHits);
+  // PokeAPI does not consistently expose hit metadata for newer moves.
+  // Population Bomb (Mäuseplage) can land from 1 to 10 hits, so provide
+  // its known range explicitly; otherwise use the API metadata.
+  const knownHitRanges={
+   'population-bomb':{min:1,max:10}
+  };
+  const knownHitRange=knownHitRanges[String(m.name||'').toLowerCase()];
+  const minHits=Math.max(1,Number(knownHitRange?.min??m.meta?.min_hits)||1);
+  const maxHits=Math.max(minHits,Number(knownHitRange?.max??m.meta?.max_hits)||minHits);
   calcState.moveHitMeta={min:minHits,max:maxHits};
   calcState.selectedHits=sameMove&&calcState.selectedHits>=minHits&&calcState.selectedHits<=maxHits?calcState.selectedHits:maxHits;
   const hitControl=maxHits>1?(minHits===maxHits
    ?`<div class="hit-count"><strong>${t('hitCount')}:</strong> ${maxHits} ${t('hits')}</div>`
    :`<label class="hit-count"><span>${t('hitCount')}</span><select id="hitCount">${Array.from({length:maxHits-minHits+1},(_,i)=>minHits+i).map(n=>`<option value="${n}" ${n===calcState.selectedHits?'selected':''}>${n} ${t('hits')}</option>`).join('')}</select><small>${t('hitRangeHelp')}</small></label>`):'';
   $('moveInfo').innerHTML=`<div><b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · ${uiLang==='en'?'Power':'Stärke'}: ${m.power??'—'} · ${uiLang==='en'?'Accuracy':'Genauigkeit'}: ${m.accuracy??'—'}</div>${hitControl}`;
-  const hitSel=$('hitCount');if(hitSel)hitSel.addEventListener('change',()=>{calcState.selectedHits=Number(hitSel.value)||maxHits});
+  const hitSel=$('hitCount');if(hitSel)hitSel.addEventListener('change',()=>{
+   calcState.selectedHits=Number(hitSel.value)||maxHits;
+   if(calcState.attacker&&calcState.defender&&calcState.selectedMove)calculateDamage();
+  });
   const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}
  }catch(e){$('moveInfo').textContent=uiLang==='en'?'Move data could not be loaded.':'Attackendaten konnten nicht geladen werden.'}
 }
