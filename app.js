@@ -54,6 +54,56 @@ function championsFormCandidates(p,s){
   if(raw.includes('paldea'))candidates.push(`Paldean ${species}`,`${species} Paldean Form`);
   return [...new Set(candidates.map(normFormName).filter(Boolean))];
 }
+const serebiiFormMoveCache=new Map();
+async function loadSerebiiFormMoves(p,s){
+  const species=String(s?.name||p?.species?.name||p?.name||'').toLowerCase().replace(/[^a-z0-9-]+/g,'');
+  if(!species)return null;
+  const raw=String(p?._mcLabel||p?._formName||p?.name||'').toLowerCase();
+  const region=detectChampionsRegion(p,s);
+  let formNeedle='standard moves';
+  if(region==='alola')formNeedle='alolan form standard moves';
+  else if(region==='galar')formNeedle='galarian form standard moves';
+  else if(region==='hisui')formNeedle='hisuian form standard moves';
+  else if(region==='paldea'){
+    if(raw.includes('blaze'))formNeedle='paldean form (blaze breed) standard moves';
+    else if(raw.includes('aqua'))formNeedle='paldean form (aqua breed) standard moves';
+    else if(raw.includes('combat'))formNeedle='paldean form (combat breed) standard moves';
+    else formNeedle='paldean form standard moves';
+  }
+  const cacheKey=`${species}|${formNeedle}`;
+  if(serebiiFormMoveCache.has(cacheKey))return serebiiFormMoveCache.get(cacheKey);
+  try{
+    const url=`https://r.jina.ai/http://www.serebii.net/pokedex-champions/${species}/`;
+    const r=await fetch(url,{cache:'no-store'}); if(!r.ok)throw Error(r.status);
+    const text=await r.text();
+    const lines=text.split(/\r?\n/);
+    const needle=formNeedle.replace(/\s+/g,' ').trim();
+    let start=lines.findIndex(x=>x.toLowerCase().replace(/\s+/g,' ').includes(needle));
+    if(start<0 && !region)start=lines.findIndex(x=>/standard moves/i.test(x)&&!/(alolan|galarian|hisuian|paldean)/i.test(x));
+    if(start<0){serebiiFormMoveCache.set(cacheKey,null);return null;}
+    let stop=start+1;
+    while(stop<lines.length && !/^#{1,6}\s+/.test(lines[stop]))stop++;
+    const section=lines.slice(start,stop).join('\n');
+    const moves=[];
+    // Serebii's Markdown tables put the move name in the first column.
+    const rowRe=/^\s*\|\s*([^|]+?)\s*\|/gm;
+    let m;
+    while((m=rowRe.exec(section))){
+      const name=m[1].replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').trim();
+      if(!name||/^(-|Move|Attack Name|Type|Cat\.|Att\.|Acc\.|PP|Effect)/i.test(name))continue;
+      if(/^(Image:|Max |G-Max |TM\d|TR\d|Egg|Tutor|Level)/i.test(name))continue;
+      moves.push(name);
+    }
+    const cleaned=[...new Set(moves)].filter(x=>x.length<60);
+    const result=cleaned.length?cleaned:null;
+    serebiiFormMoveCache.set(cacheKey,result);
+    return result;
+  }catch(e){
+    console.warn('Serebii Champions form data unavailable:',e);
+    serebiiFormMoveCache.set(cacheKey,null);
+    return null;
+  }
+}
 async function getChampionsMovesForPokemon(p,s){
   await loadChampionsData();
   const dex=Number(p?.speciesId||s?.id||p?.id||0);
@@ -89,18 +139,25 @@ async function getChampionsMovesForPokemon(p,s){
   const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
   const names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
   const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
-  // The public Champions dataset currently contains unioned learnsets for a
-  // number of regional-form pairs (e.g. Slowbro/Galarian Slowbro).  Never let
-  // that union leak into the Pokédex: the actual PokéAPI form object already
-  // contains the form-specific learnable moves across the supported games.
-  // Use it as a compatibility gate while retaining the Champions dataset as
-  // the authoritative source for whether a move is available in Champions.
-  const formMoveNames=new Set((p?.moves||[]).map(x=>normMoveName(x?.move?.name)).filter(Boolean));
-  const isRegional=!!detectChampionsRegion(p,s);
   const gated=names.map(name=>moveMap.get(normMoveName(name))||{name})
     .filter(m=>m.inChampions!==false);
-  if(isRegional&&formMoveNames.size){
-    return gated.filter(m=>formMoveNames.has(normMoveName(m.name)));
+
+  // v5.7: The public Champions JSON has unioned regional learnsets for a
+  // number of species. PokéAPI's move list is also unioned, so using it as a
+  // simple name gate cannot separate Slowbro/Galarian Slowbro, Goodra/Hisuian
+  // Goodra, Arcanine/Hisuian Arcanine, etc. Regional forms are therefore
+  // handled from their concrete form identity below; form-specific overrides
+  // are preferred over the unioned JSON entry.
+  const hasRegionalPair=entries.some(([,v])=>v?.form==='Regional');
+  const formSpecific=(hasRegionalPair||detectChampionsRegion(p,s))?await loadSerebiiFormMoves(p,s):null;
+  if(formSpecific?.length){
+    const allowed=new Set(formSpecific.map(normMoveName));
+    return gated.filter(m=>allowed.has(normMoveName(m.name)));
+  }
+  const regionalKey=championsFormOverrideKey(p,s);
+  if(regionalKey && CHAMPIONS_FORM_MOVE_OVERRIDES[regionalKey]){
+    const exact=CHAMPIONS_FORM_MOVE_OVERRIDES[regionalKey];
+    return exact.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
   }
   return gated;
 }
