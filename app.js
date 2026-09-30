@@ -63,7 +63,18 @@ async function getChampionsMovesForPokemon(p,s){
 // same unioned move list, while the Champions Pokédex distinguishes their form
 // learnsets. Keep the correction local so the generic data source remains usable.
 const CHAMPIONS_FORM_MOVE_OVERRIDES={
+  'ninetales':[
+    'Agility','Attract','Baby-Doll Eyes','Baton Pass','Body Slam','Burning Jealousy','Calm Mind','Charm',
+    'Confuse Ray','Dark Pulse','Dig','Disable','Double-Edge','Encore','Endure','Energy Ball','Extrasensory',
+    'Facade','Fake Tears','Fire Blast','Fire Spin','Flail','Flame Charge','Flamethrower','Flare Blitz',
+    'Foul Play','Giga Impact','Healing Wish','Heat Wave','Helping Hand','Hex','Howl','Hyper Beam','Hypnosis',
+    'Imprison','Inferno','Iron Tail','Memento','Mystical Fire','Nasty Plot','Night Shade','Overheat',
+    'Pain Split','Payback','Power Swap','Protect','Psych Up','Psyshock','Quick Attack','Rest','Roar','Round',
+    'Safeguard','Scorching Sands','Shadow Ball','Sleep Talk','Snarl','Snore','Solar Beam','Spite','Stored Power',
+    'Substitute','Sunny Day','Tail Slap','Weather Ball','Will-O-Wisp','Zen Headbutt'
+  ],
   'alolanninetales':[
+
     'Agility','Attract','Aurora Veil','Avalanche','Baby-Doll Eyes','Baton Pass','Blizzard','Body Slam',
     'Calm Mind','Charm','Chilling Water','Confuse Ray','Dark Pulse','Dazzling Gleam','Dig','Disable',
     'Double-Edge','Draining Kiss','Encore','Endure','Extrasensory','Facade','Fake Tears','Flail',
