@@ -561,6 +561,17 @@ function translateMoveEffectToGerman(text){
   // First translate complete phrases. This prevents the old "Denglish" effect
   // where translating individual words first produced sentences such as
   // "das first Runde" or "das Ziel's side".
+  const championsPhrases=[
+    [/^The target is burned with a (\d+)% chance\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.'],
+    [/^The target has a (\d+)% chance to be burned\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.'],
+    [/^The target is burned with a (\d+)% chance and thaws when used\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen und wird bei Einsatz aufgetaut.'],
+    [/^The target thaws when this move is used\.?$/i,'Bei Einsatz wird das Ziel aufgetaut.'],
+    [/^The user and target are thawed when this move is used\.?$/i,'Bei Einsatz werden der Anwender und das Ziel aufgetaut.'],
+    [/^The user restores half of the damage dealt as HP\.?$/i,'Die KP des Anwenders werden um die Hälfte des verursachten Schadens aufgefüllt.'],
+    [/^The target takes a (\d+)% chance to be burned\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.']
+  ];
+  for(const [re,to] of championsPhrases)s=s.replace(re,to);
+
   const phrases=[
     [/^Has a (\d+)% chance to burn the target\. The target thaws out when it is frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
     [/^Has a (\d+)% chance to burn the target\. The target thaws out when frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
@@ -649,18 +660,29 @@ function translateMoveEffectToGerman(text){
   s=s.replace(/das Ziel's/gi,'des Ziels').replace(/das Anwender/gi,'der Anwender').replace(/das Attacke/gi,'die Attacke').replace(/das Wetter/gi,'das Wetter').replace(/die Wetter/gi,'das Wetter');
   return s.replace(/\s+/g,' ').trim();
 }
+const CHAMPIONS_GERMAN_EFFECTS={
+  flamethrower:'Das Ziel erleidet mit 10%iger Wahrscheinlichkeit Verbrennungen.',
+  scorchingands:'Das Ziel erleidet mit 30%iger Wahrscheinlichkeit Verbrennungen. Bei Einsatz werden der Anwender und das Ziel aufgetaut.',
+  drainpunch:'Die KP des Anwenders werden um die Hälfte des verursachten Schadens aufgefüllt.',
+  shadowclaw:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
+  aerialace:'Diese Attacke trifft garantiert.',
+  crosschop:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
+  steelwing:'Die Verteidigung des Anwenders wird mit 10%iger Wahrscheinlichkeit um 1 Stufe erhöht.'
+};
+function championsGermanEffect(champMove){
+  const key=normMoveName(champMove?.name||'');
+  return CHAMPIONS_GERMAN_EFFECTS[key]||'';
+}
 function germanMoveDescription(champMove,api){
   const english=String(champMove?.description||'').trim();
   if(uiLang!=='de')return english;
+  // Prefer verified Champions-specific German effect wording where available.
+  // PokéAPI flavor text is deliberately NOT used as a fallback here: it often
+  // describes the regular main-series move and can omit Champions-only effects
+  // such as Brandsand thawing both Pokémon.
+  const officialLike=championsGermanEffect(champMove);
+  if(officialLike)return officialLike;
   const translated=translateMoveEffectToGerman(english);
-  const flavor=(api?.flavor_text_entries||[]).find(x=>x.language?.name==='de')?.flavor_text;
-  const cleanFlavor=flavor?String(flavor).replace(/[\n\f]+/g,' ').trim():'';
-  // Never leave obvious English fragments in the German UI. Champions-specific
-  // descriptions are preferred when our complete-sentence translator handled them;
-  // otherwise use the official German PokéAPI flavor text instead of Denglish.
-  const englishLeak=/\b(?:the|this|that|when|if|and|or|with|without|is|are|has|have|does|do|not|target|user|attack|move|damage|chance|frozen|burn|burned|thaws|accuracy|focus|damaging|before|after|turn|first|second|requires|holding|held|power|strength|effects?|field|side)\b/i;
-  if(translated && translated!==english && !englishLeak.test(translated))return translated;
-  if(cleanFlavor)return cleanFlavor;
   return translated||english;
 }
 async function getMoveInfo(champMove){
