@@ -52,9 +52,34 @@ async function getChampionsMovesForPokemon(p,s){
     const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
     chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
   }
-  const names=(chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
+  const overrideKey=championsFormOverrideKey(p,s);
+  const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
+  const names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
   const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
   return names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+}
+// v5.2 – form-specific Champions learnset corrections.
+// The current community dataset exposes Ninetales and Alolan Ninetales with the
+// same unioned move list, while the Champions Pokédex distinguishes their form
+// learnsets. Keep the correction local so the generic data source remains usable.
+const CHAMPIONS_FORM_MOVE_OVERRIDES={
+  'alolanninetales':[
+    'Agility','Attract','Aurora Veil','Avalanche','Baby-Doll Eyes','Baton Pass','Blizzard','Body Slam',
+    'Calm Mind','Charm','Chilling Water','Confuse Ray','Dark Pulse','Dazzling Gleam','Dig','Disable',
+    'Double-Edge','Draining Kiss','Encore','Endure','Extrasensory','Facade','Fake Tears','Flail',
+    'Foul Play','Freeze-Dry','Giga Impact','Helping Hand','Hex','Howl','Hyper Beam','Hypnosis',
+    'Ice Beam','Ice Shard','Icicle Spear','Icy Wind','Imprison','Iron Tail','Misty Terrain','Moonblast',
+    'Nasty Plot','Pain Split','Payback','Play Rough','Power Swap','Protect','Psych Up','Psyshock',
+    'Rain Dance','Rest','Roar','Round','Safeguard','Sleep Talk','Snore','Snowscape','Spite',
+    'Stored Power','Substitute','Tail Slap','Triple Axel','Weather Ball','Wonder Room','Zen Headbutt'
+  ]
+};
+function championsFormOverrideKey(p,s){
+  const raw=String(p?._mcLabel||p?.name||'').toLowerCase();
+  const species=String(s?.name||p?.species?.name||'').toLowerCase();
+  if(raw.includes('alola')||raw.includes('alolan')||raw.includes('-alola')) return normFormName(raw.includes('ninetales')?'Alolan Ninetales':raw);
+  if(species==='ninetales' && (raw.includes('alola')||raw.includes('alolan'))) return 'alolanninetales';
+  return '';
 }
 function championsTypeLabel(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return uiLang==='en'?type:meta[0]}
 function championsTypeBadge(type){const meta=CHAMPIONS_TYPE_META[type]||[type,'•'];return `<span class="champ-type champ-type-${String(type).toLowerCase()}"><span class="champ-type-symbol">${meta[1]}</span><span>${championsTypeLabel(type)}</span></span>`}
