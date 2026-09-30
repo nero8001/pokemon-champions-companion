@@ -440,9 +440,14 @@ async function showMoveInfoById(id){
   const maxHits=Math.max(minHits,Number(knownHitRange?.max??m.meta?.max_hits)||minHits);
   calcState.moveHitMeta={min:minHits,max:maxHits};
   calcState.selectedHits=sameMove&&calcState.selectedHits>=minHits&&calcState.selectedHits<=maxHits?calcState.selectedHits:maxHits;
-  const hitControl=maxHits>1?(minHits===maxHits
-   ?`<div class="hit-count"><strong>${t('hitCount')}:</strong> ${maxHits} ${t('hits')}</div>`
-   :`<label class="hit-count"><span>${t('hitCount')}</span><select id="hitCount">${Array.from({length:maxHits-minHits+1},(_,i)=>minHits+i).map(n=>`<option value="${n}" ${n===calcState.selectedHits?'selected':''}>${n} ${t('hits')}</option>`).join('')}</select><small>${t('hitRangeHelp')}</small></label>`):'';
+  // Even moves with a fixed maximum (e.g. Triple Axel) can finish early if a
+  // preceding hit misses. Let the user select 1..maxHits for those moves as
+  // well; variable-hit moves keep their API-defined minimum.
+  const controlMinHits=minHits===maxHits?1:minHits;
+  calcState.selectedHits=Math.min(maxHits,Math.max(controlMinHits,Number(calcState.selectedHits)||maxHits));
+  const hitControl=maxHits>1
+   ?`<label class="hit-count"><span>${t('hitCount')}</span><select id="hitCount">${Array.from({length:maxHits-controlMinHits+1},(_,i)=>controlMinHits+i).map(n=>`<option value="${n}" ${n===calcState.selectedHits?'selected':''}>${n} ${t('hits')}</option>`).join('')}</select><small>${t('hitRangeHelp')}</small></label>`
+   :'';
   $('moveInfo').innerHTML=`<div><b>${deM(id)||title(m.name)}</b> · ${type} · ${cls} · ${uiLang==='en'?'Power':'Stärke'}: ${m.power??'—'} · ${uiLang==='en'?'Accuracy':'Genauigkeit'}: ${m.accuracy??'—'}</div>${hitControl}`;
   const hitSel=$('hitCount');if(hitSel)hitSel.addEventListener('change',()=>{
    calcState.selectedHits=Number(hitSel.value)||maxHits;
