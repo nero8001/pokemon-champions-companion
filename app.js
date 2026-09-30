@@ -500,7 +500,7 @@ function showdownMoveFlags(id){
   return out;
 }
 const MOVE_FLAG_LABELS={
-  contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt',en:'Slicing'},punch:{de:'Faust',en:'Punch'},bite:{de:'Biss',en:'Biting'},
+  contact:{de:'Kontakt',en:'Contact'},slicing:{de:'Schnitt',en:'Slicing'},punch:{de:'Hieb',en:'Punch'},bite:{de:'Biss',en:'Biting'},
   sound:{de:'Schall',en:'Sound'},powder:{de:'Pulver',en:'Powder'},pulse:{de:'Puls',en:'Pulse'},bullet:{de:'Projektil/Ball',en:'Bullet/Ball'},
   dance:{de:'Tanz',en:'Dance'},wind:{de:'Wind',en:'Wind'}
 };
@@ -546,122 +546,16 @@ function extractMoveAmounts(text){
   return out;
 }
 function moveInfoFlags(flags){return Object.keys(MOVE_FLAG_LABELS).filter(k=>flags?.[k]).map(k=>MOVE_FLAG_LABELS[k][uiLang])}
-function translateMoveEffectToGerman(text){
-  let s=String(text||'').trim();
-  if(!s)return '';
-  const exact={
-    'Has a higher chance for a critical hit.':'Hat eine erhöhte Volltrefferquote.',
-    'No additional effect.':'Keine zusätzlichen Effekte.',
-    'The user recovers 1/2 the HP lost by the target, rounded half up.':'Der Anwender heilt 1/2 der vom Ziel verlorenen KP, aufgerundet.',
-    'The user recovers 1/2 the HP lost by the target.':'Der Anwender heilt 1/2 der vom Ziel verlorenen KP.',
-    'The user restores 1/2 of its maximum HP.':'Der Anwender stellt 1/2 seiner maximalen KP wieder her.'
-  };
-  if(exact[s])return exact[s];
+const CHAMPIONS_GERMAN_MOVE_CACHE=new Map();
+const CHAMPIONS_GERMAN_MOVE_PENDING=new Map();
+const CHAMPIONS_GERMAN_SOURCE='https://op.gg/de/pokemon-champions/moves/';
 
-  // First translate complete phrases. This prevents the old "Denglish" effect
-  // where translating individual words first produced sentences such as
-  // "das first Runde" or "das Ziel's side".
-  const championsPhrases=[
-    [/^The target is burned with a (\d+)% chance\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.'],
-    [/^The target has a (\d+)% chance to be burned\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.'],
-    [/^The target is burned with a (\d+)% chance and thaws when used\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen und wird bei Einsatz aufgetaut.'],
-    [/^The target thaws when this move is used\.?$/i,'Bei Einsatz wird das Ziel aufgetaut.'],
-    [/^The user and target are thawed when this move is used\.?$/i,'Bei Einsatz werden der Anwender und das Ziel aufgetaut.'],
-    [/^The user restores half of the damage dealt as HP\.?$/i,'Die KP des Anwenders werden um die Hälfte des verursachten Schadens aufgefüllt.'],
-    [/^The target takes a (\d+)% chance to be burned\.?$/i,'Das Ziel erleidet mit $1%iger Wahrscheinlichkeit Verbrennungen.']
-  ];
-  for(const [re,to] of championsPhrases)s=s.replace(re,to);
-
-  const phrases=[
-    [/^Has a (\d+)% chance to burn the target\. The target thaws out when it is frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/^Has a (\d+)% chance to burn the target\. The target thaws out when frozen\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen. Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/^Has a (\d+)% chance to burn the target\.?$/i,'Hat eine Chance von $1 %, das Ziel zu verbrennen.'],
-    [/^The target thaws out when it is frozen\.?$/i,'Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/^The target thaws out when frozen\.?$/i,'Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/^This move never misses\.?$/i,'Diese Attacke trifft immer.'],
-    [/^The user loses its focus and does nothing if it is hit by a damaging attack this turn before it can be executed\.?$/i,'Der Anwender verliert die Konzentration und führt die Attacke nicht aus, wenn er in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird.'],
-    [/^The user loses its focus and does nothing if it is hit by a damaging attack this turn before it can be used\.?$/i,'Der Anwender verliert die Konzentration und führt die Attacke nicht aus, wenn er in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird.'],
-    [/^This attack charges on the first turn and executes on the second\. Power is halved when the weather is (.+?) and the user is not holding Utility Umbrella\. When the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the attack completes in one turn\. When the user is holding Utility Umbrella and the weather is Desolate Land or Sunny Day, the attack still requires a turn to charge up\.?$/i,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt. Die Stärke wird bei bestimmten Wetterbedingungen halbiert, wenn der Anwender keinen Wetterumhang trägt. Trägt der Anwender ein Energiekraut oder ist Dürre bzw. Sonnentag aktiv, wird die Attacke in einer Runde ausgeführt. Trägt der Anwender einen Wetterumhang und ist Dürre bzw. Sonnentag aktiv, benötigt die Attacke weiterhin eine Runde zum Aufladen.'],
-    [/This (?:attack|move) charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
-    [/This (?:attack|move) charges on the first turn and executes on the second\.?/gi,'Diese Attacke lädt sich in der ersten Runde auf und wird in der zweiten Runde ausgeführt.'],
-    [/if the weather is Primordial Sea, Rain Dance, Sandstorm, or Snow and the user is not holding Utility Umbrella/gi,'wenn das Wetter Urmeer, Regentanz, Sandsturm oder Schnee aktiv ist und der Anwender keinen Wetterumhang trägt'],
-    [/if the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the attack completes in one turn/gi,'wenn der Anwender ein Energiekraut trägt oder Dürre bzw. Sonnentag aktiv ist, wird die Attacke in einer Runde ausgeführt'],
-    [/Strength is halved when the weather is Primordial Sea, Rain Dance, Sandstorm, or Snow and the user is not holding Utility Umbrella/gi,'Die Stärke wird halbiert, wenn Urmeer, Regentanz, Sandsturm oder Schnee aktiv ist und der Anwender keinen Wetterumhang trägt'],
-    [/Power is halved when the weather is Primordial Sea, Rain Dance, Sandstorm, or Snow and the user is not holding Utility Umbrella/gi,'Die Stärke wird halbiert, wenn Urmeer, Regentanz, Sandsturm oder Schnee aktiv ist und der Anwender keinen Wetterumhang trägt'],
-    [/when the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the attack completes in one turn/gi,'wenn der Anwender ein Energiekraut trägt oder Dürre bzw. Sonnentag aktiv ist, wird die Attacke in einer Runde ausgeführt'],
-    [/If this attack does not miss, the effects of Reflect, Light Screen, and Aurora Veil end for the target's side of the field before damage is calculated\.?/gi,'Wenn diese Attacke trifft, enden die Effekte von Reflektor, Lichtschild und Auroraschleier auf der Seite des Ziels, bevor der Schaden berechnet wird.'],
-    [/If this attack does not miss, the effects of Reflect, Light Screen, and Aurora Veil end for the target's side of the field before damage is calculated\.?/gi,'Wenn diese Attacke nicht danebengeht, enden die Effekte von Reflektor, Lichtschild und Auroraschleier auf der Seite des Ziels, bevor der Schaden berechnet wird.'],
-    [/the effects of Reflect, Light Screen, and Aurora Veil end for the target's side of the field/gi,'die Effekte von Reflektor, Lichtschild und Auroraschleier auf der Seite des Ziels enden'],
-    [/Has a (\d+)% chance to burn (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel zu verbrennen.'],
-    [/Has a (\d+)% chance to poison (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel zu vergiften.'],
-    [/Has a (\d+)% chance to badly poison (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel schwer zu vergiften.'],
-    [/Has a (\d+)% chance to paralyze (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel zu paralysieren.'],
-    [/Has a (\d+)% chance to freeze (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel einzufrieren.'],
-    [/Has a (\d+)% chance to confuse (?:the target|das Ziel)\.?/gi,'Hat eine Chance von $1 %, das Ziel zu verwirren.'],
-    [/Has a (\d+)% chance to make (?:the target|das Ziel) flinch\.?/gi,'Hat eine Chance von $1 %, das Ziel zurückschrecken zu lassen.'],
-    [/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Special Defense by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, die Spezial-Verteidigung des Ziels um $2 Stufe(n) zu senken.'],
-    [/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Defense by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, die Verteidigung des Ziels um $2 Stufe(n) zu senken.'],
-    [/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Attack by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, den Angriff des Ziels um $2 Stufe(n) zu senken.'],
-    [/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Special Attack by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, den Spezial-Angriff des Ziels um $2 Stufe(n) zu senken.'],
-    [/Has a (\d+)% chance to lower (?:the target|das Ziel)'s Speed by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, die Initiative des Ziels um $2 Stufe(n) zu senken.'],
-    [/Has a (\d+)% chance to raise the user's (.+?) by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, $2 des Anwenders um $3 Stufe(n) zu erhöhen.'],
-    [/Has a (\d+)% chance to lower the target's (.+?) by (\d+) stage[s]?\.?/gi,'Hat eine Chance von $1 %, $2 des Ziels um $3 Stufe(n) zu senken.'],
-    [/Raises the user's (.+?) by (\d+) stage[s]?\.?/gi,'Erhöht $1 des Anwenders um $2 Stufe(n).'],
-    [/Lowers the target's (.+?) by (\d+) stage[s]?\.?/gi,'Senkt $1 des Ziels um $2 Stufe(n).'],
-    [/The user recovers (\d+\/\d+) the HP lost by the target, rounded half up\.?/gi,'Der Anwender heilt $1 der vom Ziel verlorenen KP, aufgerundet.'],
-    [/The user recovers (\d+\/\d+) the HP lost by the target\.?/gi,'Der Anwender heilt $1 der vom Ziel verlorenen KP.'],
-    [/The user recovers (\d+\/\d+) of the damage dealt(?: to the target)?\.?/gi,'Der Anwender heilt $1 des verursachten Schadens.'],
-    [/The user restores (\d+\/\d+) of its maximum HP\.?/gi,'Der Anwender stellt $1 seiner maximalen KP wieder her.'],
-    [/The user restores (\d+)% of its maximum HP\.?/gi,'Der Anwender stellt $1 % seiner maximalen KP wieder her.'],
-    [/The user takes recoil damage equal to (\d+\/\d+) of the damage dealt\.?/gi,'Der Anwender erleidet Rückstoßschaden in Höhe von $1 des verursachten Schadens.'],
-    [/The user heals (\d+\/\d+) of the damage dealt\.?/gi,'Der Anwender heilt $1 des verursachten Schadens.'],
-    [/If Big Root is held by the user, the HP recovered is 1\.3x normal, rounded half down\.?/gi,'Wenn der Anwender Großwurzel trägt, beträgt die geheilte KP-Menge das 1,3-Fache des normalen Werts, abgerundet.'],
-    [/If Big Root is held by the user, the HP recovered is 1\.3x normal\.?/gi,'Wenn der Anwender Großwurzel trägt, beträgt die geheilte KP-Menge das 1,3-Fache des normalen Werts.'],
-    [/The user faints upon using this move\.?/gi,'Der Anwender wird nach Einsatz dieser Attacke kampfunfähig.'],
-    [/The user swaps positions with its ally\.?/gi,'Der Anwender tauscht die Position mit seinem Mitstreiter.'],
-    [/Cannot be selected the turn after it's used\.?/gi,'Kann in der Runde nach dem Einsatz nicht erneut ausgewählt werden.'],
-    [/Power doubles if the user was hit by the target this turn\.?/gi,'Die Stärke verdoppelt sich, wenn der Anwender in dieser Runde vom Ziel getroffen wurde.'],
-    [/Power doubles if the user moves before the target\.?/gi,'Die Stärke verdoppelt sich, wenn der Anwender vor dem Ziel handelt.'],
-    [/Damage is doubled if the target has used Minimize while active\.?/gi,'Der Schaden wird verdoppelt, wenn das Ziel während des Kampfes Komprimator eingesetzt hat.'],
-    [/The user is protected from most attacks made by other Pokemon during this turn\.?/gi,'Der Anwender ist in dieser Runde vor den meisten Attacken anderer Pokémon geschützt.'],
-    [/does not check accuracy\.?/gi,'prüft die Genauigkeit nicht.'],
-    [/This attack does not check accuracy\.?/gi,'Diese Attacke prüft die Genauigkeit nicht.'],
-    [/This move does not check accuracy\.?/gi,'Diese Attacke prüft die Genauigkeit nicht.'],
-    [/The target thaws out when it is frozen\.?/gi,'Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/The target thaws out when frozen\.?/gi,'Das Ziel taut auf, wenn es eingefroren ist.'],
-    [/if it is hit by a damaging attack this turn before it can be (?:used|executed)/gi,'wenn der Anwender in dieser Runde vor ihrem Einsatz von einer schadensverursachenden Attacke getroffen wird'],
-    [/loses its focus/gi,'verliert die Konzentration'],
-    [/damaging attack/gi,'schadensverursachenden Attacke'],
-    [/can be selected/gi,'kann ausgewählt werden'],
-    [/cannot be selected/gi,'kann nicht ausgewählt werden'],
-    [/No additional effect\.?/gi,'Keine zusätzlichen Effekte.']
-  ];
-  for(const [re,to] of phrases)s=s.replace(re,to);
-
-  // Remaining short expressions are translated only after complete sentences.
-  const words=[
-    [/target's/gi,'des Ziels'],[/the user's/gi,'des Anwenders'],[/the target/gi,'das Ziel'],[/the user/gi,'der Anwender'],
-    [/this attack/gi,'diese Attacke'],[/this move/gi,'diese Attacke'],[/the attack/gi,'die Attacke'],[/attacks?/gi,'Attacken'],
-    [/charges? up/gi,'lädt sich auf'],[/charges?/gi,'lädt sich auf'],[/executes?/gi,'wird ausgeführt'],[/first turn/gi,'erste Runde'],[/second turn/gi,'zweite Runde'],[/one turn/gi,'eine Runde'],
-    [/first/gi,'erste'],[/second/gi,'zweite'],[/turns?/gi,'Runden'],[/rounds?/gi,'Runden'],
-    [/weather/gi,'Wetter'],[/Strength/gi,'Stärke'],[/power/gi,'Stärke'],[/damage/gi,'Schaden'],[/effects?/gi,'Effekte'],[/field/gi,'Feld'],[/side/gi,'Seite'],[/before/gi,'bevor'],[/calculated/gi,'berechnet'],[/does not miss/gi,'nicht danebengeht'],
-    [/holding/gi,'trägt'],[/held by/gi,'getragen von'],[/held/gi,'getragen'],[/user'?s/gi,'Anwenders'],[/target'?s/gi,'Ziels'],
-    [/Utility Umbrella/gi,'Wetterumhang'],[/Power Herb/gi,'Energiekraut'],[/Big Root/gi,'Großwurzel'],
-    [/Primordial Sea/gi,'Urmeer'],[/Rain Dance/gi,'Regentanz'],[/Sandstorm/gi,'Sandsturm'],[/Snow/gi,'Schnee'],[/Desolate Land/gi,'Dürre'],[/Sunny Day/gi,'Sonnentag'],
-    [/Reflect/gi,'Reflektor'],[/Light Screen/gi,'Lichtschild'],[/Aurora Veil/gi,'Auroraschleier'],[/HP/gi,'KP'],[/Special Attack/gi,'Spezial-Angriff'],[/Special Defense/gi,'Spezial-Verteidigung'],
-    [/Attack/gi,'Angriff'],[/Defense/gi,'Verteidigung'],[/Speed/gi,'Initiative'],[/critical hit/gi,'Volltreffer'],[/chance/gi,'Chance'],[/accuracy/gi,'Genauigkeit'],
-    [/moves?/gi,'Attacken'],[/stage[s]?/gi,'Stufe(n)'],[/ally/gi,'Mitstreiter'],[/opponent/gi,'Gegner'],[/foe/gi,'Gegner'],[/party/gi,'Team'],[/item/gi,'Item'],
-    [/recover[s]?/gi,'heilt'],[/restore[s]?/gi,'stellt wieder her'],[/heal[s]?/gi,'heilt'],[/burn/gi,'verbrennen'],[/poison/gi,'vergiften'],[/paraly[sz]e/gi,'paralysieren'],[/freeze/gi,'einfrieren'],[/confuse/gi,'verwirren'],[/flinch/gi,'zurückschrecken'],
-    [/maximum/gi,'maximalen'],[/rounded half up/gi,'aufgerundet'],[/rounded half down/gi,'abgerundet'],
-    [/\bif\b/gi,'wenn'],[/\bwhen\b/gi,'wenn'],[/\band\b/gi,'und'],[/\bor\b/gi,'oder'],[/\bwith\b/gi,'mit'],[/\bwithout\b/gi,'ohne'],[/\bfor\b/gi,'für'],[/\bof\b/gi,'von'],[/\bto\b/gi,'zu'],[/\bby\b/gi,'um'],[/\bthe\b/gi,'das'],[/\bThe\b/g,'Das']
-  ];
-  for(const [re,to] of words)s=s.replace(re,to);
-  // Clean up a few grammatical artifacts created by generic replacements.
-  s=s.replace(/das Ziel's/gi,'des Ziels').replace(/das Anwender/gi,'der Anwender').replace(/das Attacke/gi,'die Attacke').replace(/das Wetter/gi,'das Wetter').replace(/die Wetter/gi,'das Wetter');
-  return s.replace(/\s+/g,' ').trim();
-}
+// The old implementation translated the English Showdown description word by
+// word. That was the source of the recurring "Denglish". Champions has its own
+// German wording, so German mode now uses a German Champions source first and
+// never mixes English fragments into that text.
 const CHAMPIONS_GERMAN_EFFECTS={
-  flamethrower:'Das Ziel erleidet mit 10%iger Wahrscheinlichkeit Verbrennungen.',
+  flamethrower:'Starke Feuer-Attacke, durch die das Ziel eventuell Verbrennungen erleidet.',
   scorchingands:'Das Ziel erleidet mit 30%iger Wahrscheinlichkeit Verbrennungen. Bei Einsatz werden der Anwender und das Ziel aufgetaut.',
   drainpunch:'Die KP des Anwenders werden um die Hälfte des verursachten Schadens aufgefüllt.',
   shadowclaw:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
@@ -669,21 +563,84 @@ const CHAMPIONS_GERMAN_EFFECTS={
   crosschop:'Der Angriff erfolgt mit um 1 Stufe erhöhter Volltrefferquote.',
   steelwing:'Die Verteidigung des Anwenders wird mit 10%iger Wahrscheinlichkeit um 1 Stufe erhöht.'
 };
-function championsGermanEffect(champMove){
-  const key=normMoveName(champMove?.name||'');
-  return CHAMPIONS_GERMAN_EFFECTS[key]||'';
+function championsMoveSlug(champMove){
+  const raw=String(champMove?.slug||champMove?.name||'').trim().toLowerCase();
+  return raw.replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
-function germanMoveDescription(champMove,api){
-  const english=String(champMove?.description||'').trim();
-  if(uiLang!=='de')return english;
-  // Prefer verified Champions-specific German effect wording where available.
-  // PokéAPI flavor text is deliberately NOT used as a fallback here: it often
-  // describes the regular main-series move and can omit Champions-only effects
-  // such as Brandsand thawing both Pokémon.
-  const officialLike=championsGermanEffect(champMove);
-  if(officialLike)return officialLike;
-  const translated=translateMoveEffectToGerman(english);
-  return translated||english;
+function textClean(s){return String(s||'').replace(/\\n/g,' ').replace(/\s+/g,' ').trim()}
+function parseGermanChampionsMovePage(html,displayName){
+  try{
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    const headings=[...doc.querySelectorAll('h1,h2,h3')].map(x=>textClean(x.textContent));
+    const wanted=textClean(displayName).toLowerCase();
+    // OP.GG renders the move name in an h1/h2 and the localized effect directly
+    // below the stat block. We use the page's own text rather than translating
+    // the English Showdown description.
+    const body=textClean(doc.body?.innerText||doc.body?.textContent||'');
+    const idx=body.toLowerCase().indexOf(wanted);
+    if(idx<0)return null;
+    const tail=body.slice(idx,idx+5000);
+    const marker=/Eigenschaften:\s*([^\n]+?)\s+(?:Status:\s*[^\n]+\s+)?([^\n]{10,500}?)(?=\s+\d+\s+Pokémon|\s+##? Zustände|$)/i;
+    const m=tail.match(marker);
+    let effect='';
+    if(m)effect=textClean(m[2]);
+    // More robust fallback: locate the stat/target block and take the first
+    // full sentence after it. This handles pages with no Status line.
+    if(!effect){
+      const lines=(doc.body?.innerText||'').split(/\r?\n/).map(textClean).filter(Boolean);
+      const wi=lines.findIndex(x=>x.toLowerCase()===wanted);
+      if(wi>=0){
+        const stats=/^(Stärke:|Gen:|AP:|Priorität:|Ziel:|Eigenschaften:|Status:)/i;
+        let seenTarget=false;
+        for(let i=wi+1;i<Math.min(lines.length,wi+30);i++){
+          if(/^Ziel:/i.test(lines[i])){seenTarget=true;continue}
+          if(seenTarget && !stats.test(lines[i]) && !/^\d+ Pokémon$/i.test(lines[i]) && lines[i].length>12){effect=lines[i];break}
+        }
+      }
+    }
+    return effect?{effect}:null;
+  }catch(e){return null}
+}
+async function loadGermanChampionsMove(champMove){
+  const key=normMoveName(champMove?.name||'');
+  if(!key)return null;
+  if(CHAMPIONS_GERMAN_MOVE_CACHE.has(key))return CHAMPIONS_GERMAN_MOVE_CACHE.get(key);
+  if(CHAMPIONS_GERMAN_MOVE_PENDING.has(key))return CHAMPIONS_GERMAN_MOVE_PENDING.get(key);
+  const fallback=CHAMPIONS_GERMAN_EFFECTS[key]||'';
+  const slug=championsMoveSlug(champMove);
+  if(!slug){return fallback?{effect:fallback}:null}
+  const promise=(async()=>{
+    try{
+      const r=await fetch(CHAMPIONS_GERMAN_SOURCE+encodeURIComponent(slug),{cache:'force-cache',mode:'cors'});
+      if(!r.ok)throw Error(r.status);
+      const html=await r.text();
+      const parsed=parseGermanChampionsMovePage(html,championsMoveLabel(champMove));
+      const result=parsed|| (fallback?{effect:fallback}:null);
+      if(result)CHAMPIONS_GERMAN_MOVE_CACHE.set(key,result);
+      return result;
+    }catch(e){
+      const result=fallback?{effect:fallback}:null;
+      if(result)CHAMPIONS_GERMAN_MOVE_CACHE.set(key,result);
+      return result;
+    }finally{CHAMPIONS_GERMAN_MOVE_PENDING.delete(key)}
+  })();
+  CHAMPIONS_GERMAN_MOVE_PENDING.set(key,promise);return promise;
+}
+function isClearlyEnglishMoveText(text){
+  const s=String(text||'').trim();
+  if(!s)return false;
+  return /\b(the|this|that|when|if|and|or|user|target|attack|move|weather|damage|power|accuracy|first|second|turn|round|holding|frozen|burned|burn|poisoned|paralyzed|confused|flinched|does|cannot|will|is|are|has|have)\b/i.test(s);
+}
+async function germanMoveDescription(champMove,api){
+  if(uiLang!=='de')return String(champMove?.description||'').trim();
+  const remote=await loadGermanChampionsMove(champMove);
+  if(remote?.effect && !isClearlyEnglishMoveText(remote.effect))return remote.effect;
+  const key=normMoveName(champMove?.name||'');
+  const local=CHAMPIONS_GERMAN_EFFECTS[key]||'';
+  if(local)return local;
+  // Deliberately do not fall back to the English Showdown description in German
+  // mode. Showing no description is preferable to corrupting it with Denglish.
+  return 'Keine deutsche Champions-Beschreibung verfügbar.';
 }
 async function getMoveInfo(champMove){
   const key=normMoveName(champMove?.name);if(moveInfoCache.has(key))return moveInfoCache.get(key);
@@ -708,7 +665,7 @@ async function showMoveInfo(raw){
   if(flags.length)detailRows.push(`<div class="move-info-block"><strong>${labels.traits}</strong><div class="move-traits">${flags.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join('')}</div></div>`);
   if(amount.heal)detailRows.push(`<div class="move-info-block"><strong>${labels.healing}</strong><p>${uiLang==='en'?`Restores ${escapeHtml(amount.heal)} of maximum HP.`:`Heilt ${escapeHtml(amount.heal)} der maximalen KP.`}</p></div>`);
   if(amount.drain)detailRows.push(`<div class="move-info-block"><strong>${labels.drain}</strong><p>${uiLang==='en'?`Recovers ${escapeHtml(amount.drain)} of the damage dealt.`:`Heilt ${escapeHtml(amount.drain)} des verursachten Schadens.`}</p></div>`);
-  detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(germanMoveDescription(m,a)|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
+  const germanEffect=await germanMoveDescription(m,a);detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(germanEffect|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
   $('infoBody').innerHTML=detailRows.join('');$('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
 }
 async function detail(p,s){

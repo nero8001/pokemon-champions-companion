@@ -22,3 +22,13 @@ Lizenz laut Repository: CC BY 4.0.
 - Randomizer mit Champions-Roster und Mega-Entwicklungen.
 
 Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen ausdrücklich vorläufig.
+
+
+### v6.6 – Deutsche Champions-Move-Lokalisierung
+- Die alte Wort-für-Wort-Übersetzung der englischen Move-Effekte wurde entfernt.
+- Im deutschen Modus wird zuerst die deutsche Pokémon-Champions-Move-Seite von OP.GG als aktuelle Referenz geladen.
+- Englische Effekttexte werden im deutschen Modus nicht mehr als Fallback angezeigt, damit kein Denglisch entsteht.
+- Champions-Eigenschaft „Punch“ wird in der deutschen Anzeige als „Hieb“ dargestellt.
+- Statusbegriffe wie Verbrennung und Eingefroren bleiben über die bestehende Effektverlinkung anklickbar.
+
+Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht als offizieller Datendienst von The Pokémon Company gekennzeichnet. Die Spielanzeige von Pokémon Champions bleibt die maßgebliche Referenz.
