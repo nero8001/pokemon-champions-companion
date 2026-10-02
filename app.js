@@ -498,10 +498,55 @@ function showEffectInfo(key){
   const data=ABILITY_EFFECTS[key]?.[uiLang]||ABILITY_EFFECTS[key]?.de;if(!data)return;
   $('infoTitle').textContent=data.title;$('infoBody').innerHTML=`<div class="effect-info"><p><strong>${uiLang==='en'?'Duration':'Dauer'}:</strong> ${data.duration}</p><p>${data.effect}</p><p class="muted">${data.note}</p></div>`;$('infoModal').hidden=false;
 }
+const abilityLearnersCache=new Map();
+async function getAbilityLearners(id,name){
+  const key=String(id||name||'').toLowerCase().trim();
+  if(!key)return [];
+  if(abilityLearnersCache.has(key))return abilityLearnersCache.get(key);
+  const promise=(async()=>{
+    try{
+      const a=await json(id?`${API}/ability/${id}`:`${API}/ability/${encodeURIComponent(String(name).toLowerCase())}`);
+      const rows=(a?.pokemon||[]).map(x=>{
+        const url=String(x?.pokemon?.url||'');
+        const m=url.match(/\/(\d+)\/?$/);
+        const dex=m?Number(m[1]):0;
+        return {dex,name:String(x?.pokemon?.name||''),hidden:Boolean(x?.is_hidden)};
+      }).filter(x=>x.dex&&x.name);
+      const seen=new Set();
+      return rows.filter(x=>{const k=`${x.dex}|${x.hidden}`;if(seen.has(k))return false;seen.add(k);return true})
+        .sort((a,b)=>a.dex-b.dex||a.name.localeCompare(b.name,'en')||Number(a.hidden)-Number(b.hidden));
+    }catch(e){
+      console.warn('Ability learners unavailable:',e);
+      return [];
+    }
+  })();
+  abilityLearnersCache.set(key,promise);
+  return promise;
+}
+function abilityLearnerLabel(x){
+  return dataName('pokemon',x.dex,x.name.replace(/-/g,' '))||title(x.name);
+}
+function abilityLearnerHtml(learners){
+  if(!learners.length)return `<p class=\"muted\">${uiLang==='en'?'No Pokémon found for this ability.':'Keine Pokémon für diese Fähigkeit gefunden.'}</p>`;
+  return `<div class=\"ability-learners-list\">${learners.map(x=>`<div class=\"ability-learner\"><img src=\"${sprite(x.dex)}\" alt=\"\"><div><span>${escapeHtml(abilityLearnerLabel(x))}</span>${x.hidden?`<small>${uiLang==='en'?'Hidden Ability':'Versteckte Fähigkeit'}</small>`:''}</div></div>`).join('')}</div>`;
+}
 async function showAbilityInfo(id,name,customDescription){
   $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';$('infoModal').hidden=false;
-  const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';$('infoBody').innerHTML=`<p>${abilityEffectLinks(info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.'))}</p>`;
+  const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';
+  const description=info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.');
+  $('infoBody').innerHTML=`<p>${abilityEffectLinks(description)}</p><div class=\"ability-info-block\"><button type=\"button\" id=\"showAbilityLearners\" class=\"secondary ability-learners-button\">${uiLang==='en'?'Pokémon that can have this ability':'Pokémon erlernbar'}</button><div id=\"abilityLearners\" class=\"ability-learners\" hidden></div></div>`;
   $('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
+  const learnersButton=$('showAbilityLearners'),learnersBox=$('abilityLearners');
+  if(learnersButton&&learnersBox)learnersButton.onclick=async()=>{
+    const opening=learnersBox.hidden;
+    learnersBox.hidden=!opening;
+    if(opening&&!learnersBox.dataset.loaded){
+      learnersBox.innerHTML=`<p class=\"muted\">${uiLang==='en'?'Loading Pokémon …':'Pokémon werden geladen …'}</p>`;
+      const learners=await getAbilityLearners(id,name);
+      learnersBox.innerHTML=abilityLearnerHtml(learners);
+      learnersBox.dataset.loaded='1';
+    }
+  };
 }
 const moveInfoCache=new Map();
 const SHOWDOWN_MOVES_URL='https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/moves.ts';

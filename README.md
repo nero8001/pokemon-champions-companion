@@ -40,3 +40,9 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - If Serebii cannot be fetched by the browser, the app falls back to the English effect already contained in the Champions move dataset.
 - No automatic translation is performed, so German mode can show an English effect rather than Denglish or a missing-description placeholder.
 - Existing Champions move properties such as Kontakt, Hieb and Schnitt remain unchanged.
+
+
+## v7.0
+- Ability Info now has a “Pokémon erlernbar” button.
+- Uses PokéAPI ability.pokemon data to list all Pokémon that can have the ability, not only Champions.
+- Hidden abilities are marked.

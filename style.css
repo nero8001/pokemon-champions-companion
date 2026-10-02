@@ -78,3 +78,6 @@
 .champions-learner span{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .champions-learner small{grid-column:2;color:#7f8baa;font-size:11px;margin-top:-5px}
 @media(max-width:600px){.champions-learners-list{grid-template-columns:1fr}}
+
+/* v7.0 – Pokémon that can have an ability (all Pokémon, not only Champions) */
+.ability-info-block{margin-top:14px;padding-top:14px;border-top:1px solid #263452}.ability-learners-button{margin:0;width:100%;height:44px}.ability-learners{margin-top:12px}.ability-learners-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ability-learner{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:9px;padding:8px 10px;border:1px solid #263452;background:#10182a;border-radius:11px;min-width:0}.ability-learner img{width:40px;height:40px;object-fit:contain}.ability-learner span{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ability-learner small{display:block;color:#7f8baa;font-size:11px;margin-top:2px}@media(max-width:600px){.ability-learners-list{grid-template-columns:1fr}}
