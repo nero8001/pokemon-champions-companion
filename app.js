@@ -329,17 +329,79 @@ function nav(){const menu=$('mainNav'),toggle=$('menuToggle');document.querySele
 const META_POKEMON=[['Kingambit',33.4,52.0,28645],['Sneasler',33.3,50.2,28527],['Garchomp',33.1,50.5,28368],['Incineroar',32.2,49.9,27627],['Basculegion',28.4,51.6,24304],['Charizard',23.0,51.2,19699],['Sinistcha',21.5,49.3,18425],['Whimsicott',16.8,49.3,14418],['Farigiraf',16.6,48.8,14257],['Eternal Flower Floette',16.2,53.2,13911],['Aerodactyl',13.8,50.6,11820],['Archaludon',13.2,50.1,11332]];
 const META_TEAM_STATS=[['#1',315,53.50,834,725],['#2',158,48.33,361,386],['#3',143,48.77,356,374],['#4',118,61.26,408,258],['#5',100,54.90,308,253],['#6',99,49.20,215,222],['#7',96,50.58,218,213],['#8',90,57.11,265,199],['#9',89,56.88,273,207],['#10',79,51.59,195,183],['#11',75,39.36,135,208],['#12',73,54.30,202,169],['#13',70,51.40,183,173],['#14',64,55.27,173,140],['#15',61,55.64,148,118],['#16',61,38.91,100,157],['#17',56,47.19,143,159],['#18',56,42.00,105,145],['#19',55,50.85,120,116],['#20',55,47.93,116,126],['#21',51,54.55,114,95],['#22',50,51.39,111,105]];
 const META_CONCRETE_TEAMS=[
- {player:'DDee',record:'12-0',pokemon:['Floette-Eternal','Sneasler','Incineroar','Rillaboom','Gholdengo','Raichu-Mega-Y']},
- {player:'Luca',record:'13-2',pokemon:['Salamence-Mega','Raichu-Mega-Y','Arcanine-Hisui','Sylveon','Gholdengo','Rillaboom']},
- {player:'Lloyd Villar',record:'13-1',pokemon:['Sneasler','Salamence-Mega','Tyranitar-Mega','Excadrill','Indeedee','Milotic']},
- {player:'Corro',record:'9-0',pokemon:['Froslass-Mega','Raichu-Mega-Y','Kingambit','Sneasler','Garchomp-Mega-Z','Arcanine-Hisui']},
- {player:'Morfhious',record:'7-0',pokemon:['Gengar-Mega','Incineroar','Rillaboom','Politoed','Archaludon','Sneasler']},
- {player:'MiggleVGC',record:'8-0',pokemon:['Tyranitar-Mega','Excadrill','Milotic','Gholdengo','Salamence-Mega','Rillaboom']},
- {player:'Wacka',record:'7-0',pokemon:['Raichu-Mega-Y','Rillaboom','Incineroar','Gholdengo','Sneasler','Garchomp-Mega-Z']}
+ {player:'Lloyd Villar',record:'13-1',event:'Make It Rain - VGC Tournament Rank #1',pokemon:[
+  {name:'Sneasler',ability:'Unburden',item:'Psychic Seed',moves:['Close Combat','Dire Claw','Protect','Acrobatics']},
+  {name:'Salamence-Mega',ability:'Intimidate',item:'Salamencite',moves:['Hyper Voice','Protect','Tailwind','Draco Meteor']},
+  {name:'Tyranitar-Mega',ability:'Sand Stream',item:'Tyranitarite',moves:['Protect','Rock Slide','Knock Off','Dragon Dance']},
+  {name:'Excadrill',ability:'Sand Rush',item:'Focus Sash',moves:['High Horsepower','Protect','Rock Slide','Iron Head']},
+  {name:'Indeedee',ability:'Psychic Surge',item:'Choice Scarf',moves:['Expanding Force','Trick','Trick Room','Dazzling Gleam']},
+  {name:'Milotic',ability:'Competitive',item:'Leftovers',moves:['Protect','Muddy Water','Hypnosis','Coil']}
+ ]},
+ {player:'Luca',record:'13-2',event:"Maddo's Cup #12 | Reg M-C Rank #1",pokemon:[
+  {name:'Salamence-Mega',ability:'Intimidate',item:'Salamencite',moves:['Hyper Voice','Draco Meteor','Tailwind','Protect']},
+  {name:'Raichu-Mega-Y',ability:'Lightning Rod',item:'Raichunite Y',moves:['Zap Cannon','Focus Blast','Fake Out','Protect']},
+  {name:'Arcanine-Hisui',ability:'Rock Head',item:'Focus Sash',moves:['Flare Blitz','Head Smash','Extreme Speed','Protect']},
+  {name:'Sylveon',ability:'Pixilate',item:'Fairy Feather',moves:['Hyper Voice','Hyper Beam','Quick Attack','Detect']},
+  {name:'Gholdengo',ability:'Good as Gold',item:'Life Orb',moves:['Make It Rain','Shadow Ball','Nasty Plot','Protect']},
+  {name:'Rillaboom',ability:'Grassy Surge',item:'Miracle Seed',moves:['Fake Out','Grassy Glide','Wood Hammer','High Horsepower']}
+ ]},
+ {player:'DDee',record:'12-0',event:"Talon's FIGHT CLUB #101 - Champions Reg M-C Rank #1",pokemon:[
+  {name:'Floette-Eternal-Mega',ability:'Flower Veil',item:'Floettite',moves:['Moonblast','Dazzling Gleam','Calm Mind','Protect']},
+  {name:'Sneasler',ability:'Unburden',item:'Grassy Seed',moves:['Close Combat','Dire Claw','Rock Slide','Protect']},
+  {name:'Incineroar',ability:'Intimidate',item:'Sitrus Berry',moves:['Flare Blitz','Throat Chop','Fake Out','Parting Shot']},
+  {name:'Rillaboom',ability:'Grassy Surge',item:'Miracle Seed',moves:['Wood Hammer','Grassy Glide','High Horsepower','Fake Out']},
+  {name:'Gholdengo',ability:'Good as Gold',item:'Life Orb',moves:['Make It Rain','Shadow Ball','Nasty Plot','Protect']},
+  {name:'Raichu-Mega-Y',ability:'Lightning Rod',item:'Raichunite Y',moves:['Zap Cannon','Focus Blast','Encore','Protect']}
+ ]},
+ {player:'Mahir X',record:'10-1',event:'Coupe Critique Champions #4 - Rank #1',pokemon:[
+  {name:'Swampert-Mega',ability:'Torrent',item:'Swampertite',moves:['Wave Crash','Earthquake','Ice Punch','Protect']},
+  {name:'Pelipper',ability:'Drizzle',item:'Sitrus Berry',moves:['Weather Ball','Hurricane','Tailwind','Wide Guard']},
+  {name:'Archaludon',ability:'Stamina',item:'Leftovers',moves:['Electro Shot','Dragon Pulse','Flash Cannon','Protect']},
+  {name:'Grimmsnarl',ability:'Prankster',item:'Light Clay',moves:['Light Screen','Reflect','Parting Shot','Spirit Break']},
+  {name:'Charizard-Mega-Y',ability:'Blaze',item:'Charizardite Y',moves:['Weather Ball','Heat Wave','Hurricane','Protect']},
+  {name:'Venusaur',ability:'Chlorophyll',item:'Focus Sash',moves:['Leaf Storm','Sleep Powder','Sludge Bomb','Protect']}
+ ]},
+ {player:'ZayGM',record:'10-0',event:'Final Weekly Qualifier - Rank #1',pokemon:[
+  {name:'Salamence-Mega',ability:'Intimidate',item:'Salamencite',moves:['Draco Meteor','Hyper Voice','Tailwind','Protect']},
+  {name:'Sneasler',ability:'Unburden',item:'White Herb',moves:['Fake Out','Dire Claw','Close Combat','Protect']},
+  {name:'Rillaboom',ability:'Grassy Surge',item:'Miracle Seed',moves:['Fake Out','Grassy Glide','Wood Hammer','High Horsepower']},
+  {name:'Tyranitar-Mega',ability:'Sand Stream',item:'Tyranitarite',moves:['Rock Slide','Knock Off','Fire Punch','Protect']},
+  {name:'Gholdengo',ability:'Good as Gold',item:'Life Orb',moves:['Make It Rain','Shadow Ball','Protect','Nasty Plot']},
+  {name:'Excadrill',ability:'Sand Rush',item:'Focus Sash',moves:['High Horsepower','Rock Slide','Iron Head','Protect']}
+ ]},
+ {player:'Lightoz',record:'12-0',event:'ValkrixVGC Pokémon Champions League #03 - Rank #1',pokemon:[
+  {name:'Sneasler',ability:'Unburden',item:'Psychic Seed',moves:['Close Combat','Dire Claw','Throat Chop','Protect']},
+  {name:'Indeedee',ability:'Psychic Surge',item:'Focus Sash',moves:['Expanding Force','Helping Hand','Trick Room','Protect']},
+  {name:'Sylveon',ability:'Pixilate',item:'Fairy Feather',moves:['Hyper Voice','Hyper Beam','Quick Attack','Detect']},
+  {name:'Basculegion',ability:'Adaptability',item:'Life Orb',moves:['Wave Crash','Last Respects','Aqua Jet','Protect']},
+  {name:'Dragonite-Mega',ability:'Multiscale',item:'Dragoninite',moves:['Dragon Pulse','Heat Wave','Tailwind','Protect']},
+  {name:'Incineroar',ability:'Intimidate',item:'Sitrus Berry',moves:['Flare Blitz','Throat Chop','Fake Out','Parting Shot']}
+ ]},
+ {player:'Corro',record:'9-0',event:"HeroicTitan’s VGC Battle Arena Rank #1",pokemon:[
+  {name:'Froslass-Mega',ability:'Cursed Body',item:'Froslassite',moves:['Blizzard','Shadow Ball','Aurora Veil','Protect']},
+  {name:'Raichu-Mega-Y',ability:'Lightning Rod',item:'Raichunite Y',moves:['Zap Cannon','Focus Blast','Encore','Protect']},
+  {name:'Rillaboom',ability:'Grassy Surge',item:'Miracle Seed',moves:['Fake Out','Grassy Glide','Wood Hammer','High Horsepower']},
+  {name:'Kingambit',ability:'Defiant',item:'Life Orb',moves:['Kowtow Cleave','Sucker Punch','Swords Dance','Protect']},
+  {name:'Sneasler',ability:'Unburden',item:'Grassy Seed',moves:['Close Combat','Dire Claw','Fake Out','Protect']},
+  {name:'Arcanine-Hisui',ability:'Rock Head',item:'Focus Sash',moves:['Flare Blitz','Head Smash','Extreme Speed','Protect']}
+ ]}
+];
+const META_TEAM_PROFILE_NOTE='EV-Splits und Wesen werden im veröffentlichten Top-Team-Feed nicht mit ausgeliefert. Sobald der Team-Builder/API diese Werte bereitstellt, werden sie hier ergänzt.';
+const META_RANKING_PREVIEWS=[
+ ['Rillaboom','Sneasler','Incineroar','Salamence-Mega'],
+ ['Incineroar','Rillaboom','Sneasler','Kingambit'],
+ ['Rillaboom','Salamence-Mega','Sneasler','Gholdengo'],
+ ['Gholdengo','Raichu-Mega-Y','Rillaboom','Arcanine-Hisui'],
+ ['Kingambit','Rillaboom','Sneasler','Salamence-Mega'],
+ ['Rillaboom','Sneasler','Gholdengo','Salamence-Mega']
 ];
 let metaStatsExpanded=false,metaBestExpanded=false,metaConcreteExpanded=false;
 function metaPokemonLabel(name){const aliases={'Rillaboom':274,'Sneasler':903,'Incineroar':727,'Gholdengo':1000,'Sylveon':700,'Arcanine-Hisui':10288,'Excadrill':530,'Indeedee':876,'Milotic':350,'Politoed':186,'Archaludon':1018,'Kingambit':983,'Garchomp-Mega-Z':10258,'Raichu-Mega-Y':10281,'Floette-Eternal':648};const id=aliases[name];return id&&Number.isFinite(id)?(deP(id)||name):name;}
 function metaTeamPokemon(name){return `<span class="meta-team-poke">${metaPokemonLabel(name)}</span>`}
+function metaProfilePokemon(p){return `<div class="meta-profile-poke"><div class="meta-profile-poke-head"><b>${metaPokemonLabel(p.name)}</b><span>${p.item||'—'}</span></div><div class="meta-profile-meta"><span><strong>${uiLang==='en'?'Ability':'Fähigkeit'}:</strong> ${p.ability||'—'}</span><span><strong>${uiLang==='en'?'Nature / EVs':'Wesen / EVs'}:</strong> ${p.nature||'—'}${p.evs?` · ${p.evs}`:''}</span></div><div class="meta-profile-moves">${(p.moves||[]).map(m=>`<span>${m}</span>`).join('')}</div></div>`}
+function openMetaTeamProfile(index){const team=META_CONCRETE_TEAMS[index];if(!team)return;$('infoTitle').textContent=`${team.player} · ${team.record}`;$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${team.event||''}</p><div class="meta-profile-grid">${team.pokemon.map(metaProfilePokemon).join('')}</div><p class="meta-profile-note">${META_TEAM_PROFILE_NOTE}</p><a class="secondary meta-profile-source" href="https://pikalytics.com/topteams" target="_blank" rel="noopener">Pikalytics – Top-Teams</a></div>`;$('infoModal').hidden=false}
+function metaRankingPreview(index){const arr=META_RANKING_PREVIEWS[index%META_RANKING_PREVIEWS.length]||[];return arr.map(metaTeamPokemon).join('')}
+
 function renderMeta(){
  const source=$('metaSource')?.value||'pikalytics',view=$('metaView')?.value||'teams',link=$('metaSourceLink');
  if(link)link.href=source==='suckerpunch'?'https://suckerpunch.gg/':'https://pikalytics.com/team-usage';
@@ -348,11 +410,12 @@ function renderMeta(){
  if(view==='teams'){
   const a=$('metaTeamRows'),b=$('metaBestRows');
   const used=metaStatsExpanded?META_TEAM_STATS:META_TEAM_STATS.slice(0,6);
-  a.innerHTML=used.map(x=>`<div class="meta-team-row"><div class="meta-team-rank">${x[0]}</div><div><b>${x[1]} Teams</b><div class="meta-muted">${x[3]} Siege · ${x[4]} Niederlagen</div></div><div class="meta-team-stat"><b>${x[2].toFixed(2)}%</b> Winrate</div></div>`).join('');
+  a.innerHTML=used.map((x,i)=>`<div class="meta-team-row meta-team-row-clickable" data-ranking="${i}" title="${uiLang==='en'?'Open team profile':'Teamprofil öffnen'}"><div class="meta-team-rank">${x[0]}</div><div><b>${x[1]} Teams</b><div class="meta-muted">${x[3]} Siege · ${x[4]} Niederlagen</div><div class="meta-team-preview">${metaRankingPreview(i)}</div></div><div class="meta-team-stat"><b>${x[2].toFixed(2)}%</b> Winrate</div></div>`).join('');
   const best=[...META_TEAM_STATS].sort((a,b)=>b[2]-a[2]),bestShown=metaBestExpanded?best:best.slice(0,6);
-  b.innerHTML=bestShown.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x[1]} Teams</b><div class="meta-muted">${x[3]} Siege · ${x[4]} Niederlagen</div></div><div class="meta-team-stat"><b>${x[2].toFixed(2)}%</b> Winrate</div></div>`).join('');
+  b.innerHTML=bestShown.map((x,i)=>`<div class="meta-team-row meta-team-row-clickable" data-ranking="${i}" title="${uiLang==='en'?'Open team profile':'Teamprofil öffnen'}"><div class="meta-team-rank">#${i+1}</div><div><b>${x[1]} Teams</b><div class="meta-muted">${x[3]} Siege · ${x[4]} Niederlagen</div><div class="meta-team-preview">${metaRankingPreview(i)}</div></div><div class="meta-team-stat"><b>${x[2].toFixed(2)}%</b> Winrate</div></div>`).join('');
+  document.querySelectorAll('.meta-team-row-clickable').forEach(row=>row.onclick=()=>{const i=Number(row.dataset.ranking||0);const x=META_TEAM_STATS[i];if(!x)return;$('infoTitle').textContent=`${uiLang==='en'?'Team ranking':'Team-Ranking'} ${x[0]}`;$('infoBody').innerHTML=`<div class="meta-profile"><p><strong>${x[1]} Teams</strong> · ${x[2].toFixed(2)}% Winrate · ${x[3]} Siege · ${x[4]} Niederlagen</p><p class="meta-profile-label">${uiLang==='en'?'Pokémon preview':'Pokémon-Vorschau'}</p><div class="meta-profile-team-preview">${metaRankingPreview(i)}</div><p class="meta-profile-note">${uiLang==='en'?'The ranking feed publishes the statistics above; it does not expose the exact six-Pokémon composition in the same dataset. The Pokémon shown here are a meta preview, not a claimed exact team composition.':'Der Ranking-Feed liefert die obigen Statistiken, aber in diesem Datensatz nicht die exakte 6er-Pokémon-Kombination. Die angezeigten Pokémon sind daher nur eine Meta-Vorschau und keine behauptete exakte Teamzusammensetzung.'}</p><a class="secondary meta-profile-source" href="https://pikalytics.com/team-usage" target="_blank" rel="noopener">Pikalytics – Team Usage</a></div>`;$('infoModal').hidden=false});
   const mb=$('metaMoreStats'),mbe=$('metaMoreBest');if(mb){mb.textContent=t(metaStatsExpanded?'metaShowLess':'metaShowMore');mb.hidden=META_TEAM_STATS.length<=6}if(mbe){mbe.textContent=t(metaBestExpanded?'metaShowLess':'metaShowMore');mbe.hidden=META_TEAM_STATS.length<=6}
-  const concrete=$('metaConcreteTeams');if(concrete){const list=metaConcreteExpanded?META_CONCRETE_TEAMS:META_CONCRETE_TEAMS.slice(0,4);concrete.innerHTML=list.map((team,i)=>`<article class="meta-concrete-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-concrete-pokemon">${team.pokemon.map(metaTeamPokemon).join('')}</div><a href="https://pikalytics.com/pokedex/championstournaments/Sneasler" target="_blank" rel="noopener">Pikalytics</a></article>`).join('');const bt=$('metaShowAllTeams');if(bt){bt.textContent=t(metaConcreteExpanded?'metaShowLessTeams':'metaShowAllTeams');bt.hidden=META_CONCRETE_TEAMS.length<=4}}
+  const concrete=$('metaConcreteTeams');if(concrete){const list=metaConcreteExpanded?META_CONCRETE_TEAMS:META_CONCRETE_TEAMS.slice(0,4);concrete.innerHTML=list.map((team,i)=>`<article class="meta-concrete-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-concrete-pokemon">${team.pokemon.map(p=>metaTeamPokemon(p.name)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${i}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></article>`).join('');document.querySelectorAll('.meta-profile-button').forEach(btn=>btn.onclick=()=>openMetaTeamProfile(Number(btn.dataset.teamProfile)));const bt=$('metaShowAllTeams');if(bt){bt.textContent=t(metaConcreteExpanded?'metaShowLessTeams':'metaShowAllTeams');bt.hidden=META_CONCRETE_TEAMS.length<=4}}
  }else{$('metaPokemonRows').innerHTML=META_POKEMON.map((x,i)=>`<div class="meta-pokemon-row"><div class="meta-pokemon-rank">${i+1}</div><div class="meta-pokemon-name">${x[0]}</div><div><div class="meta-pokemon-bar"><span style="width:${x[1]}%"></span></div></div><div class="meta-pokemon-stat">${x[1].toFixed(1)}% · ${x[2].toFixed(1)}%</div></div>`).join('')}
 }
 
