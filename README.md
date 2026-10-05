@@ -40,3 +40,9 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - If Serebii cannot be fetched by the browser, the app falls back to the English effect already contained in the Champions move dataset.
 - No automatic translation is performed, so German mode can show an English effect rather than Denglish or a missing-description placeholder.
 - Existing Champions move properties such as Kontakt, Hieb and Schnitt remain unchanged.
+
+## v7.2 Meta & Teams improvements
+- Added concrete curated Pokémon Champions teams with player/record and six-Pokémon composition.
+- Added expandable "Mehr Datensätze anzeigen" controls for most-used and best-performing team rankings.
+- Added expandable "Weitere Teams anzeigen" control for the concrete team list.
+- Concrete team examples are based on current Pikalytics Champions Reg M-C team pages; the full automatic team feed remains reserved for the later API integration.
