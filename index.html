@@ -26,7 +26,7 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <nav><button class="nav active" data-page="dex">Pokédex</button><button class="nav" data-page="calc">Battle Calculator</button><button class="nav" data-page="randomizer">Randomizer</button></nav>
+  <div class="menu-wrap"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
@@ -170,6 +170,26 @@
   </div>
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
+<section id="meta" class="page">
+  <div class="hero"><small>LIVE META</small><h1 data-i18n="meta">Meta &amp; Teams</h1><p data-i18n="metaHero">Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.</p></div>
+  <div class="meta-toolbar card">
+    <div><label for="metaSource" data-i18n="metaSourceLabel">Datenquelle</label><select id="metaSource"><option value="pikalytics">Pikalytics – Team-Rankings</option><option value="suckerpunch">Suckerpunch – Meta &amp; Builds</option></select></div>
+    <div><label for="metaView" data-i18n="metaViewLabel">Ansicht</label><select id="metaView"><option value="teams" data-i18n="metaViewTeams">Teams</option><option value="pokemon" data-i18n="metaViewPokemon">Pokémon-Meta</option></select></div>
+    <a id="metaSourceLink" class="secondary meta-source-link" href="https://pikalytics.com/team-usage" target="_blank" rel="noopener" data-i18n="metaOpenSource">Live-Quelle öffnen</a>
+  </div>
+  <div id="metaStatus" class="meta-status"></div>
+  <div id="metaTeamsView" class="meta-view">
+    <div class="meta-grid">
+      <article class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaMostUsed">🔥 Meistgenutzte Teams</h2><span class="meta-badge">Pikalytics</span></div><p class="meta-muted" data-i18n="metaTeamsExplain">Teams mit identischer Pokémon-/Mega-Kombination, sortiert nach Häufigkeit.</p><div id="metaTeamRows" class="meta-team-rows"></div></article>
+      <article class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaBest">🏆 Erfolgreichste Teams</h2><span class="meta-badge">Pikalytics</span></div><p class="meta-muted" data-i18n="metaBestExplain">Für die Rangfolge wird später eine Mindestanzahl an Teams berücksichtigt.</p><div id="metaBestRows" class="meta-team-rows"></div></article>
+    </div>
+    <div class="card meta-card meta-note"><h2 data-i18n="metaIntegration">Datenanbindung</h2><p data-i18n="metaIntegrationText">Die Oberfläche ist bereits vorbereitet. Pikalytics liefert die Team-Rankings; die konkrete Team-Zusammensetzung wird in einem nächsten Schritt direkt aus einer stabilen Datenquelle eingebunden, damit keine veralteten Werte fest in der App stehen.</p></div>
+  </div>
+  <div id="metaPokemonView" class="meta-view" hidden>
+    <div class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaTopPokemon">📈 Aktuelle Pokémon-Meta</h2><span class="meta-badge">Suckerpunch</span></div><p class="meta-muted" data-i18n="metaPokemonExplain">Aktuelle Turnierdaten für Regulation M-C.</p><div id="metaPokemonRows" class="meta-pokemon-rows"></div></div>
+  </div>
+</section>
+
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
 <script src="app.js"></script>
