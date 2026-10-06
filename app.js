@@ -554,6 +554,71 @@ function showEffectInfo(key){
   const data=ABILITY_EFFECTS[key]?.[uiLang]||ABILITY_EFFECTS[key]?.de;if(!data)return;
   $('infoTitle').textContent=data.title;$('infoBody').innerHTML=`<div class="effect-info"><p><strong>${uiLang==='en'?'Duration':'Dauer'}:</strong> ${data.duration}</p><p>${data.effect}</p><p class="muted">${data.note}</p></div>`;$('infoModal').hidden=false;
 }
+const abilityLearnersCache=new Map();
+const ABILITY_LEARNERS_CSV='https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/';
+let abilityLearnersCsvPromise=null;
+async function loadAbilityLearnersCsv(){
+  if(abilityLearnersCsvPromise)return abilityLearnersCsvPromise;
+  abilityLearnersCsvPromise=(async()=>{
+    const [abText,pText]=await Promise.all([
+      fetch(ABILITY_LEARNERS_CSV+'pokemon_abilities.csv',{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error(r.status);return r.text()}),
+      fetch(ABILITY_LEARNERS_CSV+'pokemon.csv',{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error(r.status);return r.text()})
+    ]);
+    const pokemonById=new Map();
+    const pLines=pText.trim().split(/\r?\n/);
+    for(let i=1;i<pLines.length;i++){
+      const cols=pLines[i].split(',');
+      if(cols.length>=2) pokemonById.set(Number(cols[0]),String(cols[1]||''));
+    }
+    return {abilityRows:abText.trim().split(/\r?\n/).slice(1),pokemonById};
+  })();
+  return abilityLearnersCsvPromise;
+}
+async function getAbilityLearners(id,name){
+  const key=String(id||name||'').toLowerCase().trim();
+  if(!key)return [];
+  if(abilityLearnersCache.has(key))return abilityLearnersCache.get(key);
+  const promise=(async()=>{
+    const abilityId=Number(id||0);
+    try{
+      // Fast path: PokéAPI's ability resource contains the complete learner list.
+      const a=await json(id?`${API}/ability/${id}`:`${API}/ability/${encodeURIComponent(String(name).toLowerCase())}`,8000);
+      const rows=(a?.pokemon||[]).map(x=>{
+        const url=String(x?.pokemon?.url||'');
+        const m=url.match(/\/(\d+)\/?$/);
+        const dex=m?Number(m[1]):0;
+        return {dex,name:String(x?.pokemon?.name||''),hidden:Boolean(x?.is_hidden)};
+      }).filter(x=>x.dex&&x.name);
+      if(rows.length)return rows.sort((a,b)=>a.dex-b.dex||a.name.localeCompare(b.name,'en')||Number(a.hidden)-Number(b.hidden));
+    }catch(e){ console.warn('PokéAPI ability learners unavailable, using CSV fallback:',e); }
+    // Reliable fallback: the official PokéAPI source data on GitHub.
+    try{
+      if(!abilityId)throw Error('No numeric ability id');
+      const {abilityRows,pokemonById}=await loadAbilityLearnersCsv();
+      const rows=[];
+      for(const line of abilityRows){
+        const cols=line.split(',');
+        if(cols.length<4||Number(cols[1])!==abilityId)continue;
+        const dex=Number(cols[0]);
+        const pokeName=pokemonById.get(dex)||'';
+        if(dex&&pokeName)rows.push({dex,name:pokeName,hidden:String(cols[2]).toLowerCase()==='true'});
+      }
+      const seen=new Set();
+      return rows.filter(x=>{const k=`${x.dex}|${x.hidden}`;if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.dex-b.dex||a.name.localeCompare(b.name,'en')||Number(a.hidden)-Number(b.hidden));
+    }catch(e){
+      console.warn('Ability learner CSV fallback unavailable:',e);
+      return [];
+    }
+  })();
+  abilityLearnersCache.set(key,promise);return promise;
+}
+function abilityLearnerLabel(x){
+  return dataName('pokemon',x.dex,x.name.replace(/-/g,' '))||title(x.name);
+}
+function abilityLearnerHtml(learners){
+  if(!learners.length)return `<p class=\"muted\">${uiLang==='en'?'No Pokémon found for this ability.':'Keine Pokémon für diese Fähigkeit gefunden.'}</p>`;
+  return `<div class=\"ability-learners-list\">${learners.map(x=>`<div class=\"ability-learner\"><img src=\"${sprite(x.dex)}\" alt=\"\"><div><span>${escapeHtml(abilityLearnerLabel(x))}</span>${x.hidden?`<small>${uiLang==='en'?'Hidden Ability':'Versteckte Fähigkeit'}</small>`:''}</div></div>`).join('')}</div>`;
+}
 async function showAbilityInfo(id,name,customDescription){
   $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';$('infoModal').hidden=false;
   const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';
@@ -562,8 +627,7 @@ async function showAbilityInfo(id,name,customDescription){
   $('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
   const learnersButton=$('showAbilityLearners'),learnersBox=$('abilityLearners');
   if(learnersButton&&learnersBox)learnersButton.onclick=async()=>{
-    const opening=learnersBox.hidden;
-    learnersBox.hidden=!opening;
+    const opening=learnersBox.hidden; learnersBox.hidden=!opening;
     if(opening&&!learnersBox.dataset.loaded){
       learnersBox.innerHTML=`<p class="muted">${uiLang==='en'?'Loading Pokémon …':'Pokémon werden geladen …'}</p>`;
       const learners=await getAbilityLearners(id,name);
@@ -726,6 +790,45 @@ async function getMoveInfo(champMove){
     return {champMove,api,description,amounts,flags};
   })();moveInfoCache.set(key,promise);return promise;
 }
+async function getChampionsLearnersForMove(champMove){
+  await loadChampionsData();
+  const moveKey=normMoveName(champMove?.name||championsMoveLabel(champMove)||'');
+  if(!moveKey||!championsLearnsetsData)return [];
+  const learners=[];
+  for(const [key,entry] of Object.entries(championsLearnsetsData)){
+    const moves=Array.isArray(entry?.moves)?entry.moves:[];
+    if(!moves.some(x=>normMoveName(typeof x==='string'?x:x?.name)===moveKey))continue;
+    learners.push({
+      key:String(key),
+      dexNumber:Number(entry?.dexNumber||0),
+      form:String(entry?.form||'Base'),
+      name:String(entry?.name||key)
+    });
+  }
+  learners.sort((a,b)=>a.dexNumber-b.dexNumber||({Base:0,Regional:1,Mega:2}[a.form]??3)-({Base:0,Regional:1,Mega:2}[b.form]??3)||a.name.localeCompare(b.name,'en'));
+  return learners;
+}
+function championsLearnerLabel(entry){
+  const key=entry?.name||entry?.key||'';
+  const dex=Number(entry?.dexNumber||0);
+  const base=deP(dex)||'';
+  if(uiLang==='en'||!base)return key;
+  if(entry?.form==='Base')return base;
+  const suffix=key.replace(/^(Mega |Alolan |Galarian |Hisuian |Paldean )/i,'');
+  if(/^Mega /i.test(key)){
+    const megaSuffix=suffix.replace(/^[A-Za-zÀ-ÿ'’ -]+(?= X$| Y$| Z$)/i,'');
+    return megaSuffix&&megaSuffix!=='X'&&megaSuffix!=='Y'&&megaSuffix!=='Z'?`Mega ${base} ${megaSuffix}`:`Mega ${base}${/ [XYZ]$/i.test(key)?' '+key.slice(-1):''}`;
+  }
+  if(/^Alolan /i.test(key))return `Alola-${base}`;
+  if(/^Galarian /i.test(key))return `Galar-${base}`;
+  if(/^Hisuian /i.test(key))return `Hisui-${base}`;
+  if(/^Paldean /i.test(key))return `Paldea-${base}`;
+  return key;
+}
+function championsLearnerHtml(learners){
+  if(!learners.length)return `<p class="muted">${uiLang==='en'?'No Pokémon found for this Champions move.':'Keine Pokémon für diese Champions-Attacke gefunden.'}</p>`;
+  return `<div class="champions-learners-list">${learners.map(x=>`<div class="champions-learner"><img src="${sprite(x.dexNumber)}" alt=""><span>${escapeHtml(championsLearnerLabel(x))}</span>${x.form!=='Base'?`<small>${escapeHtml(uiLang==='en'?x.form:'Form')}</small>`:''}</div>`).join('')}</div>`;
+}
 async function showMoveInfo(raw){
   const champMove=typeof raw==='string'?{name:raw}:raw;const name=championsMoveLabel(champMove);$('infoTitle').textContent=name||champMove.name||'';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Move data are loading …':'Attackendaten werden geladen …'}</p>`;$('infoModal').hidden=false;
   const info=await getMoveInfo(champMove);const m=info.champMove||{};const a=info.api||{};const accuracy=m.accuracy??a.accuracy;const power=m.power??a.power;const category=m.category||({physical:'Physical',special:'Special',status:'Status'}[a.damage_class?.name])||'—';const type=m.type||a.type?.name||'—';const target=m.target||a.target?.name||'';const flags=moveInfoFlags(info.flags);const amount=info.amounts;
@@ -736,7 +839,10 @@ async function showMoveInfo(raw){
   if(amount.heal)detailRows.push(`<div class="move-info-block"><strong>${labels.healing}</strong><p>${uiLang==='en'?`Restores ${escapeHtml(amount.heal)} of maximum HP.`:`Heilt ${escapeHtml(amount.heal)} der maximalen KP.`}</p></div>`);
   if(amount.drain)detailRows.push(`<div class="move-info-block"><strong>${labels.drain}</strong><p>${uiLang==='en'?`Recovers ${escapeHtml(amount.drain)} of the damage dealt.`:`Heilt ${escapeHtml(amount.drain)} des verursachten Schadens.`}</p></div>`);
   const germanEffect=await germanMoveDescription(m,a);detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(germanEffect|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
+  detailRows.push(`<div class="move-info-block move-learners-block"><button type="button" id="showChampionsLearners" class="secondary move-learners-button">${uiLang==='en'?'Pokémon that can learn this move':'Pokémon erlernbar'}</button><div id="championsLearners" class="champions-learners" hidden></div></div>`);
   $('infoBody').innerHTML=detailRows.join('');$('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
+  const learnersButton=$('showChampionsLearners'),learnersBox=$('championsLearners');
+  if(learnersButton&&learnersBox)learnersButton.onclick=async()=>{const opening=learnersBox.hidden;learnersBox.hidden=!opening;if(opening&&!learnersBox.dataset.loaded){learnersBox.innerHTML=`<p class="muted">${uiLang==='en'?'Loading Champions learnsets …':'Champions-Lernlisten werden geladen …'}</p>`;const learners=await getChampionsLearnersForMove(m);learnersBox.innerHTML=championsLearnerHtml(learners);learnersBox.dataset.loaded='1';}};
 }
 async function detail(p,s){
   const pname=p._mcLabel||deP(p.id)||deF(p.id)||title(p.name);
