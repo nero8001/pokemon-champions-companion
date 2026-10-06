@@ -138,45 +138,6 @@ function championsMoveId(m){
   const id=Object.keys(src).find(x=>normMoveName(src[x])===key);
   return id?Number(id):null;
 }
-async function getChampionsLearnersForMove(champMove){
-  await loadChampionsData();
-  const moveKey=normMoveName(champMove?.name||championsMoveLabel(champMove)||'');
-  if(!moveKey||!championsLearnsetsData)return [];
-  const learners=[];
-  for(const [key,entry] of Object.entries(championsLearnsetsData)){
-    const moves=Array.isArray(entry?.moves)?entry.moves:[];
-    if(!moves.some(x=>normMoveName(typeof x==='string'?x:x?.name)===moveKey))continue;
-    learners.push({
-      key:String(key),
-      dexNumber:Number(entry?.dexNumber||0),
-      form:String(entry?.form||'Base'),
-      name:String(entry?.name||key)
-    });
-  }
-  learners.sort((a,b)=>a.dexNumber-b.dexNumber||({Base:0,Regional:1,Mega:2}[a.form]??3)-({Base:0,Regional:1,Mega:2}[b.form]??3)||a.name.localeCompare(b.name,'en'));
-  return learners;
-}
-function championsLearnerLabel(entry){
-  const key=entry?.name||entry?.key||'';
-  const dex=Number(entry?.dexNumber||0);
-  const base=deP(dex)||'';
-  if(uiLang==='en'||!base)return key;
-  if(entry?.form==='Base')return base;
-  const suffix=key.replace(/^(Mega |Alolan |Galarian |Hisuian |Paldean )/i,'');
-  if(/^Mega /i.test(key)){
-    const megaSuffix=suffix.replace(/^[A-Za-zÀ-ÿ'’ -]+(?= X$| Y$| Z$)/i,'');
-    return megaSuffix&&megaSuffix!=='X'&&megaSuffix!=='Y'&&megaSuffix!=='Z'?`Mega ${base} ${megaSuffix}`:`Mega ${base}${/ [XYZ]$/i.test(key)?' '+key.slice(-1):''}`;
-  }
-  if(/^Alolan /i.test(key))return `Alola-${base}`;
-  if(/^Galarian /i.test(key))return `Galar-${base}`;
-  if(/^Hisuian /i.test(key))return `Hisui-${base}`;
-  if(/^Paldean /i.test(key))return `Paldea-${base}`;
-  return key;
-}
-function championsLearnerHtml(learners){
-  if(!learners.length)return `<p class="muted">${uiLang==='en'?'No Pokémon found for this Champions move.':'Keine Pokémon für diese Champions-Attacke gefunden.'}</p>`;
-  return `<div class="champions-learners-list">${learners.map(x=>`<div class="champions-learner"><img src="${sprite(x.dexNumber)}" alt=""><span>${escapeHtml(championsLearnerLabel(x))}</span>${x.form!=='Base'?`<small>${escapeHtml(uiLang==='en'?x.form:'Form')}</small>`:''}</div>`).join('')}</div>`;
-}
 function championsMoveHtml(moves){
   const groups={};
   for(const m of moves){const type=m.type||'Normal';(groups[type] ||= []).push(m)}
@@ -597,14 +558,14 @@ async function showAbilityInfo(id,name,customDescription){
   $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';$('infoModal').hidden=false;
   const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';
   const description=info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.');
-  $('infoBody').innerHTML=`<p>${abilityEffectLinks(description)}</p><div class=\"ability-info-block\"><button type=\"button\" id=\"showAbilityLearners\" class=\"secondary ability-learners-button\">${uiLang==='en'?'Pokémon that can have this ability':'Pokémon erlernbar'}</button><div id=\"abilityLearners\" class=\"ability-learners\" hidden></div></div>`;
+  $('infoBody').innerHTML=`<p>${abilityEffectLinks(description)}</p><div class="ability-info-block"><button type="button" id="showAbilityLearners" class="secondary ability-learners-button">${uiLang==='en'?'Pokémon that can have this ability':'Pokémon erlernbar'}</button><div id="abilityLearners" class="ability-learners" hidden></div></div>`;
   $('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
   const learnersButton=$('showAbilityLearners'),learnersBox=$('abilityLearners');
   if(learnersButton&&learnersBox)learnersButton.onclick=async()=>{
     const opening=learnersBox.hidden;
     learnersBox.hidden=!opening;
     if(opening&&!learnersBox.dataset.loaded){
-      learnersBox.innerHTML=`<p class=\"muted\">${uiLang==='en'?'Loading Pokémon …':'Pokémon werden geladen …'}</p>`;
+      learnersBox.innerHTML=`<p class="muted">${uiLang==='en'?'Loading Pokémon …':'Pokémon werden geladen …'}</p>`;
       const learners=await getAbilityLearners(id,name);
       learnersBox.innerHTML=abilityLearnerHtml(learners);
       learnersBox.dataset.loaded='1';
@@ -775,19 +736,7 @@ async function showMoveInfo(raw){
   if(amount.heal)detailRows.push(`<div class="move-info-block"><strong>${labels.healing}</strong><p>${uiLang==='en'?`Restores ${escapeHtml(amount.heal)} of maximum HP.`:`Heilt ${escapeHtml(amount.heal)} der maximalen KP.`}</p></div>`);
   if(amount.drain)detailRows.push(`<div class="move-info-block"><strong>${labels.drain}</strong><p>${uiLang==='en'?`Recovers ${escapeHtml(amount.drain)} of the damage dealt.`:`Heilt ${escapeHtml(amount.drain)} des verursachten Schadens.`}</p></div>`);
   const germanEffect=await germanMoveDescription(m,a);detailRows.push(`<div class="move-info-block"><strong>${labels.effect}</strong><p>${moveEffectLinks(germanEffect|| (uiLang==='en'?'No additional effect.':'Keine zusätzlichen Effekte.'))}</p></div>`);
-  detailRows.push(`<div class="move-info-block move-learners-block"><button type="button" id="showChampionsLearners" class="secondary move-learners-button">${uiLang==='en'?'Pokémon that can learn this move':'Pokémon erlernbar'}</button><div id="championsLearners" class="champions-learners" hidden></div></div>`);
   $('infoBody').innerHTML=detailRows.join('');$('infoBody').querySelectorAll('.effect-link').forEach(b=>b.onclick=()=>showEffectInfo(b.dataset.effect));
-  const learnersButton=$('showChampionsLearners'),learnersBox=$('championsLearners');
-  if(learnersButton&&learnersBox)learnersButton.onclick=async()=>{
-    const opening=learnersBox.hidden;
-    learnersBox.hidden=!opening;
-    if(opening&&!learnersBox.dataset.loaded){
-      learnersBox.innerHTML=`<p class="muted">${uiLang==='en'?'Loading Champions learnsets …':'Champions-Lernlisten werden geladen …'}</p>`;
-      const learners=await getChampionsLearnersForMove(m);
-      learnersBox.innerHTML=championsLearnerHtml(learners);
-      learnersBox.dataset.loaded='1';
-    }
-  };
 }
 async function detail(p,s){
   const pname=p._mcLabel||deP(p.id)||deF(p.id)||title(p.name);
