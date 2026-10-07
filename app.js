@@ -316,9 +316,10 @@ async function getTypeRelations(p){
   return {weak,resist,immune};
 }
 function relationPills(arr,showMultiplier=false){return arr.length?arr.map(x=>`<span class="pill">${x.name}${showMultiplier?` ×${x.m}`:''}</span>`).join(''):'<span class="muted">Keine</span>';}
-async function json(u,timeout=15000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw Error(r.status);return await r.json()}finally{clearTimeout(tm)}}
+async function json(u,timeout=15000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(u,{signal:c.signal,cache:'no-store'});if(!r.ok)throw Error(r.status);return await r.json()}finally{clearTimeout(tm)}}
+async function jsonRetry(u,timeout=15000,retries=2){let last;for(let i=0;i<=retries;i++){try{return await json(u,timeout)}catch(e){last=e;if(i<retries)await new Promise(r=>setTimeout(r,350*(i+1)))}}throw last}
 
-const UI={de:{menu:'Menü',pokedex:'Pokédex',calculator:'Battle Calculator',meta:'Meta & Teams',metaHero:'Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.',metaSourceLabel:'Datenquelle',metaViewLabel:'Ansicht',metaViewTeams:'Teams',metaViewPokemon:'Pokémon-Meta',metaOpenSource:'Live-API öffnen',metaMostUsed:'🔥 Häufigste Team-Kombinationen',metaBest:'🏆 Stärkste Team-Kombinationen',metaTeamsExplain:'Live aus den Champions-Battle-Daten: häufig gemeinsam verwendete Pokémon-Paare, abgeleitet aus den Teampartner-Daten.',metaBestExplain:'Nach gegenseitiger Teampartner-Nutzung sortiert. Die API liefert hierfür keinen Team-Winrate-Feed, daher werden keine erfundenen Winrates angezeigt.',metaShowMore:'Mehr Datensätze anzeigen',metaShowLess:'Weniger Datensätze anzeigen',metaConcrete:'🧩 Konkrete Top-Teams',metaConcreteExplain:'Veröffentlichte konkrete Turnier-Teams. Diese bleiben getrennt von den live abgeleiteten Team-Kombinationen.',metaShowAllTeams:'Weitere Teams anzeigen',metaShowLessTeams:'Weniger Teams anzeigen',metaIntegration:'Datenanbindung',metaIntegrationText:'Die Team-Ansicht nutzt jetzt live die Pokémon Champions Battle Data API. Team-Kombinationen werden aus aktuellen Teampartner-Daten abgeleitet; veröffentlichte 6er-Turnierlisten bleiben separat und werden nicht mit diesen Ableitungen vermischt.',metaTopPokemon:'📈 Aktuelle Pokémon-Meta',metaPokemonExplain:'Live-Rangliste aus den aktuellen Champions-Battle-Daten.',dexHero:'Deutsche Pokémon-Daten und Kampfvorbereitung.',calcHero:'Level 50 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.',searchPokemon:'Pokémon suchen',searchPlaceholder:'Name oder Pokédex-Nummer',dexFilterLabel:'Pokédex-Auswahl',dexFilterAll:'Alle Pokémon',dexFilterChampions:'In Pokémon Champions verfügbar',attacker:'Angreifer',defender:'Verteidiger',pokemonSearch:'Pokémon suchen',form:'Form',moveSearch:'Attacke suchen',nature:'Wesen',itemSearch:'Item suchen',spTitle:'Statuswertpunkte-Verteilung',spHelp:'Max. 32 pro Statuswert · 66 insgesamt',field:'Feldstatus',weather:'Wetter',fieldHelp:'Feld und Wetter werden bei der Schadensberechnung berücksichtigt.',attackButton:'Attacke',preliminary:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',loading:'Pokémon werden geladen …',loadError:'Pokémon konnten nicht geladen werden.',showAll:'Alle Pokémon anzeigen',showLess:'Weniger anzeigen',showMC:'M-C-Neuzugänge anzeigen',showAllDex:'Gesamten Pokédex anzeigen',randomizer:'Randomizer',randomizerHero:'Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.',randomizerMegaLabel:'Enthält Mega-Entwicklungen',randomizerNoMega:'Nein',randomizerOneMega:'Eine Mega-Entwicklung',randomizerTwoMega:'Zwei Mega-Entwicklungen',randomize:'Randomize',randomizerHelp:'Jedes Team enthält sechs verschiedene Pokémon. Wenn Mega-Entwicklungen gewählt werden, wird die konkrete Mega-Form direkt angezeigt.',hitCount:'Trefferanzahl',hits:'Treffer',hitRangeHelp:'Wähle, wie viele Treffer landen.'},en:{menu:'Menu',pokedex:'Pokédex',calculator:'Battle Calculator',meta:'Meta & Teams',metaHero:'Current tournament data, team rankings and Pokémon Champions meta analysis.',metaSourceLabel:'Data source',metaViewLabel:'View',metaViewTeams:'Teams',metaViewPokemon:'Pokémon meta',metaOpenSource:'Open live source',metaMostUsed:'🔥 Most common team combinations',metaBest:'🏆 Strongest team combinations',metaTeamsExplain:'Live from Champions battle data: commonly paired Pokémon derived from teammate usage.',metaBestExplain:'Sorted by mutual teammate usage. The API does not expose a team win-rate feed, so no win rates are fabricated.',metaShowMore:'Show more datasets',metaShowLess:'Show fewer datasets',metaConcrete:'🧩 Concrete top teams',metaConcreteExplain:'Published concrete tournament teams. These stay separate from the live-derived team combinations.',metaShowAllTeams:'Show more teams',metaShowLessTeams:'Show fewer teams',metaIntegration:'Data connection',metaIntegrationText:'The Teams view now uses the Pokémon Champions Battle Data API live. Team combinations are derived from current teammate data; published six-Pokémon tournament lists remain separate and are never mixed with derived combinations.',metaTopPokemon:'📈 Current Pokémon meta',metaPokemonExplain:'Live ranking from current Champions battle data.',dexHero:'Official Pokémon data and battle preparation.',calcHero:'Level 50 · Stat Points · Nature · Status · Stat changes.',searchPokemon:'Search Pokémon',searchPlaceholder:'Name or Pokédex number',dexFilterLabel:'Pokédex filter',dexFilterAll:'All Pokémon',dexFilterChampions:'Available in Pokémon Champions',attacker:'Attacker',defender:'Defender',pokemonSearch:'Search Pokémon',form:'Form',moveSearch:'Search Move',nature:'Nature',itemSearch:'Search Item',spTitle:'Stat Point Distribution',spHelp:'Max. 32 per stat · 66 total',field:'Field',weather:'Weather',fieldHelp:'Field and weather are included in the damage calculation.',attackButton:'Move',preliminary:'Damage calculation remains preliminary until the verified Champions ruleset.',loading:'Loading Pokémon …',loadError:'Pokémon could not be loaded.',showAll:'Show all Pokémon',showLess:'Show fewer Pokémon',showMC:'Show M-C additions',showAllDex:'Show full Pokédex',randomizer:'Randomizer',randomizerHero:'Create a random team from the Pokémon currently available in Pokémon Champions.',randomizerMegaLabel:'Contains Mega Evolutions',randomizerNoMega:'No',randomizerOneMega:'One Mega Evolution',randomizerTwoMega:'Two Mega Evolutions',randomize:'Randomize',randomizerHelp:'Each team contains six different Pokémon. When Mega Evolutions are selected, the concrete Mega form is shown directly.',hitCount:'Number of hits',hits:'hits',hitRangeHelp:'Choose how many hits connect.'}};
+const UI={de:{menu:'Menü',pokedex:'Pokédex',calculator:'Battle Calculator',meta:'Meta & Teams',metaHero:'Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.',metaSourceLabel:'Datenquelle',metaViewLabel:'Ansicht',metaViewTeams:'Teams',metaViewPokemon:'Pokémon-Meta',metaOpenSource:'Live-API öffnen',metaMostUsed:'🔥 Häufigste Team-Kombinationen',metaBest:'🏆 Stärkste 6er-Teams',metaTeamsExplain:'Live aus den Champions-Battle-Daten: häufig gemeinsam verwendete Pokémon-Paare, abgeleitet aus den Teampartner-Daten.',metaBestExplain:'Veröffentlichte vollständige 6er-Turnier-Teams, nach Turnier-Record sortiert. Live-Teampartner-Kombinationen bleiben separat.',metaShowMore:'Mehr Datensätze anzeigen',metaShowLess:'Weniger Datensätze anzeigen',metaConcrete:'🧩 Konkrete Top-Teams',metaConcreteExplain:'Weitere veröffentlichte vollständige 6er-Turnier-Teams. Diese bleiben getrennt von den live abgeleiteten Teampartner-Kombinationen.',metaShowAllTeams:'Weitere Teams anzeigen',metaShowLessTeams:'Weniger Teams anzeigen',metaIntegration:'Datenanbindung',metaIntegrationText:'Die Team-Ansicht nutzt jetzt live die Pokémon Champions Battle Data API. Team-Kombinationen werden aus aktuellen Teampartner-Daten abgeleitet; veröffentlichte 6er-Turnierlisten bleiben separat und werden nicht mit diesen Ableitungen vermischt.',metaTopPokemon:'📈 Aktuelle Pokémon-Meta',metaPokemonExplain:'Live-Rangliste aus den aktuellen Champions-Battle-Daten. Die Reihenfolge folgt dem veröffentlichten Doubles-Rang; Usage wird nur angezeigt, wenn die API ein eindeutiges Usage-Feld liefert.',dexHero:'Deutsche Pokémon-Daten und Kampfvorbereitung.',calcHero:'Level 50 · Statuswertpunkte · Wesen · Status · Statuswertänderungen.',searchPokemon:'Pokémon suchen',searchPlaceholder:'Name oder Pokédex-Nummer',dexFilterLabel:'Pokédex-Auswahl',dexFilterAll:'Alle Pokémon',dexFilterChampions:'In Pokémon Champions verfügbar',attacker:'Angreifer',defender:'Verteidiger',pokemonSearch:'Pokémon suchen',form:'Form',moveSearch:'Attacke suchen',nature:'Wesen',itemSearch:'Item suchen',spTitle:'Statuswertpunkte-Verteilung',spHelp:'Max. 32 pro Statuswert · 66 insgesamt',field:'Feldstatus',weather:'Wetter',fieldHelp:'Feld und Wetter werden bei der Schadensberechnung berücksichtigt.',attackButton:'Attacke',preliminary:'Die Schadensberechnung bleibt bis zum verifizierten Champions-Regelsatz vorläufig.',loading:'Pokémon werden geladen …',loadError:'Pokémon konnten nicht geladen werden.',showAll:'Alle Pokémon anzeigen',showLess:'Weniger anzeigen',showMC:'M-C-Neuzugänge anzeigen',showAllDex:'Gesamten Pokédex anzeigen',randomizer:'Randomizer',randomizerHero:'Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.',randomizerMegaLabel:'Enthält Mega-Entwicklungen',randomizerNoMega:'Nein',randomizerOneMega:'Eine Mega-Entwicklung',randomizerTwoMega:'Zwei Mega-Entwicklungen',randomize:'Randomize',randomizerHelp:'Jedes Team enthält sechs verschiedene Pokémon. Wenn Mega-Entwicklungen gewählt werden, wird die konkrete Mega-Form direkt angezeigt.',hitCount:'Trefferanzahl',hits:'Treffer',hitRangeHelp:'Wähle, wie viele Treffer landen.'},en:{menu:'Menu',pokedex:'Pokédex',calculator:'Battle Calculator',meta:'Meta & Teams',metaHero:'Current tournament data, team rankings and Pokémon Champions meta analysis.',metaSourceLabel:'Data source',metaViewLabel:'View',metaViewTeams:'Teams',metaViewPokemon:'Pokémon meta',metaOpenSource:'Open live source',metaMostUsed:'🔥 Most common team combinations',metaBest:'🏆 Strongest six-Pokémon teams',metaTeamsExplain:'Live from Champions battle data: commonly paired Pokémon derived from teammate usage.',metaBestExplain:'Published complete six-Pokémon tournament teams, sorted by tournament record. Live teammate combinations remain separate.',metaShowMore:'Show more datasets',metaShowLess:'Show fewer datasets',metaConcrete:'🧩 Concrete top teams',metaConcreteExplain:'Additional published complete six-Pokémon tournament teams. These stay separate from live-derived teammate combinations.',metaShowAllTeams:'Show more teams',metaShowLessTeams:'Show fewer teams',metaIntegration:'Data connection',metaIntegrationText:'The Teams view now uses the Pokémon Champions Battle Data API live. Team combinations are derived from current teammate data; published six-Pokémon tournament lists remain separate and are never mixed with derived combinations.',metaTopPokemon:'📈 Current Pokémon meta',metaPokemonExplain:'Live ranking from current Champions battle data. Order follows the published Doubles rank; usage is shown only when the API exposes an unambiguous usage field.',dexHero:'Official Pokémon data and battle preparation.',calcHero:'Level 50 · Stat Points · Nature · Status · Stat changes.',searchPokemon:'Search Pokémon',searchPlaceholder:'Name or Pokédex number',dexFilterLabel:'Pokédex filter',dexFilterAll:'All Pokémon',dexFilterChampions:'Available in Pokémon Champions',attacker:'Attacker',defender:'Defender',pokemonSearch:'Search Pokémon',form:'Form',moveSearch:'Search Move',nature:'Nature',itemSearch:'Search Item',spTitle:'Stat Point Distribution',spHelp:'Max. 32 per stat · 66 total',field:'Field',weather:'Weather',fieldHelp:'Field and weather are included in the damage calculation.',attackButton:'Move',preliminary:'Damage calculation remains preliminary until the verified Champions ruleset.',loading:'Loading Pokémon …',loadError:'Pokémon could not be loaded.',showAll:'Show all Pokémon',showLess:'Show fewer Pokémon',showMC:'Show M-C additions',showAllDex:'Show full Pokédex',randomizer:'Randomizer',randomizerHero:'Create a random team from the Pokémon currently available in Pokémon Champions.',randomizerMegaLabel:'Contains Mega Evolutions',randomizerNoMega:'No',randomizerOneMega:'One Mega Evolution',randomizerTwoMega:'Two Mega Evolutions',randomize:'Randomize',randomizerHelp:'Each team contains six different Pokémon. When Mega Evolutions are selected, the concrete Mega form is shown directly.',hitCount:'Number of hits',hits:'hits',hitRangeHelp:'Choose how many hits connect.'}};
 function t(k){return UI[uiLang]?.[k]??UI.en[k]??k}
 function applyLanguage(){document.documentElement.lang=uiLang;const sel=$('languageSelect');if(sel)sel.value=uiLang;document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));const ph=$('search');if(ph)ph.placeholder=t('searchPlaceholder');const navs=document.querySelectorAll('.nav');if(navs[0])navs[0].textContent=t('pokedex');if(navs[1])navs[1].textContent=t('calculator');if(navs[2])navs[2].textContent=t('randomizer');if(navs[3])navs[3].textContent=t('meta');document.querySelectorAll('[data-i18n]').forEach(e=>{if(e.tagName==='OPTION')e.textContent=t(e.dataset.i18n)});const heads=document.querySelectorAll('.calc-title h2');if(heads[0])heads[0].textContent=t('attacker');if(heads[1])heads[1].textContent=t('defender');document.querySelectorAll('#attackerCard>label:first-of-type,#defenderCard>label:first-of-type').forEach(e=>e.childNodes[0].textContent=t('pokemonSearch')+'\n      ');const ml=document.querySelector('#moveSearch')?.parentElement;if(ml)ml.childNodes[0].textContent=t('moveSearch')+'\n      ';document.querySelectorAll('.combatant-card-v14 h3').forEach(e=>e.textContent=t('spTitle'));document.querySelectorAll('.sp-help').forEach(e=>e.textContent=t('spHelp'));const fl=document.querySelectorAll('.field-controls-v16 .twocol label');if(fl[0])fl[0].childNodes[0].textContent=t('field');if(fl[1])fl[1].childNodes[0].textContent=t('weather');const fh=document.querySelector('.field-help');if(fh)fh.textContent=t('fieldHelp');if($('calcButton'))$('calcButton').textContent=t('attackButton');const no=document.querySelector('.notice');if(no)no.textContent=t('preliminary');const sts=statusOptions();['atkStatus','defStatus'].forEach(id=>{const e=$(id);if(e)e.innerHTML=sts.map(x=>`<option>${x}</option>`).join('')});const fieldNames=uiLang==='en'?['No Terrain','Electric Terrain','Grassy Terrain','Psychic Terrain','Misty Terrain']:['Kein Feld','Elektrofeld','Grasfeld','Psychofeld','Nebelfeld'];const weatherNames=uiLang==='en'?['No Weather','Sun','Rain','Sandstorm','Snow']:['Kein Wetter','Sonnenschein','Regen','Sandsturm','Schnee'];const fs=$('fieldStatus'),ws=$('weatherStatus');if(fs)[...fs.options].forEach((o,i)=>o.textContent=fieldNames[i]);if(ws)[...ws.options].forEach((o,i)=>o.textContent=weatherNames[i]);const fp=$('atkSearch');if(fp)fp.placeholder=t('searchPlaceholder');const dp=$('defSearch');if(dp)dp.placeholder=t('searchPlaceholder');const ip=$('atkItemSearch');if(ip)ip.placeholder=t('itemSearch');const ip2=$('defItemSearch');if(ip2)ip2.placeholder=t('itemSearch');const mi=$('moveSearch');if(mi)mi.placeholder=t('moveSearch');}
 function dexPool(){const base=dexFilter==='champions'?mons.filter(p=>CHAMPIONS_AVAILABLE_IDS.includes(Number(p.id))):mons;return showMCOnly?base.filter(p=>MC_NEW_POKEMON_IDS.includes(Number(p.id))):base}
@@ -397,205 +398,138 @@ const META_RANKING_PREVIEWS=[
  ['Rillaboom','Sneasler','Gholdengo','Salamence-Mega']
 ];
 let metaStatsExpanded=false,metaBestExpanded=false,metaConcreteExpanded=false;
-const CHAMPIONS_BATTLE_ROOT='https://championsbattledata.com';
-const CHAMPIONS_BATTLE_API=`${CHAMPIONS_BATTLE_ROOT}/api`;
-const CHAMPIONS_BATTLE_META=`${CHAMPIONS_BATTLE_ROOT}/data/meta`;
+const CHAMPIONS_BATTLE_API='https://championsbattledata.com/api';
 let liveTeamMetaCache=null,liveTeamMetaPromise=null;
 function liveApiPokemonId(x){return String(x?.showdownId||x?.id||x?.name||x?.title||x?.saved_name||'').trim().toLowerCase().replace(/[^a-z0-9-]/g,'')}
 function liveApiDisplayName(x){return String(x?.showdownName||x?.name||x?.saved_name||x?.title||x?.base_name||x?.showdownId||x?.id||'').trim()}
 function liveApiNumber(v){if(typeof v==='number'&&Number.isFinite(v))return v;if(typeof v==='string'){const m=v.replace(',','.').match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):0}return 0}
-function liveApiDeepNumber(obj,keys,depth=0){
-  if(obj==null||depth>4)return 0;
-  if(Array.isArray(obj)){for(const x of obj){const n=liveApiDeepNumber(x,keys,depth+1);if(n>0)return n}return 0}
-  if(typeof obj!=='object')return 0;
+function liveApiPick(obj,keys){
+  if(!obj||typeof obj!=='object')return 0;
   for(const k of keys){if(obj[k]!==undefined&&obj[k]!==null){const n=liveApiNumber(obj[k]);if(n>0)return n}}
-  for(const v of Object.values(obj)){const n=liveApiDeepNumber(v,keys,depth+1);if(n>0)return n}
   return 0;
 }
 function liveApiSummary(entry){
-  const rank=liveApiDeepNumber(entry,['doublesRank','doubles_rank','usageRank','usage_rank','rank']);
-  const usage=liveApiDeepNumber(entry,['doublesUsage','doubles_usage','usage_percentage','usagePercentage','usage_percent','usagePercent','usage','percentage','share']);
-  return {rank,usage};
+  const s=entry?.summary||{};
+  const byFormat=s?.Doubles||s?.doubles||s?.formats?.Doubles||s?.formats?.doubles||entry?.Doubles||entry?.doubles||{};
+  const rank=liveApiPick(byFormat,['rank','usage_rank','usageRank','doublesRank','doubles_rank'])||liveApiPick(s,['doublesRank','doubles_rank','usageRank','usage_rank','rank'])||liveApiPick(entry,['doublesRank','doubles_rank','usageRank','usage_rank','rank']);
+  const explicitUsageKeys=['usage_percentage','usagePercentage','doublesUsage','doubles_usage'];
+  const usage=liveApiPick(byFormat,explicitUsageKeys)||liveApiPick(s,explicitUsageKeys)||liveApiPick(entry,explicitUsageKeys);
+  return {rank,usage,hasUsage:usage>0};
 }
-function liveMetaCompact(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
-function liveMetaFormLabel(raw,base){
-  const n=String(raw||'').toLowerCase();
-  if(n===String(base||'').toLowerCase())return '';
-  const suffix=n.startsWith(String(base||'').toLowerCase()+'-')?n.slice(String(base||'').length+1):n;
-  const forms={
-    mega:'Mega','mega-x':'Mega X','mega-y':'Mega Y','mega-z':'Mega Z',
-    alola:'Alola-Form',galar:'Galar-Form',hisui:'Hisui-Form',paldea:'Paldea-Form',
-    'f':'weiblich','m':'männlich','eternal':'Ewigblütenform','fancy':'Fancy-Form',
-    dusk:'Zwielichtform',midday:'Tagform',midnight:'Nachtform',dawn:'Morgenform',
-    wash:'Waschmodul',heat:'Hitzemodul',frost:'Gefriermodul',fan:'Ventilatormodul',mow:'Rasenmähermodul',
-    'low-key':'Low-Key-Form','amped':'High-Voltage-Form',hero:'Heldenform',zero:'Nullform',
-    'mega-z':'Mega Z'
-  };
-  return forms[suffix]||suffix.split('-').map(title).join(' ');
-}
-function liveMetaResolveId(name,baseName=''){
-  const raw=String(name||'').trim();
-  const candidates=[raw,baseName].filter(Boolean).map(liveMetaCompact);
-  const exact=mons.find(p=>candidates.includes(liveMetaCompact(p.name)));
-  if(exact)return Number(exact.id);
-  const base=String(baseName||raw).split('-')[0];
-  const found=mons.find(p=>liveMetaCompact(p.name)===liveMetaCompact(base));
-  return found?Number(found.id):null;
-}
-function liveMetaDisplayName(name,baseName=''){
-  const id=liveMetaResolveId(name,baseName);
-  const baseEnglish=baseName||String(name||'');
-  const baseGerman=id?deP(id):null;
-  if(uiLang==='en')return String(name||baseEnglish).replace(/-/g,' ');
-  const baseLabel=baseGerman||title(baseEnglish);
-  const form=liveMetaFormLabel(name,baseEnglish);
-  return form?`${baseLabel} – ${form}`:baseLabel;
-}
-async function jsonTry(urls,timeout=12000){
-  let last=null;
-  for(const u of urls){try{return await json(u,timeout)}catch(e){last=e}}
-  throw last||new Error('No data source available.');
-}
-function liveMetaSeasonAndDate(index){
-  const seasons=Array.isArray(index?.seasons)?index.seasons:[];
-  for(const s of seasons){if((s?.formats||[]).includes('Doubles')&&Array.isArray(s?.dates)&&s.dates.length)return {season:String(s.season||''),date:String(s.dates[0]||'')}}
-  return null;
-}
+function liveApiSeasonLabel(season){return season&&season!=='Current'?String(season):''}
 async function loadLiveTeamMeta(){
   if(liveTeamMetaCache)return liveTeamMetaCache;
   if(liveTeamMetaPromise)return liveTeamMetaPromise;
   liveTeamMetaPromise=(async()=>{
-    // The public meta page uses these static JSON snapshots itself. They are lighter and much
-    // safer for a browser/Android client than firing 20 battle requests at once.
-    const metaIndex=await jsonTry([
-      `${CHAMPIONS_BATTLE_META}/index.json`,
-      `${CHAMPIONS_BATTLE_ROOT}/data/meta/index.json`
-    ],12000);
-    const current=liveMetaSeasonAndDate(metaIndex);
-    if(!current){
-      liveTeamMetaCache={ranked:[],pokemonRows:[],pairs:[],season:'',date:'',updatedAt:new Date(),hasLivePairs:false,noCurrentSnapshot:true};
-      return liveTeamMetaCache;
-    }
-    const snapshot=await jsonTry([
-      `${CHAMPIONS_BATTLE_META}/${encodeURIComponent(current.season)}/${encodeURIComponent(current.date)}/Doubles.json`
-    ],12000);
-    const pokemonObj=snapshot?.pokemon&&typeof snapshot.pokemon==='object'?snapshot.pokemon:{};
-    const rankedEntries=Object.entries(pokemonObj)
-      .map(([name,v])=>({name,raw:v,rank:Number(v?.position),usage:liveApiDeepNumber(v,['doublesUsage','doubles_usage','usage_percentage','usagePercentage','usage_percent','usagePercent','usage','percentage','share']),baseName:metaIndex?.pokemon?.[name]?.baseName||''}))
-      .filter(x=>Number.isFinite(x.rank)&&x.rank>0)
-      .sort((a,b)=>a.rank-b.rank)
-      .filter(x=>{const id=liveMetaResolveId(x.name,x.baseName);return id&&CHAMPIONS_AVAILABLE_IDS.includes(id)})
-      .slice(0,30);
-    if(!rankedEntries.length){
-      liveTeamMetaCache={ranked:[],pokemonRows:[],pairs:[],season:current.season,date:current.date,updatedAt:new Date(),hasLivePairs:false,noCurrentSnapshot:true};
-      return liveTeamMetaCache;
-    }
-    // Usage percentages live on the per-Pokemon API record. Fetch only the ranked top 12,
-    // with a small concurrency cap so the client does not trigger API throttling.
-    const ranked=rankedEntries.slice(0,12).map(p=>({...p,rawUsage:p.usage||0}));
-    const records=[];
-    for(let i=0;i<ranked.length;i+=4){
-      const batch=ranked.slice(i,i+4);
-      const got=await Promise.all(batch.map(async p=>{
-        const id=liveApiPokemonId({showdownId:p.name});
-        try{
-          const data=await jsonTry([
-            `${CHAMPIONS_BATTLE_API}/pokemon/${encodeURIComponent(id)}?format=Doubles`,
-            `${CHAMPIONS_BATTLE_API}/battle/Doubles/${encodeURIComponent(id)}`
-          ],12000);
-          const stats=liveApiSummary(data);
-          return {...p,usage:stats.usage||0,apiRank:stats.rank||0,data};
-        }catch(e){return {...p,usage:0,apiRank:0,data:null,error:e}}
-      }));
-      records.push(...got);
-    }
-    const pokemonRows=records.map(p=>({name:p.name,baseName:p.baseName,rank:p.rank,usage:p.usage||p.rawUsage||0}));
-    const pairMap=new Map();
-    // The ranked snapshot already contains the teammate category for each Pokemon.
-    // Prefer it over the heavier /api/battle calls; those are only a fallback for clients
-    // that receive a snapshot without teammate rows.
-    for(const p of rankedEntries.slice(0,12)){
-      const rows=Array.isArray(p.raw?.teammate)?p.raw.teammate:[];
-      for(const row of rows.slice(0,20)){
-        const otherRaw=String(row?.[0]||row?.name||row?.showdownName||'').trim();
-        if(!otherRaw)continue;
-        const otherId=liveApiPokemonId({showdownId:otherRaw});
-        const otherMeta=rankedEntries.find(x=>liveApiPokemonId({showdownId:x.name})===otherId || liveMetaCompact(x.name)===liveMetaCompact(otherRaw));
-        if(!otherMeta||otherId===liveApiPokemonId({showdownId:p.name}))continue;
-        const pct=liveApiNumber(row?.[1]??row?.percentage_value??row?.percentage);
+    const index=await jsonRetry(`${CHAMPIONS_BATTLE_API}/index`,12000,2);
+    const raw=Array.isArray(index?.pokemon)?index.pokemon:[];
+    if(!raw.length)throw new Error('Champions Battle Data API: /api/index enthält keine Pokémon-Liste.');
+    const ranked=raw.map((x,i)=>{
+      const stats=liveApiSummary(x);
+      const rank=stats.rank||Number(x?.rank)||i+1;
+      return {raw:x,id:liveApiPokemonId(x),name:liveApiDisplayName(x),rank,usage:stats.usage||0,hasUsage:stats.hasUsage||false};
+    }).filter(x=>x.id&&x.name).sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name)).slice(0,30);
+    const records=await Promise.all(ranked.map(async p=>{
+      try{return {p,data:await jsonRetry(`${CHAMPIONS_BATTLE_API}/battle/Doubles/${encodeURIComponent(p.id)}`,12000,1)}}catch(e){console.warn('Live team data unavailable for',p.id,e);return {p,data:null,error:e}}
+    }));
+    const pairMap=new Map(), usageMap=new Map(ranked.map(x=>[x.id,x])), seasons=new Set();
+    const pokemonRows=ranked.map((p,i)=>({name:p.name,rank:p.rank||i+1,usage:p.usage||0,hasUsage:!!p.hasUsage}));
+    for(const {p,data} of records){
+      if(data?.season)seasons.add(String(data.season));
+      const rows=Array.isArray(data?.rows)?data.rows:[];
+      for(const row of rows.filter(r=>String(r.category||'').toLowerCase().startsWith('teammate')).slice(0,30)){
+        const otherId=liveApiPokemonId({showdownId:row.showdownId||row.id||row.name,name:row.name});
+        const otherName=String(row.name||row.showdownName||row.title||'').trim();
+        if(!otherId||!otherName||otherId===p.id)continue;
+        const pct=liveApiNumber(row.percentage_value??row.percentage);
         if(!(pct>0))continue;
-        const a=liveApiPokemonId({showdownId:p.name}),b=otherId,key=[a,b].sort().join('|');
-        const rec=pairMap.get(key)||{a:{name:p.name,baseName:p.baseName},b:{name:otherMeta.name,baseName:otherMeta.baseName},values:[]};
-        rec.values.push(pct);pairMap.set(key,rec);
+        const a=p.id,b=otherId,key=[a,b].sort().join('|');
+        const rec=pairMap.get(key)||{a:{id:a,name:p.name},b:{id:b,name:otherName},values:[]};
+        rec.values.push({from:a,to:b,pct});
+        pairMap.set(key,rec);
       }
     }
-    if(!pairMap.size){
-      for(const p of records){
-        const rows=Array.isArray(p.data?.rows)?p.data.rows:[];
-        for(const row of rows.filter(r=>String(r.category||'').toLowerCase()==='teammate').slice(0,20)){
-          const otherRaw=String(row.name||row.showdownName||row.title||'').trim();
-          if(!otherRaw)continue;
-          const otherId=liveApiPokemonId({showdownId:otherRaw});
-          const otherMeta=rankedEntries.find(x=>liveApiPokemonId({showdownId:x.name})===otherId);
-          if(!otherMeta||otherId===liveApiPokemonId({showdownId:p.name}))continue;
-          const pct=liveApiNumber(row.percentage_value??row.percentage);
-          if(!(pct>0))continue;
-          const a=liveApiPokemonId({showdownId:p.name}),b=otherId,key=[a,b].sort().join('|');
-          const rec=pairMap.get(key)||{a:{name:p.name,baseName:p.baseName},b:{name:otherMeta.name,baseName:otherMeta.baseName},values:[]};
-          rec.values.push(pct);pairMap.set(key,rec);
-        }
-      }
-    }
-    const rankMap=new Map(records.map(x=>[liveApiPokemonId({showdownId:x.name}),x.rank]));
-    const pairs=[...pairMap.values()].map(x=>({
-      names:[x.a.name,x.b.name],score:x.values.reduce((a,b)=>a+b,0)/x.values.length,min:Math.min(...x.values),max:Math.max(...x.values),
-      rankA:rankMap.get(liveApiPokemonId({showdownId:x.a.name}))||0,rankB:rankMap.get(liveApiPokemonId({showdownId:x.b.name}))||0
-    })).sort((a,b)=>b.score-a.score||a.rankA-b.rankA||a.rankB-b.rankB).slice(0,22);
-    liveTeamMetaCache={ranked:records,pokemonRows,pairs,season:current.season,date:current.date,updatedAt:new Date(),hasLivePairs:pairs.length>0};
+    const pairs=[...pairMap.values()].map(x=>{
+      const aRec=usageMap.get(x.a.id),bRec=usageMap.get(x.b.id),values=x.values.map(v=>v.pct).filter(Number.isFinite);
+      const mutual=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
+      return {names:[x.a.name,x.b.name],score:mutual,min:Math.min(...values),max:Math.max(...values),usageA:aRec?.usage||0,usageB:bRec?.usage||0,rankA:aRec?.rank||0,rankB:bRec?.rank||0};
+    }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.rankA-b.rankA||a.rankB-b.rankB).slice(0,22);
+    liveTeamMetaCache={ranked,pokemonRows,pairs,season:seasons.size===1?[...seasons][0]:'Current',updatedAt:new Date(),hasLivePairs:pairs.length>0};
     return liveTeamMetaCache;
   })().catch(e=>{liveTeamMetaPromise=null;throw e});
   return liveTeamMetaPromise;
 }
-function metaPokemonLabel(name){return liveMetaDisplayName(name);}
+async function loadLivePokemonDetails(id){
+  const key=String(id||'').trim().toLowerCase();
+  if(!key)return null;
+  window.__livePokemonDetails=window.__livePokemonDetails||new Map();
+  if(window.__livePokemonDetails.has(key))return window.__livePokemonDetails.get(key);
+  const data=await jsonRetry(`${CHAMPIONS_BATTLE_API}/battle/Doubles/${encodeURIComponent(key)}`,12000,2);
+  const rows=Array.isArray(data?.rows)?data.rows:[];
+  const first=(cats)=>rows.find(r=>cats.includes(String(r.category||'').toLowerCase()));
+  const many=(cats)=>rows.filter(r=>cats.includes(String(r.category||'').toLowerCase())).slice(0,8);
+  const detail={
+    pokemon:data?.pokemon||key,season:data?.season||'Current',
+    moves:many(['move']).map(r=>r.name).filter(Boolean),
+    items:many(['item']).map(r=>r.name).filter(Boolean),
+    abilities:many(['ability']).map(r=>r.name).filter(Boolean),
+    natures:many(['nature']).map(r=>r.name).filter(Boolean),
+    spreads:many(['spread','ev','ev spread','stat spread']).map(r=>r.name).filter(Boolean),
+    rows
+  };
+  window.__livePokemonDetails.set(key,detail);return detail;
+}
+function metaPokemonLabel(name){const aliases={'Rillaboom':274,'Sneasler':903,'Incineroar':727,'Gholdengo':1000,'Sylveon':700,'Arcanine-Hisui':10288,'Excadrill':530,'Indeedee':876,'Milotic':350,'Politoed':186,'Archaludon':1018,'Kingambit':983,'Garchomp-Mega-Z':10258,'Raichu-Mega-Y':10281,'Floette-Eternal':648};const id=aliases[name];return id&&Number.isFinite(id)?(deP(id)||name):name;}
 function metaTeamPokemon(name){return `<span class="meta-team-poke">${metaPokemonLabel(name)}</span>`}
 function metaProfilePokemon(p){return `<div class="meta-profile-poke"><div class="meta-profile-poke-head"><b>${metaPokemonLabel(p.name)}</b><span>${p.item||'—'}</span></div><div class="meta-profile-meta"><span><strong>${uiLang==='en'?'Ability':'Fähigkeit'}:</strong> ${p.ability||'—'}</span><span><strong>${uiLang==='en'?'Nature / EVs':'Wesen / EVs'}:</strong> ${p.nature||'—'}${p.evs?` · ${p.evs}`:''}</span></div><div class="meta-profile-moves">${(p.moves||[]).map(m=>`<span>${m}</span>`).join('')}</div></div>`}
 function openMetaTeamProfile(index){const team=META_CONCRETE_TEAMS[index];if(!team)return;$('infoTitle').textContent=`${team.player} · ${team.record}`;$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${team.event||''}</p><div class="meta-profile-grid">${team.pokemon.map(metaProfilePokemon).join('')}</div><p class="meta-profile-note">${META_TEAM_PROFILE_NOTE}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/pokemon-champions-tournament-teams/" target="_blank" rel="noopener">Pokémon Champions Battle Data – Tournament Teams</a></div>`;$('infoModal').hidden=false}
+function metaTeamPokemonButton(name){
+  const id=liveApiPokemonId({name});
+  return `<button type="button" class="meta-team-poke meta-team-poke-button" data-live-poke="${id}" data-live-name="${String(name).replace(/"/g,'&quot;')}">${metaPokemonLabel(name)}</button>`;
+}
+function teamRecordScore(record){const m=String(record||'').match(/(\d+)\s*-\s*(\d+)/);if(!m)return 0;const w=Number(m[1]),l=Number(m[2]);return w+l?w/(w+l):0}
+function publishedStrongTeams(){return [...META_CONCRETE_TEAMS].sort((a,b)=>teamRecordScore(b.record)-teamRecordScore(a.record)||Number(b.record.split('-')[0])-Number(a.record.split('-')[0])).slice(0,4)}
+async function openLivePokemonProfile(name,id){
+  const titleName=metaPokemonLabel(name)||name;
+  $('infoTitle').textContent=titleName;
+  $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">Live Champions Battle Data wird geladen …</p></div>`;
+  $('infoModal').hidden=false;
+  try{
+    const d=await loadLivePokemonDetails(id||liveApiPokemonId({name}));
+    if(!d){throw Error('Keine Live-Daten')}
+    const label=uiLang==='en';
+    const block=(title,arr)=>arr?.length?`<div class="meta-live-detail-block"><div class="meta-profile-label">${title}</div><div class="meta-live-detail-list">${arr.slice(0,6).map(x=>`<span>${x}</span>`).join('')}</div></div>`:'';
+    $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">Pokémon Champions Battle Data · ${d.season==='Current'?(label?'Current data':'Aktuelle Daten'):d.season}</p>${block(label?'Top moves':'Top-Attacken',d.moves)}${block(label?'Top items':'Top-Items',d.items)}${block(label?'Abilities':'Fähigkeiten',d.abilities)}${block(label?'Natures':'Wesen',d.natures)}${block(label?'EV / stat spreads':'EV / Statuswert-Splits',d.spreads)}<p class="meta-profile-note">${label?'These are the current live usage distributions for this Pokémon. They are not a guaranteed copy of one individual player set.':'Dies sind die aktuellen Live-Nutzungsverteilungen dieses Pokémon. Sie stellen nicht automatisch den exakten Satz eines einzelnen Spielers dar.'}</p><a class="secondary meta-profile-source" href="${CHAMPIONS_BATTLE_API}/battle/Doubles/${encodeURIComponent(id||liveApiPokemonId({name}))}" target="_blank" rel="noopener">Live-API-Datensatz öffnen</a></div>`;
+  }catch(e){$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-note">${uiLang==='en'?'No live detail data available right now.':'Aktuell sind keine Live-Detaildaten verfügbar.'}</p></div>`}
+}
+function bindLivePokemonButtons(){document.querySelectorAll('.meta-team-poke-button').forEach(b=>b.onclick=()=>openLivePokemonProfile(b.dataset.liveName,b.dataset.livePoke))}
+
 function metaRankingPreview(index){const arr=META_RANKING_PREVIEWS[index%META_RANKING_PREVIEWS.length]||[];return arr.map(metaTeamPokemon).join('')}
 
 async function renderMeta(){
  const source=$('metaSource')?.value||'championsApi',view=$('metaView')?.value||'teams',link=$('metaSourceLink');
  if(link)link.href=source==='championsApi'?'https://championsbattledata.com/api_guide':source==='suckerpunch'?'https://suckerpunch.gg/':'https://pikalytics.com/team-usage';
  $('metaTeamsView').hidden=view!=='teams';$('metaPokemonView').hidden=view!=='pokemon';
- const status=$('metaStatus'),pokemonBadge=$('metaPokemonBadge'),mostBadge=$('metaMostBadge'),bestBadge=$('metaBestBadge');
- if(pokemonBadge)pokemonBadge.textContent=source==='championsApi'?'LIVE API':source==='pikalytics'?'Pikalytics':'Suckerpunch';
- if(mostBadge)mostBadge.textContent=source==='championsApi'?'LIVE API':source==='pikalytics'?'Pikalytics':'Suckerpunch';
- if(bestBadge)bestBadge.textContent=source==='championsApi'?'LIVE API':source==='pikalytics'?'Pikalytics':'Suckerpunch';
+ const status=$('metaStatus');
  if(source!=='championsApi'){
    if(status)status.textContent=source==='pikalytics'?'Pikalytics · externe Team-Usage':'Suckerpunch · externe Meta-Quelle';
  }else if(status)status.textContent=uiLang==='en'?'Loading live Champions Battle Data …':'Live Champions-Battle-Daten werden geladen …';
  if(source==='championsApi'){
    try{
      const live=await loadLiveTeamMeta();
-     if(live.noCurrentSnapshot){
-       if(status)status.textContent=uiLang==='en'?'Live API · no current Doubles meta snapshot published yet.':'Live-API · noch kein aktueller Doubles-Meta-Snapshot veröffentlicht.';
-       if(view==='teams'){
-         const empty=uiLang==='en'?'No current live team data is published yet. This can happen directly after a season reset.':'Noch keine aktuellen Live-Teamdaten veröffentlicht. Das kann direkt nach einem Saisonwechsel vorkommen.';
-         $('metaTeamRows').innerHTML=`<p class="meta-muted">${empty}</p>`;$('metaBestRows').innerHTML=`<p class="meta-muted">${empty}</p>`;
-       }else $('metaPokemonRows').innerHTML=`<p class="meta-muted">${uiLang==='en'?'No current Live-Meta data is published yet.':'Noch keine aktuellen Live-Meta-Daten veröffentlicht.'}</p>`;
-       const mb=$('metaMoreStats'),mbe=$('metaMoreBest');if(mb)mb.hidden=true;if(mbe)mbe.hidden=true;return;
-     }
      if(status)status.textContent=live.pairs.length? (uiLang==='en'?`Live API · ${live.pairs.length} team combinations · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API · ${live.pairs.length} Team-Kombinationen · aktualisiert ${live.updatedAt.toLocaleTimeString()}`) : (uiLang==='en'?`Live API · no current team combinations yet${live.season&&live.season!=='Current'?` · season ${live.season}`:''} · checked ${live.updatedAt.toLocaleTimeString()}`:`Live-API · noch keine aktuellen Team-Kombinationen${live.season&&live.season!=='Current'?` · Season ${live.season}`:''} · geprüft ${live.updatedAt.toLocaleTimeString()}`);
      if(view==='teams'){
        const a=$('metaTeamRows'),b=$('metaBestRows');
        const used=metaStatsExpanded?live.pairs:live.pairs.slice(0,6);
        a.innerHTML=used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join('');
-       const best=live.pairs.slice().sort((a,b)=>b.score-a.score),bestShown=metaBestExpanded?best:best.slice(0,6);
-       b.innerHTML=bestShown.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">Ränge #${x.rankA} + #${x.rankB} · ${x.min.toFixed(1)}–${x.max.toFixed(1)}%</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join('');
-       if(!live.pairs.length){const empty=uiLang==='en'?'No current teammate combinations are published yet. This can happen directly after a season reset.':'Noch keine aktuellen Team-Kombinationen veröffentlicht. Das kann direkt nach einem Saisonwechsel vorkommen.';a.innerHTML=`<p class="meta-muted">${empty}</p>`;b.innerHTML=`<p class="meta-muted">${empty}</p>`;}
-       const mb=$('metaMoreStats'),mbe=$('metaMoreBest');if(mb){mb.textContent=t(metaStatsExpanded?'metaShowLess':'metaShowMore');mb.hidden=live.pairs.length<=6}if(mbe){mbe.textContent=t(metaBestExpanded?'metaShowLess':'metaShowMore');mbe.hidden=live.pairs.length<=6}
-       const concrete=$('metaConcreteTeams');if(concrete){const list=metaConcreteExpanded?META_CONCRETE_TEAMS:META_CONCRETE_TEAMS.slice(0,4);concrete.innerHTML=list.map((team,i)=>`<article class="meta-concrete-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-concrete-pokemon">${team.pokemon.map(p=>metaTeamPokemon(p.name)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${i}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></article>`).join('');document.querySelectorAll('.meta-profile-button').forEach(btn=>btn.onclick=()=>openMetaTeamProfile(Number(btn.dataset.teamProfile)));const bt=$('metaShowAllTeams');if(bt){bt.textContent=t(metaConcreteExpanded?'metaShowLessTeams':'metaShowAllTeams');bt.hidden=META_CONCRETE_TEAMS.length<=4}}
+       const best=publishedStrongTeams(),bestShown=metaBestExpanded?best:best.slice(0,2);
+       b.innerHTML=bestShown.map((team,i)=>`<div class="meta-published-team"><div class="meta-published-team-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-published-team-event">${team.event||''}</div><div class="meta-published-team-pokemon">${team.pokemon.map(p=>metaTeamPokemonButton(p.name)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${META_CONCRETE_TEAMS.indexOf(team)}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></div>`).join('');
+       if(!live.pairs.length){const empty=uiLang==='en'?'No current teammate combinations are published yet. This can happen directly after a season reset.':'Noch keine aktuellen Team-Kombinationen veröffentlicht. Das kann direkt nach einem Saisonwechsel vorkommen.';a.innerHTML=`<p class="meta-muted">${empty}</p>`;}
+       const mb=$('metaMoreStats'),mbe=$('metaMoreBest');if(mb){mb.textContent=t(metaStatsExpanded?'metaShowLess':'metaShowMore');mb.hidden=live.pairs.length<=6}if(mbe){mbe.textContent=t(metaBestExpanded?'metaShowLess':'metaShowMore');mbe.hidden=best.length<=2}
+       const concrete=$('metaConcreteTeams');if(concrete){const list=metaConcreteExpanded?META_CONCRETE_TEAMS:META_CONCRETE_TEAMS.slice(0,4);concrete.innerHTML=list.map((team,i)=>`<article class="meta-concrete-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-concrete-pokemon">${team.pokemon.map(p=>metaTeamPokemonButton(p.name)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${i}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></article>`).join('');document.querySelectorAll('.meta-profile-button').forEach(btn=>btn.onclick=()=>openMetaTeamProfile(Number(btn.dataset.teamProfile)));const bt=$('metaShowAllTeams');if(bt){bt.textContent=t(metaConcreteExpanded?'metaShowLessTeams':'metaShowAllTeams');bt.hidden=META_CONCRETE_TEAMS.length<=4}}
+       bindLivePokemonButtons();
      }else{
-       $('metaPokemonRows').innerHTML=live.pokemonRows.map((x,i)=>`<div class="meta-pokemon-row"><div class="meta-pokemon-rank">${x.rank||i+1}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${Math.min(100,Math.max(0,x.usage||0))}%"></span></div></div><div class="meta-pokemon-stat">${x.usage?x.usage.toFixed(1)+'%':'—'}</div></div>`).join('');
+       $('metaPokemonRows').innerHTML=live.pokemonRows.map((x,i)=>`<div class="meta-pokemon-row"><div class="meta-pokemon-rank">${x.rank||i+1}</div><div class="meta-pokemon-name"><button type="button" class="meta-team-poke-button meta-pokemon-click" data-live-poke="${liveApiPokemonId({name:x.name})}" data-live-name="${String(x.name).replace(/"/g,'&quot;')}">${metaPokemonLabel(x.name)}</button></div><div><div class="meta-pokemon-bar"><span style="width:${x.hasUsage?Math.min(100,Math.max(0,x.usage||0)):0}%"></span></div></div><div class="meta-pokemon-stat">${x.hasUsage?x.usage.toFixed(1)+'%':(uiLang==='en'?'rank '+(x.rank||i+1):`Rang ${x.rank||i+1}`)}</div></div>`).join('');bindLivePokemonButtons();
      }
    }catch(e){
      console.error('Live Champions Battle Data API:',e);

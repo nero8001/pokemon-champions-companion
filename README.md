@@ -1,4 +1,4 @@
-# Pokémon Champions Companion v5.0
+# Pokémon Champions Companion v7.6.0
 
 ## v5.0 – Champions-Pokédex
 - Bei Pokémon, die in Pokémon Champions spielbar sind, gibt es im Pokédex über den Attacken ein Auswahlfeld zwischen „Normal erlernbare Attacken“ und „Verfügbare Attacken in Champions“.
@@ -71,9 +71,9 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - The Live API remains lazy-loaded only when the Meta tab is opened, preserving initial Pokédex load speed.
 
 
-## v7.5.2 Live Meta fix
-- Ranked Pokémon now come from the current `data/meta/<season>/<date>/Doubles.json` snapshot, not the alphabetic `/api/index` list.
-- Pokémon are filtered against the Companion's Champions roster before display.
-- Live labels use the Companion's German localization and form labels.
-- Teammate combinations are derived from the ranked snapshot first, avoiding a burst of `/api/battle` requests; per-Pokémon API data is only used for usage percentages and as a fallback.
-- A fresh season with no ranked snapshot is shown as an explicit "no current data yet" state rather than an API error or fake ranking.
+## v7.6 – Meta & Team refinement
+- Strongest Teams now use complete published six-Pokémon tournament teams, sorted by tournament record, instead of duo combinations.
+- Pokémon in published team cards are clickable and open live Champions Battle Data details for moves, items, abilities, natures and EV/stat spreads when available.
+- Pokémon Meta follows the published Doubles rank. Usage is only shown when the API exposes an explicit, unambiguous usage field; suspicious generic percentages are no longer treated as usage.
+- Live API requests use retry handling for transient browser/network failures.
+- The original legacy launcher icon is used as the Android icon source; adaptive-icon background remains transparent.
