@@ -683,12 +683,14 @@ const livePokemonProfileCache=new Map();
 function parseLiveProfile(name,data){
   const rows=Array.isArray(data?.rows)?data.rows:[];
   const cat=r=>String(r.category||'').toLowerCase().replace(/[_-]+/g,' ');
-  const pick=(cats)=>rows.filter(r=>cats.some(c=>cat(r)===c||cat(r).includes(c))).slice(0,10).map(r=>({name:r.name||r.label||'—',pct:liveApiNumber(r.percentage_value??r.percentage)}));
+  const pick=(cats,limit=10)=>rows.filter(r=>cats.some(c=>cat(r)===c||cat(r).includes(c))).slice(0,limit).map(r=>({name:r.name||r.label||'—',pct:liveApiNumber(r.percentage_value??r.percentage)}));
   const nature=pick(['nature']);
   const spreads=pick(['spread','ev','stat spread','stat']);
-  const item=pick(['item']);
+  const item=pick(['item','held item']);
   const ability=pick(['ability']);
-  return {name,data,nature,spreads,item,ability,season:data?.season||'Current'};
+  const moves=pick(['move']);
+  const teammates=pick(['teammate','team mate']);
+  return {name,data,nature,spreads,item,ability,moves,teammates,season:data?.season||'Current'};
 }
 async function loadLivePokemonProfile(name){
   const key=liveApiShowdownId(name);
@@ -703,11 +705,11 @@ async function openMetaPokemonProfile(name,teamContext=''){
   $('infoModal').hidden=false;
   try{
     const p=await loadLivePokemonProfile(name);
-    const section=(title,arr)=>arr.length?`<div class="meta-profile-stat-section"><h3>${title}</h3>${arr.map(x=>`<div class="meta-profile-stat-row"><span>${x.name}</span><b>${x.pct>0?x.pct.toFixed(1)+'%':''}</b></div>`).join('')}</div>`:'';
+    const section=(title,arr)=>arr.length?`<div class="meta-profile-stat-section"><h3>${title}</h3>${arr.map(x=>`<div class="meta-profile-stat-row"><span>${x.name}</span><b>${x.pct>0?x.pct.toFixed(1)+'%':'—'}</b></div>`).join('')}</div>`:'';
     const note=uiLang==='en'
-      ?'Important: the public API currently provides aggregate Doubles distributions for this Pokémon. It does not expose a guaranteed team-specific EV/nature spread for the published six-Pokémon team, so no values are invented here.'
-      :'Wichtig: Die öffentliche API liefert aktuell aggregierte Doubles-Verteilungen für dieses Pokémon. Einen garantiert team-spezifischen EV-/Wesen-Split für das veröffentlichte 6er-Team stellt sie nicht bereit – deshalb werden hier keine Werte erfunden.';
-    $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||`Pokémon Champions Battle Data · ${p.season}`}</p>${section(uiLang==='en'?'Natures':'Wesen',p.nature)}${section(uiLang==='en'?'EV / stat spreads':'EV-/Statuswert-Splits',p.spreads)}${section(uiLang==='en'?'Items':'Items',p.item)}${section(uiLang==='en'?'Abilities':'Fähigkeiten',p.ability)}<p class="meta-profile-note">${note}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/api_guide" target="_blank" rel="noopener">Pokémon Champions Battle Data API</a></div>`;
+      ?'The profile uses the current aggregate Doubles battle rows. Teammate, move, item, ability and nature percentages are shown when the API provides them. The API does not expose a guaranteed team-specific EV/nature spread for a published six-Pokémon team, so no values are invented.'
+      :'Das Profil verwendet die aktuellen aggregierten Doubles-Battle-Daten. Teampartner-, Attacken-, Item-, Fähigkeiten- und Wesen-Prozente werden angezeigt, sofern die API sie liefert. Einen garantiert team-spezifischen EV-/Wesen-Split für ein veröffentlichtes 6er-Team stellt die API nicht bereit – deshalb werden hier keine Werte erfunden.';
+    $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||`Pokémon Champions Battle Data · ${p.season}`}</p>${section(uiLang==='en'?'Most used moves':'Häufigste Attacken',p.moves)}${section(uiLang==='en'?'Most used teammates':'Häufigste Teampartner',p.teammates)}${section(uiLang==='en'?'Items':'Items',p.item)}${section(uiLang==='en'?'Abilities':'Fähigkeiten',p.ability)}${section(uiLang==='en'?'Natures':'Wesen',p.nature)}${section(uiLang==='en'?'EV / stat spreads':'EV-/Statuswert-Splits',p.spreads)}<p class="meta-profile-note">${note}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/api_guide" target="_blank" rel="noopener">Pokémon Champions Battle Data API</a></div>`;
   }catch(e){
     $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||''}</p><p class="meta-profile-note">${uiLang==='en'?'No current API profile data available for this Pokémon.':'Für dieses Pokémon sind aktuell keine Profil-Daten aus der Live-API verfügbar.'}</p></div>`;
   }
@@ -746,7 +748,17 @@ async function renderMeta(){
      if(view==='teams'){
        const a=$('metaTeamRows'),b=$('metaBestRows');
        const used=metaStatsExpanded?live.pairs:live.pairs.slice(0,6);
-       a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
+       a.innerHTML=used.length?used.map((x,i)=>{
+         const context=uiLang==='en'?`Live teammate combination #${i+1}`:`Live-Team-Kombination #${i+1}`;
+         const names=x.names.map(n=>metaTeamPokemon(n,true,context)).join('<div class="meta-team-plus">+</div>');
+         const score=x.hasPercentage
+           ? `<div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div>`
+           : `<div class="meta-muted">${uiLang==='en'?'Teammate data available · no pair percentage exposed by the fallback meta file.':'Teampartner-Daten vorhanden · die Fallback-Meta-Datei liefert keinen Paar-Prozentwert.'}</div>`;
+         const stat=x.hasPercentage
+           ? `<b>${x.score.toFixed(1)}%</b><span>Partner-Score</span>`
+           : `<b>LIVE</b><span>Teampartner</span>`;
+         return `<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div>${names}${score}</div><div class="meta-team-stat">${stat}</div></div>`;
+       }).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
        // The public API does not expose a live six-Pokemon team ranking. Show the
        // published complete teams here instead of pretending that teammate pairs
        // are full teams. Each Pokemon remains clickable for current aggregate
@@ -763,7 +775,8 @@ async function renderMeta(){
          const hasUsage=Number.isFinite(x.usage)&&x.usage>0;
          const barWidth=hasUsage?Math.min(100,Math.max(0,x.usage)):4;
          const stat=hasUsage?`${x.usage.toFixed(1)}%`:(x.rank>0?`Rang #${x.rank}`:'—');
-         return `<button type="button" class="meta-pokemon-row meta-pokemon-row-button" data-meta-pokemon="${String(x.name).replace(/"/g,'&quot;')}"><div class="meta-pokemon-rank">${x.rank||'—'}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${barWidth}%"></span></div></div><div class="meta-pokemon-stat">${stat}</div></button>`;
+         const barTitle=hasUsage?`${x.usage.toFixed(1)}% Nutzung`:`Live-Rang #${x.rank||'—'} · kein Nutzungsprozentsatz im Live-Meta-Datensatz`;
+         return `<button title="${barTitle.replace(/"/g,'&quot;')}" type="button" class="meta-pokemon-row meta-pokemon-row-button" data-meta-pokemon="${String(x.name).replace(/"/g,'&quot;')}"><div class="meta-pokemon-rank">${x.rank||'—'}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${barWidth}%"></span></div></div><div class="meta-pokemon-stat">${stat}</div></button>`;
        }).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current ranked Pokémon data available.':'Keine aktuellen Pokémon-Rangdaten verfügbar.')+'</p>';bindMetaPokemonButtons(document);document.querySelector('.meta-concrete')?.setAttribute('hidden','');
      }
    }catch(e){

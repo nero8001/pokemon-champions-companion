@@ -92,3 +92,10 @@ API implementation follows the documented index-first approach and uses Showdown
 - Die korrupte `index.html` aus den letzten ZIPs wurde durch die echte App-HTML-Datei der funktionierenden Basis ersetzt.
 - Cache-Buster `app.js?v=7.6.7` und `.nojekyll` für GitHub Pages ergänzt.
 - Keine erfundenen Rang-, Usage-, EV-, Wesen- oder Winrate-Daten.
+
+## v7.6.8 – Live Meta interaction improvements
+- Both Pokémon in every live teammate combination are now clickable.
+- Clicking either Pokémon opens the same current Doubles profile data from the Battle Data API.
+- Pokémon profiles now show top moves and top teammates in addition to items, abilities, natures and stat spreads.
+- The lightweight live builder meta file provides rank/position but does not include an overall Pokémon usage percentage, so the app no longer displays misleading 0.0% values as if they were real usage percentages.
+- Teammate pair percentages are shown only when the battle-row API actually provides them; fallback teammate names are labelled as live teammate data without a fabricated percentage.
