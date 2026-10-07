@@ -68,3 +68,11 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - Added explicit German display-name overrides for common Champions species/forms to avoid incorrect localization (e.g. Rillaboom -> Gortrom).
 - The live Teams view keeps teammate-pair data in "Häufigste Team-Kombinationen" and uses published complete six-Pokémon tournament teams in "Stärkste veröffentlichte 6er-Teams". It no longer duplicates the same teams in a second live section.
 - Clicking a Pokémon in a published team opens current aggregate nature/spread/item/ability data from the live API where available. The UI explicitly labels these as aggregate data because the public API does not currently provide guaranteed team-specific EV/nature splits for each published six-Pokémon team.
+
+## v7.6.2 Live-API loading fix
+- The live API index now uses the documented `/api` endpoint first, with `/api/index` only as a compatibility fallback.
+- The app no longer resolves every indexed Pokémon through `/pokemon` in parallel. It uses the index's own explicit Doubles rank/usage fields first.
+- If the index does not contain rank fields, only a bounded subset is resolved with limited concurrency and retries.
+- Doubles battle/team-partner requests are also limited to a small concurrent batch, so mobile browsers/WebViews are not flooded with simultaneous API requests.
+- A single failed Pokémon request no longer invalidates the complete live dataset.
+- API data remains strictly live; no old meta data is used as a silent fallback.
