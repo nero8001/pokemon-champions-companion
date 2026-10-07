@@ -1,92 +1,197 @@
-# Pokémon Champions Companion v5.0
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.6.6</title>
+<link rel="stylesheet" href="style.css">
 
-## v5.0 – Champions-Pokédex
-- Bei Pokémon, die in Pokémon Champions spielbar sind, gibt es im Pokédex über den Attacken ein Auswahlfeld zwischen „Normal erlernbare Attacken“ und „Verfügbare Attacken in Champions“.
-- Die normale Attackenliste bleibt unverändert und verwendet weiterhin die PokéAPI-Learnsets.
-- Die Champions-Ansicht verwendet Pokémon-spezifische Champions-Learnsets und zeigt nur die dort verfügbaren Attacken.
-- Champions-Attacken werden nach Typ gruppiert und mit Typ-Symbolen sowie typbezogenen Markierungen dargestellt.
-- Mega- und regionale Formen werden, sofern im Champions-Datensatz separat erfasst, mit ihrem eigenen Learnset verwendet.
-- Champions-Daten werden beim Öffnen der Champions-Ansicht geladen und zwischengespeichert.
+<style id="v14-calculator">
+.calc-duo-v14{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);gap:14px;align-items:stretch}
+.combatant-card-v14{min-width:0}
+.switch-column-v14{display:flex;align-items:center;justify-content:center}
+.switch-btn-v14{width:64px;min-height:48px;border:1px solid #555;border-radius:12px;background:#222;color:#fff;font-weight:800;cursor:pointer}
+.calc-preview{min-height:70px}
+.attack-action-v14{margin-top:14px}
+@media(max-width:900px){
+  .calc-duo-v14{grid-template-columns:1fr}
+  .switch-column-v14{padding:4px 0}
+  .switch-btn-v14{width:100%;max-width:180px}
+}
+</style>
+<style id="v16-field-controls">
+.field-controls-v16{margin-top:14px}.field-help{margin-top:8px;font-size:.9rem;opacity:.75}
+</style>
+<style id="v19-hpbar">.damage-percent{font-size:1.15rem;font-weight:700;margin:.35rem 0 .8rem}.hpbar-wrap{margin:.5rem 0 1rem}.hpbar{height:22px;border-radius:999px;background:#222;overflow:hidden;border:1px solid #444}.hpbar-fill{height:100%;background:linear-gradient(90deg,#59c95a,#8bdd6b);transition:width .25s ease}.hpbar-label{text-align:center;margin-top:.35rem;font-weight:600}</style></head>
+<body>
+<header>
+  <div class="brand">⚡ <b>Champions<br>Companion</b></div>
+  <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+  <div class="menu-wrap"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+</header>
+<style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
+<main>
+<section id="dex" class="page active">
+  <div class="hero"><small>VERSION 7.5</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="card searchbox">
+    <label for="search">Pokémon suchen</label>
+    <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
+    <label class="dex-filter-label" for="dexFilter" data-i18n="dexFilterLabel">Pokédex-Auswahl</label>
+    <select id="dexFilter" class="dex-filter" aria-label="Pokédex-Auswahl">
+      <option value="all" data-i18n="dexFilterAll">Alle Pokémon</option>
+      <option value="champions" data-i18n="dexFilterChampions">In Pokémon Champions verfügbar</option>
+    </select>
+    <div id="suggestions"></div><div class="dex-actions"><button id="showAllPokemon" type="button" class="secondary" data-i18n="showAll">Alle Pokémon anzeigen</button><button id="showMCPokemon" type="button">M-C-Neuzugänge anzeigen</button><div id="status">Pokémon werden geladen …</div></div>
+  </div>
+  <div id="grid" class="grid"></div>
+</section>
+<section id="calc" class="page">
+<div class="hero"><small>VERSION 7.5</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
-## Datenquelle für Champions-Learnsets
-Die Champions-Learnsets und Move-Daten stammen aus dem öffentlich strukturierten Datensatz „Pokemon Champions Data“ von otterlyclueless/pokemon-champions-data. Der Datensatz enthält Pokémon-spezifische Learnsets sowie die Kennzeichnung, welche Attacken in Champions verfügbar sind.
+<div class="calc-duo-v14">
+  <div class="card combatant-card-v14" id="attackerCard">
+    <div class="calc-title"><h2>Angreifer</h2><span id="atkTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
-Quelle: https://github.com/otterlyclueless/pokemon-champions-data
-Lizenz laut Repository: CC BY 4.0.
+    <label>Pokémon suchen
+      <input id="atkSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
+      <div id="atkSuggestions" class="calc-suggestions" hidden></div>
+    </label>
 
-## Vorherige Erweiterungen
-- Battle Calculator mit Champions-Regelsatz M-C, Status-/Feld-/Wetterberechnung und Mehrfachtreffer-Auswahl.
-- Pokédex-Fähigkeiten als anklickbare Info-Buttons.
-- Verknüpfte Infofenster für Wetter, Felder und Status-Effekte inklusive Schadens-/Heilungswerten.
-- Deutsche/englische Lokalisierung.
-- Randomizer mit Champions-Roster und Mega-Entwicklungen.
+    <label>Form
+      <select id="atkForm" disabled><option>Erst Pokémon auswählen …</option></select>
+    </label>
 
-Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen ausdrücklich vorläufig.
+    <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
 
+    <label>Attacke suchen
+      <input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …">
+      <div id="moveSuggestions" class="calc-suggestions" hidden></div>
+    </label>
+    <div id="moveInfo" class="move-info">Wähle einen Angreifer und danach eine Attacke.</div>
 
-### v6.7 – Deutsche Champions-Move-Lokalisierung
-- Die alte Wort-für-Wort-Übersetzung der englischen Move-Effekte wurde entfernt.
-- Im deutschen Modus wird zuerst die deutsche Pokémon-Champions-Move-Seite von OP.GG als aktuelle Referenz geladen.
-- Englische Effekttexte werden im deutschen Modus nicht mehr als Fallback angezeigt, damit kein Denglisch entsteht.
-- Champions-Eigenschaft „Punch“ wird in der deutschen Anzeige als „Hieb“ dargestellt.
-- Statusbegriffe wie Verbrennung und Eingefroren bleiben über die bestehende Effektverlinkung anklickbar.
+    <div class="twocol">
+      <label>Wesen<select id="atkNature"></select></label>
+        <label>Fähigkeit<select id="atkAbility"></select></label>
+      <div>
+        <label for="atkItemSearch">Item suchen</label>
+        <input id="atkItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
+        <select id="atkItem"></select>
+      </div>
+    </div>
 
-Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht als offizieller Datendienst von The Pokémon Company gekennzeichnet. Die Spielanzeige von Pokémon Champions bleibt die maßgebliche Referenz.
+    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
+    <div id="atkEV" class="evgrid"></div>
+    <div class="changegrid">
+      <label>Status<select id="atkStatus"></select></label>
+      <label>Angriff<select id="atkBoost"></select></label>
+      <label>Sp. Angriff<select id="atkSpABoost"></select></label>
+      <label>Initiative<select id="atkSpeedBoost"></select></label>
+    </div>
+  </div>
 
+  <div class="switch-column-v14">
+    <button type="button" id="switchCombatants" class="switch-btn-v14">Switch</button>
+  </div>
 
-## v6.7 – Move effects: original English Champions text
-- Removed the unreliable OP.GG German move-effect scraping and the old German fallback/translation layer.
-- Serebii's Pokémon Champions Available Moves page is now the primary move-effect reference.
-- If Serebii cannot be fetched by the browser, the app falls back to the English effect already contained in the Champions move dataset.
-- No automatic translation is performed, so German mode can show an English effect rather than Denglish or a missing-description placeholder.
-- Existing Champions move properties such as Kontakt, Hieb and Schnitt remain unchanged.
+  <div class="card combatant-card-v14" id="defenderCard">
+    <div class="calc-title"><h2>Verteidiger</h2><span id="defTotal" class="total">Statuswertpunkte: 0 / 66</span></div>
 
-## v7.3 Meta & Teams improvements
-- Added concrete curated Pokémon Champions teams with player/record and six-Pokémon composition.
-- Added expandable "Mehr Datensätze anzeigen" controls for most-used and best-performing team rankings.
-- Added expandable "Weitere Teams anzeigen" control for the concrete team list.
-- Concrete team examples are based on current Pikalytics Champions Reg M-C team pages; the full automatic team feed remains reserved for the later API integration.
+    <label>Pokémon suchen
+      <input id="defSearch" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer">
+      <div id="defSuggestions" class="calc-suggestions" hidden></div>
+    </label>
 
+    <label>Form
+      <select id="defForm" disabled><option>Erst Pokémon auswählen …</option></select>
+    </label>
 
-## v7.3 – Teamprofile
-- Vollständige lokale Teamprofile für die konkreten Top-Teams: 6 Pokémon, Fähigkeit, Item und 4 Attacken.
-- Ranking-Einträge öffnen eine Profilansicht mit Statistik und Meta-Pokémon-Vorschau.
-- EV-Splits und Wesen werden nicht erfunden, wenn der veröffentlichte Top-Team-Feed sie nicht bereitstellt.
+    <div id="defenderPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
 
+    <div class="twocol">
+      <label>Wesen<select id="defNature"></select></label>
+        <label>Fähigkeit<select id="defAbility"></select></label>
+      <div>
+        <label for="defItemSearch">Item suchen</label>
+        <input id="defItemSearch" type="search" autocomplete="off" placeholder="Item suchen …">
+        <select id="defItem"></select>
+      </div>
+    </div>
 
-## v7.5 – Live Team API
-- Meta & Teams uses the Pokémon Champions Battle Data API as the primary live source.
-- Team combinations are derived from current Doubles teammate rows; no team win rates are invented when the API does not expose a team-level win-rate feed.
-- Pokémon Meta is loaded from the same live API.
-- Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
-- Published concrete tournament teams remain a separate, explicitly labelled dataset.
-- API attribution: “Battle data provided by Pokémon Champions Battle Data”.
+    <h3>Statuswertpunkte-Verteilung</h3><div class="sp-help">Max. 32 pro Statuswert · 66 insgesamt</div>
+    <div id="defEV" class="evgrid"></div>
+    <div class="changegrid">
+      <label>Status<select id="defStatus"></select></label>
+      <label>Verteidigung<select id="defBoost"></select></label>
+      <label>Sp. Verteidigung<select id="defSpDBoost"></select></label>
+      <label>Initiative<select id="defSpeedBoost"></select></label>
+    </div>
+  </div>
+</div>
 
-## v7.6.1 Meta/Teams corrections
-- Live Pokémon meta now reads only explicit Doubles rank/usage fields from the Champions Battle Data API; move/item/ability percentage values are never mistaken for Pokémon usage.
-- Pokémon meta is ordered by the published Doubles rank, not alphabetically.
-- Added explicit German display-name overrides for common Champions species/forms to avoid incorrect localization (e.g. Rillaboom -> Gortrom).
-- The live Teams view keeps teammate-pair data in "Häufigste Team-Kombinationen" and uses published complete six-Pokémon tournament teams in "Stärkste veröffentlichte 6er-Teams". It no longer duplicates the same teams in a second live section.
-- Clicking a Pokémon in a published team opens current aggregate nature/spread/item/ability data from the live API where available. The UI explicitly labels these as aggregate data because the public API does not currently provide guaranteed team-specific EV/nature splits for each published six-Pokémon team.
+<div class="card field-controls-v16">
+  <div class="twocol">
+    <label>Feldstatus
+      <select id="fieldStatus">
+        <option value="none">Kein Feld</option>
+        <option value="electric">Elektrofeld</option>
+        <option value="grassy">Grasfeld</option>
+        <option value="psychic">Psychofeld</option>
+        <option value="misty">Nebelfeld</option>
+      </select>
+    </label>
+    <label>Wetter
+      <select id="weatherStatus">
+        <option value="none">Kein Wetter</option>
+        <option value="sun">Sonnenschein</option>
+        <option value="rain">Regen</option>
+        <option value="sand">Sandsturm</option>
+        <option value="snow">Schnee</option>
+      </select>
+    </label>
+  </div>
+  <div class="field-help">Feld und Wetter werden bei der Schadensberechnung berücksichtigt.</div>
+</div>
 
+<div class="card attack-action-v14">
+  <button id="calcButton" class="primary" type="button">Attacke</button>
+  <div id="damageResult" class="damage-result"></div>
+</div>
+</section>
+<section id="randomizer" class="page">
+  <div class="hero"><small>VERSION 7.5</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="card randomizer-controls">
+    <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
+    <select id="randomizerMega">
+      <option value="0" data-i18n="randomizerNoMega">Nein</option>
+      <option value="1" data-i18n="randomizerOneMega">Eine Mega-Entwicklung</option>
+      <option value="2" data-i18n="randomizerTwoMega">Zwei Mega-Entwicklungen</option>
+    </select>
+    <button id="randomizeButton" class="primary" type="button" data-i18n="randomize">Randomize</button>
+    <p class="randomizer-help" data-i18n="randomizerHelp">Jedes Team enthält sechs verschiedene Pokémon. Wenn Mega-Entwicklungen gewählt werden, wird die konkrete Mega-Form direkt angezeigt.</p>
+  </div>
+  <div id="randomizerTeam" class="randomizer-team"></div>
+</section>
+<section id="meta" class="page">
+  <div class="hero"><small>LIVE META API</small><h1 data-i18n="meta">Meta &amp; Teams</h1><p data-i18n="metaHero">Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.</p></div>
+  <div class="meta-toolbar card">
+    <div><label for="metaSource" data-i18n="metaSourceLabel">Datenquelle</label><select id="metaSource"><option value="championsApi">Pokémon Champions Battle Data API – Live</option><option value="pikalytics">Pikalytics – Team-Rankings</option><option value="suckerpunch">Suckerpunch – Meta &amp; Builds</option></select></div>
+    <div><label for="metaView" data-i18n="metaViewLabel">Ansicht</label><select id="metaView"><option value="teams" data-i18n="metaViewTeams">Teams</option><option value="pokemon" data-i18n="metaViewPokemon">Pokémon-Meta</option></select></div>
+    <a id="metaSourceLink" class="secondary meta-source-link" href="https://pikalytics.com/team-usage" target="_blank" rel="noopener" data-i18n="metaOpenSource">Live-Quelle öffnen</a>
+  </div>
+  <div id="metaStatus" class="meta-status"></div>
+  <div id="metaTeamsView" class="meta-view">
+    <div class="meta-grid">
+      <article class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaMostUsed">🔥 Meistgenutzte Teams</h2><span id="metaTeamsSourceBadge" class="meta-badge">LIVE API</span></div><p class="meta-muted" data-i18n="metaTeamsExplain">Live aus den Champions-Battle-Daten: häufig gemeinsam verwendete Pokémon-Paare, abgeleitet aus den Teampartner-Daten.</p><div id="metaTeamRows" class="meta-team-rows"></div><button id="metaMoreStats" class="secondary meta-more" type="button" data-i18n="metaShowMore">Mehr Datensätze anzeigen</button></article>
+      <article class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaBest">🏆 Erfolgreichste Teams</h2><span id="metaBestSourceBadge" class="meta-badge">LIVE API</span></div><p class="meta-muted" data-i18n="metaBestExplain">Nach gegenseitiger Teampartner-Nutzung sortiert. Die API liefert hierfür keinen Team-Winrate-Feed, daher werden keine erfundenen Winrates angezeigt.</p><div id="metaBestRows" class="meta-team-rows"></div><button id="metaMoreBest" class="secondary meta-more" type="button" data-i18n="metaShowMore">Mehr Datensätze anzeigen</button></article>
+    </div>
+    <div class="card meta-card meta-concrete"><div class="meta-card-head"><h2 data-i18n="metaConcrete">🧩 Konkrete Top-Teams</h2><span id="metaConcreteSourceBadge" class="meta-badge">Pikalytics</span></div><p class="meta-muted" data-i18n="metaConcreteExplain">Veröffentlichte konkrete Turnier-Teams. Diese bleiben getrennt von den live abgeleiteten Team-Kombinationen.</p><div id="metaConcreteTeams" class="meta-concrete-grid"></div><button id="metaShowAllTeams" class="secondary meta-more" type="button" data-i18n="metaShowAllTeams">Weitere Teams anzeigen</button></div>
+    <div class="card meta-card meta-note"><h2 data-i18n="metaIntegration">Datenanbindung</h2><p data-i18n="metaIntegrationText">Die Live-Teamdaten werden aus der Pokémon Champions Battle Data API geladen. Exakte veröffentlichte 6er-Turnierlisten bleiben als separate Turnier-Team-Daten gekennzeichnet und werden nicht mit abgeleiteten Team-Kombinationen vermischt.</p></div>
+  </div>
+  <div id="metaPokemonView" class="meta-view" hidden>
+    <div class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaTopPokemon">📈 Aktuelle Pokémon-Meta</h2><span id="metaPokemonSourceBadge" class="meta-badge">LIVE API</span></div><p class="meta-muted" data-i18n="metaPokemonExplain">Live-Rangliste aus den aktuellen Champions-Battle-Daten.</p><div id="metaPokemonRows" class="meta-pokemon-rows"></div></div>
+  </div>
+</section>
 
-## v7.6.3 Live API loading fix
-- The documented `/api` index is now loaded first with a 30-second timeout and a single fallback to `/api/index` if necessary.
-- The app no longer launches one `/api/pokemon/...` request for every indexed Pokémon when the index already contains rank/usage data.
-- If an older index snapshot omits ranking fields, individual Pokémon records are resolved with low concurrency and bounded timeouts.
-- Live Pokémon ranking is rendered independently from teammate enrichment. Slow or unavailable teammate endpoints can no longer make a successfully loaded ranking appear as a complete Live API failure.
-- Teammate requests are limited to the top 12 ranked Pokémon with two concurrent requests and are treated as optional enrichment.
-- API requests use `cache: no-store` for the live source to avoid stale browser-cache failures.
-- The UI now explicitly distinguishes “Ranking geladen · Teampartner-Daten werden geladen …” from “keine aktuellen Team-Kombinationen”.
-- No rank, usage value, EV split or nature is fabricated.
-
-API implementation follows the documented index-first approach and uses Showdown IDs for API routes.
-
-
-## v7.6.4 Live Meta source fix
-- The previous v7.6.3 fix still loaded the complete `/api` manifest first. The provider's own repository documents `/api` as the complete API dataset, while `data/pokemon-index.json` is the lightweight browser/search index and `data/builder/meta-doubles.json` contains the current ranked meta used by the provider's builder.
-- v7.6.4 therefore loads the small current Doubles meta file first instead of downloading the complete API manifest. This removes the large-payload failure path that can occur especially in mobile browsers/WebViews.
-- Only teammate enrichment continues to use the live `/api/battle/Doubles/<showdownId>` endpoints, with bounded concurrency.
-- A lightweight index fallback remains available if the ranked-meta file cannot be reached.
-- `index.html` now uses an `app.js?v=7.6.4` cache-busting query so an older GitHub Pages browser cache is less likely to keep the previous Live-API code.
-- No rank, usage, EV split or nature is fabricated.
+</main>
+<div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
+<script src="app.js?v=7.6.6"></script>
+</body></html>

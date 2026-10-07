@@ -90,3 +90,9 @@ API implementation follows the documented index-first approach and uses Showdown
 - If live `/api/battle/Doubles/<pokemon>` teammate rows are unavailable, uses the publisher dataset's teammate names without inventing percentages.
 - Live API percentages are shown only when actually returned by the API.
 - The UI labels the publisher-mirror fallback separately, so it is never presented as a fabricated direct API response.
+
+## v7.6.6 – GitHub Pages entry-file fix
+- Restored the actual HTML application shell as `index.html`.
+- The previous v7.6.5 ZIP accidentally contained the Markdown README content inside `index.html`, causing GitHub Pages to display the README instead of running the application.
+- Added a cache-busting `app.js?v=7.6.6` reference so the corrected application code is loaded after deployment.
+- Added `.nojekyll` so the repository is explicitly treated as a static site when published from the branch root.
