@@ -61,3 +61,19 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
 - Published concrete tournament teams remain a separate, explicitly labelled dataset.
 - API attribution: “Battle data provided by Pokémon Champions Battle Data”.
+
+## v7.5.1 – Live Team API robustness fix
+- Uses the documented `/api/index` shape more defensively (Showdown ID/name fallbacks and nested Doubles rank/usage fields).
+- Teammate rows accept both `teammate` and `teammates` category naming.
+- Live team cards no longer show Pikalytics badges when the Live API source is selected.
+- A fresh season with no teammate rows is shown as "noch keine aktuellen Team-Kombinationen" instead of a misleading `0` ranking.
+- The UI never invents team winrates; the Live API currently exposes teammate data rather than a dedicated 6-Pokémon team winrate feed.
+- The Live API remains lazy-loaded only when the Meta tab is opened, preserving initial Pokédex load speed.
+
+
+## v7.5.2 Live Meta fix
+- Ranked Pokémon now come from the current `data/meta/<season>/<date>/Doubles.json` snapshot, not the alphabetic `/api/index` list.
+- Pokémon are filtered against the Companion's Champions roster before display.
+- Live labels use the Companion's German localization and form labels.
+- Teammate combinations are derived from the ranked snapshot first, avoiding a burst of `/api/battle` requests; per-Pokémon API data is only used for usage percentages and as a fallback.
+- A fresh season with no ranked snapshot is shown as an explicit "no current data yet" state rather than an API error or fake ranking.
