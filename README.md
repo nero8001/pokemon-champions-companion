@@ -1,4 +1,4 @@
-# Pokémon Champions Companion v7.6.0
+# Pokémon Champions Companion v5.0
 
 ## v5.0 – Champions-Pokédex
 - Bei Pokémon, die in Pokémon Champions spielbar sind, gibt es im Pokédex über den Attacken ein Auswahlfeld zwischen „Normal erlernbare Attacken“ und „Verfügbare Attacken in Champions“.
@@ -61,19 +61,3 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
 - Published concrete tournament teams remain a separate, explicitly labelled dataset.
 - API attribution: “Battle data provided by Pokémon Champions Battle Data”.
-
-## v7.5.1 – Live Team API robustness fix
-- Uses the documented `/api/index` shape more defensively (Showdown ID/name fallbacks and nested Doubles rank/usage fields).
-- Teammate rows accept both `teammate` and `teammates` category naming.
-- Live team cards no longer show Pikalytics badges when the Live API source is selected.
-- A fresh season with no teammate rows is shown as "noch keine aktuellen Team-Kombinationen" instead of a misleading `0` ranking.
-- The UI never invents team winrates; the Live API currently exposes teammate data rather than a dedicated 6-Pokémon team winrate feed.
-- The Live API remains lazy-loaded only when the Meta tab is opened, preserving initial Pokédex load speed.
-
-
-## v7.6 – Meta & Team refinement
-- Strongest Teams now use complete published six-Pokémon tournament teams, sorted by tournament record, instead of duo combinations.
-- Pokémon in published team cards are clickable and open live Champions Battle Data details for moves, items, abilities, natures and EV/stat spreads when available.
-- Pokémon Meta follows the published Doubles rank. Usage is only shown when the API exposes an explicit, unambiguous usage field; suspicious generic percentages are no longer treated as usage.
-- Live API requests use retry handling for transient browser/network failures.
-- The original legacy launcher icon is used as the Android icon source; adaptive-icon background remains transparent.
