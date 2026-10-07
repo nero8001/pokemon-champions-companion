@@ -69,10 +69,15 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - The live Teams view keeps teammate-pair data in "Häufigste Team-Kombinationen" and uses published complete six-Pokémon tournament teams in "Stärkste veröffentlichte 6er-Teams". It no longer duplicates the same teams in a second live section.
 - Clicking a Pokémon in a published team opens current aggregate nature/spread/item/ability data from the live API where available. The UI explicitly labels these as aggregate data because the public API does not currently provide guaranteed team-specific EV/nature splits for each published six-Pokémon team.
 
-## v7.6.2 Live-API loading fix
-- The live API index now uses the documented `/api` endpoint first, with `/api/index` only as a compatibility fallback.
-- The app no longer resolves every indexed Pokémon through `/pokemon` in parallel. It uses the index's own explicit Doubles rank/usage fields first.
-- If the index does not contain rank fields, only a bounded subset is resolved with limited concurrency and retries.
-- Doubles battle/team-partner requests are also limited to a small concurrent batch, so mobile browsers/WebViews are not flooded with simultaneous API requests.
-- A single failed Pokémon request no longer invalidates the complete live dataset.
-- API data remains strictly live; no old meta data is used as a silent fallback.
+
+## v7.6.3 Live API loading fix
+- The documented `/api` index is now loaded first with a 30-second timeout and a single fallback to `/api/index` if necessary.
+- The app no longer launches one `/api/pokemon/...` request for every indexed Pokémon when the index already contains rank/usage data.
+- If an older index snapshot omits ranking fields, individual Pokémon records are resolved with low concurrency and bounded timeouts.
+- Live Pokémon ranking is rendered independently from teammate enrichment. Slow or unavailable teammate endpoints can no longer make a successfully loaded ranking appear as a complete Live API failure.
+- Teammate requests are limited to the top 12 ranked Pokémon with two concurrent requests and are treated as optional enrichment.
+- API requests use `cache: no-store` for the live source to avoid stale browser-cache failures.
+- The UI now explicitly distinguishes “Ranking geladen · Teampartner-Daten werden geladen …” from “keine aktuellen Team-Kombinationen”.
+- No rank, usage value, EV split or nature is fabricated.
+
+API implementation follows the documented index-first approach and uses Showdown IDs for API routes.
