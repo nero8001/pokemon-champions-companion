@@ -82,17 +82,13 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 
 API implementation follows the documented index-first approach and uses Showdown IDs for API routes.
 
-## v7.6.5 Live Meta resilience fix
 
-- Uses the publisher's current `data/builder/meta-doubles.json` as the primary lightweight ranked-meta source.
-- If the direct `championsbattledata.com` static JSON cannot be fetched from the user's browser, falls back to the same publisher's generated GitHub copy of that exact builder dataset.
-- Parses the publisher's actual schema (`pokemon[].position`, `pokemon[].teammates`) instead of expecting a top-level usage percentage that the file does not provide.
-- If live `/api/battle/Doubles/<pokemon>` teammate rows are unavailable, uses the publisher dataset's teammate names without inventing percentages.
-- Live API percentages are shown only when actually returned by the API.
-- The UI labels the publisher-mirror fallback separately, so it is never presented as a fabricated direct API response.
-
-## v7.6.6 – GitHub Pages entry-file fix
-- Restored the actual HTML application shell as `index.html`.
-- The previous v7.6.5 ZIP accidentally contained the Markdown README content inside `index.html`, causing GitHub Pages to display the README instead of running the application.
-- Added a cache-busting `app.js?v=7.6.6` reference so the corrected application code is loaded after deployment.
-- Added `.nojekyll` so the repository is explicitly treated as a static site when published from the branch root.
+### v7.6.7 – v7.6.4 Basis + sauberer Live-API-Fix
+- v7.6.4 bleibt die fachliche Basis für die Meta-&-Teams-Ansicht.
+- Die Live-Meta-Anbindung verwendet den veröffentlichten Doubles-Meta-Datensatz `data/builder/meta-doubles.json` zuerst; dieser enthält den aktuellen Rang (`position`) und die Teampartner direkt.
+- Fallback auf den vom API-Anbieter veröffentlichten GitHub-Mirror, ohne erfundene Usage- oder Winrate-Werte.
+- Teampartner-Abfragen über `/api/battle/Doubles/<showdownId>` sind begrenzt und dürfen das geladene Ranking nicht mehr zum Fehlschlagen bringen.
+- Teampartner aus dem veröffentlichten Meta-Datensatz werden verwendet, wenn die einzelnen Battle-Endpunkte nicht erreichbar sind.
+- Die korrupte `index.html` aus den letzten ZIPs wurde durch die echte App-HTML-Datei der funktionierenden Basis ersetzt.
+- Cache-Buster `app.js?v=7.6.7` und `.nojekyll` für GitHub Pages ergänzt.
+- Keine erfundenen Rang-, Usage-, EV-, Wesen- oder Winrate-Daten.

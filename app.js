@@ -733,21 +733,20 @@ async function renderMeta(){
    try{
      const live=await loadLiveTeamMeta();
      const seasonLabel=live.season&&live.season!=='Current'?` · ${live.season}`:'';
-     const sourceLabel=live.fallbackMirror?' · Live-Meta-Spiegel':' ';
      if(status)status.textContent=view==='pokemon'
-       ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pokemonRows.length} ranked Pokémon · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · ${live.pokemonRows.length} gerankte Pokémon · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
+       ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pokemonRows.length} ranked Pokémon · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · ${live.pokemonRows.length} gerankte Pokémon · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
        :(live.pairLoading
-         ?(uiLang==='en'?`Live API${seasonLabel} · ranking loaded · loading teammate data …`:`Live-API${seasonLabel}${sourceLabel} · Ranking geladen · Teampartner-Daten werden geladen …`)
+         ?(uiLang==='en'?`Live API${seasonLabel} · ranking loaded · loading teammate data …`:`Live-API${seasonLabel} · Ranking geladen · Teampartner-Daten werden geladen …`)
          :(live.pairs.length
-           ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pairs.length} team combinations · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · ${live.pairs.length} Team-Kombinationen · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
-           :(uiLang==='en'?`Live API${seasonLabel} · no current team combinations · checked ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · noch keine aktuellen Team-Kombinationen · geprüft ${live.updatedAt.toLocaleTimeString()}`)));
+           ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pairs.length} team combinations · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · ${live.pairs.length} Team-Kombinationen · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
+           :(uiLang==='en'?`Live API${seasonLabel} · no current team combinations · checked ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · noch keine aktuellen Team-Kombinationen · geprüft ${live.updatedAt.toLocaleTimeString()}`)));
      const badges={teams:'LIVE API',pokemon:'LIVE API'};
      ['metaTeamsSourceBadge','metaBestSourceBadge','metaPokemonSourceBadge'].forEach(id=>{const el=$(id);if(el)el.textContent=badges[view]||'LIVE API'});
      const concreteBadge=$('metaConcreteSourceBadge');if(concreteBadge)concreteBadge.textContent='Tournament Teams';
      if(view==='teams'){
        const a=$('metaTeamRows'),b=$('metaBestRows');
        const used=metaStatsExpanded?live.pairs:live.pairs.slice(0,6);
-       a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.hasPercentage?`${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung`:(uiLang==='en'?'Current teammate from the publisher meta dataset':'Aktueller Teampartner aus dem veröffentlichten Meta-Datensatz')}</div></div><div class="meta-team-stat"><b>${x.hasPercentage?x.score.toFixed(1)+'%':'LIVE'}</b><span>${x.hasPercentage?(uiLang==='en'?'Partner score':'Partner-Score'):(uiLang==='en'?'Teammate':'Teampartner')}</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
+       a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
        // The public API does not expose a live six-Pokemon team ranking. Show the
        // published complete teams here instead of pretending that teammate pairs
        // are full teams. Each Pokemon remains clickable for current aggregate
