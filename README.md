@@ -52,3 +52,12 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - Vollständige lokale Teamprofile für die konkreten Top-Teams: 6 Pokémon, Fähigkeit, Item und 4 Attacken.
 - Ranking-Einträge öffnen eine Profilansicht mit Statistik und Meta-Pokémon-Vorschau.
 - EV-Splits und Wesen werden nicht erfunden, wenn der veröffentlichte Top-Team-Feed sie nicht bereitstellt.
+
+
+## v7.5 – Live Team API
+- Meta & Teams uses the Pokémon Champions Battle Data API as the primary live source.
+- Team combinations are derived from current Doubles teammate rows; no team win rates are invented when the API does not expose a team-level win-rate feed.
+- Pokémon Meta is loaded from the same live API.
+- Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
+- Published concrete tournament teams remain a separate, explicitly labelled dataset.
+- API attribution: “Battle data provided by Pokémon Champions Battle Data”.

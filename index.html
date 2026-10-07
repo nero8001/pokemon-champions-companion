@@ -31,7 +31,7 @@
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 5.0</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 7.5</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -45,7 +45,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 5.0</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 7.5</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -157,7 +157,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 5.0</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 7.5</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -171,9 +171,9 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="meta" class="page">
-  <div class="hero"><small>LIVE META</small><h1 data-i18n="meta">Meta &amp; Teams</h1><p data-i18n="metaHero">Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.</p></div>
+  <div class="hero"><small>LIVE META API</small><h1 data-i18n="meta">Meta &amp; Teams</h1><p data-i18n="metaHero">Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.</p></div>
   <div class="meta-toolbar card">
-    <div><label for="metaSource" data-i18n="metaSourceLabel">Datenquelle</label><select id="metaSource"><option value="pikalytics">Pikalytics – Team-Rankings</option><option value="suckerpunch">Suckerpunch – Meta &amp; Builds</option></select></div>
+    <div><label for="metaSource" data-i18n="metaSourceLabel">Datenquelle</label><select id="metaSource"><option value="championsApi">Pokémon Champions Battle Data API – Live</option><option value="pikalytics">Pikalytics – Team-Rankings</option><option value="suckerpunch">Suckerpunch – Meta &amp; Builds</option></select></div>
     <div><label for="metaView" data-i18n="metaViewLabel">Ansicht</label><select id="metaView"><option value="teams" data-i18n="metaViewTeams">Teams</option><option value="pokemon" data-i18n="metaViewPokemon">Pokémon-Meta</option></select></div>
     <a id="metaSourceLink" class="secondary meta-source-link" href="https://pikalytics.com/team-usage" target="_blank" rel="noopener" data-i18n="metaOpenSource">Live-Quelle öffnen</a>
   </div>
@@ -184,7 +184,7 @@
       <article class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaBest">🏆 Erfolgreichste Teams</h2><span class="meta-badge">Pikalytics</span></div><p class="meta-muted" data-i18n="metaBestExplain">Nach Winrate sortiert; die Datensätze stammen aus der aktuellen Team-Usage-Auswertung.</p><div id="metaBestRows" class="meta-team-rows"></div><button id="metaMoreBest" class="secondary meta-more" type="button" data-i18n="metaShowMore">Mehr Datensätze anzeigen</button></article>
     </div>
     <div class="card meta-card meta-concrete"><div class="meta-card-head"><h2 data-i18n="metaConcrete">🧩 Konkrete Top-Teams</h2><span class="meta-badge">Pikalytics</span></div><p class="meta-muted" data-i18n="metaConcreteExplain">Kuratierte aktuelle Champions-Teams mit veröffentlichtem Record. Später kann diese Liste direkt aus der Team-Datenquelle erweitert werden.</p><div id="metaConcreteTeams" class="meta-concrete-grid"></div><button id="metaShowAllTeams" class="secondary meta-more" type="button" data-i18n="metaShowAllTeams">Weitere Teams anzeigen</button></div>
-    <div class="card meta-card meta-note"><h2 data-i18n="metaIntegration">Datenanbindung</h2><p data-i18n="metaIntegrationText">Team-Rankings und konkrete veröffentlichte Teams stammen aus Pikalytics. Konkrete Teams öffnen jetzt ein vollständiges Profil; EV-Splits und Wesen werden ergänzt, sobald sie vom verwendeten Team-Datensatz geliefert werden.</p></div>
+    <div class="card meta-card meta-note"><h2 data-i18n="metaIntegration">Datenanbindung</h2><p data-i18n="metaIntegrationText">Die Live-Teamdaten werden aus der Pokémon Champions Battle Data API geladen. Exakte veröffentlichte 6er-Turnierlisten bleiben als separate Turnier-Team-Daten gekennzeichnet und werden nicht mit abgeleiteten Team-Kombinationen vermischt.</p></div>
   </div>
   <div id="metaPokemonView" class="meta-view" hidden>
     <div class="card meta-card"><div class="meta-card-head"><h2 data-i18n="metaTopPokemon">📈 Aktuelle Pokémon-Meta</h2><span class="meta-badge">Suckerpunch</span></div><p class="meta-muted" data-i18n="metaPokemonExplain">Aktuelle Turnierdaten für Regulation M-C.</p><div id="metaPokemonRows" class="meta-pokemon-rows"></div></div>
