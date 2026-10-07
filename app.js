@@ -428,18 +428,30 @@ function liveApiDeepNumber(obj,patterns){
   return walk(obj);
 }
 function liveApiSummary(entry){
-  const s=entry?.summary||{};
+  // IMPORTANT: the API's Pokemon record contains several percentage values
+  // (top move/item/ability/etc.). We must never mistake one of those for
+  // Pokemon usage. Only explicit rank/usage fields are accepted here.
   const containers=[
     entry?.summary?.Doubles,entry?.summary?.doubles,entry?.summary?.formats?.Doubles,entry?.summary?.formats?.doubles,
-    entry?.Doubles,entry?.doubles,entry?.formats?.Doubles,entry?.formats?.doubles,s,entry
+    entry?.Doubles,entry?.doubles,entry?.formats?.Doubles,entry?.formats?.doubles,
+    entry?.summary,entry
   ].filter(Boolean);
+  const exactNumber=(obj,keys)=>{
+    if(!obj||typeof obj!=='object')return 0;
+    for(const key of keys){
+      const direct=obj[key];
+      const n=liveApiNumber(direct);
+      if(n>0)return n;
+      const found=Object.keys(obj).find(k=>k.toLowerCase()===key.toLowerCase());
+      if(found){const v=liveApiNumber(obj[found]);if(v>0)return v;}
+    }
+    return 0;
+  };
   let rank=0,usage=0;
   for(const c of containers){
-    rank ||= liveApiDeepNumber(c,[/(^|)doublesrank$/, /^rank$/, /usagerank/]);
-    usage ||= liveApiDeepNumber(c,[/(^|)doublesusage$/, /^usagepercentage$/, /^usage$/, /percentage/, /share/]);
+    rank ||= exactNumber(c,['doublesRank','rank','usageRank']);
+    usage ||= exactNumber(c,['doublesUsage','usagePercentage','usage','usage_percent','usagePercent']);
   }
-  if(!rank)rank=liveApiDeepNumber(entry,[/doublesrank/,/usagerank/]);
-  if(!usage)usage=liveApiDeepNumber(entry,[/doublesusage/,/usagepercentage/]);
   return {rank,usage};
 }
 function liveApiBaseName(name){
@@ -465,9 +477,21 @@ function metaPokemonDexId(name){
   const m=mons.find(x=>String(x.name||'').toLowerCase()===base);
   return m?.id||0;
 }
+const META_GERMAN_NAMES={
+  Rillaboom:'Gortrom',Sneasler:'Snieboss',Incineroar:'Fuegro',Salamence:'Brutalanda','Salamence-Mega':'Brutalanda',
+  Garchomp:'Knakrack','Garchomp-Mega-Z':'Knakrack',Kingambit:'Gladimperio',Gholdengo:'Monetigo',Golisopod:'Tectass',
+  Basculegion:'Salmagnis','Basculegion-F':'Salmagnis',Pelipper:'Pelipper',Farigiraf:'Farigiraf',Milotic:'Milotic',
+  Indeedee:'Servol','Indeedee-F':'Servol',Raichu:'Raichu','Raichu-Mega-Y':'Raichu',Arcanine:'Arkani','Arcanine-Hisui':'Arkani-Hisui',
+  Sylveon:'Feelinara',Tyranitar:'Despotar','Tyranitar-Mega':'Despotar',Excadrill:'Stalobor',Floette:'Floette','Floette-Eternal':'Floette-Eternal','Floette-Eternal-Mega':'Floette-Eternal',
+  Charizard:'Glurak','Charizard-Mega-Y':'Glurak',Swampert:'Sumpex','Swampert-Mega':'Sumpex',Archaludon:'Briduradon',Grimmsnarl:'Olangaar',Venusaur:'Bisaflor',
+  Froslass:'Frosdedje','Froslass-Mega':'Frosdedje',Dragonite:'Dragoran','Dragonite-Mega':'Dragoran',Shiftry:'Tengulist',Abomasnow:'Rexblisar',Absol:'Absol',Aegislash:'Durengard',
+  Aerodactyl:'Aerodactyl',Aggron:'Stolloss',Alakazam:'Simsala',Alcremie:'Pokusan',Altaria:'Altaria',Ampharos:'Ampharos',Annihilape:'Epitaff',Appletun:'Schlapfel',Araquanid:'Araquanid',Arbok:'Arbok',Arboliva:'Olinienda'
+};
 function metaPokemonLabel(name){
-  const id=metaPokemonDexId(name);
-  return id?(deP(id)||title(String(name).replace(/-mega(-[xyz])?$/i,'').replace(/-/g,' '))):title(String(name).replace(/-/g,' '));
+  const raw=String(name||'').trim();
+  if(META_GERMAN_NAMES[raw])return META_GERMAN_NAMES[raw];
+  const id=metaPokemonDexId(raw);
+  return id?(deP(id)||title(raw.replace(/-mega(-[xyz])?$/i,'').replace(/-/g,' '))):title(raw.replace(/-/g,' '));
 }
 function liveApiShowdownId(name){
   const raw=String(name||'').trim();
@@ -534,11 +558,12 @@ async function loadLiveTeamMeta(){
 const livePokemonProfileCache=new Map();
 function parseLiveProfile(name,data){
   const rows=Array.isArray(data?.rows)?data.rows:[];
-  const pick=(cats)=>rows.filter(r=>cats.includes(String(r.category||'').toLowerCase())).slice(0,5).map(r=>({name:r.name||'—',pct:liveApiNumber(r.percentage_value??r.percentage)}));
-  const nature=pick(['nature','natures']);
-  const spreads=pick(['spread','spreads','ev spread','evs','stat spread','stats']);
-  const item=pick(['item','items']);
-  const ability=pick(['ability','abilities']);
+  const cat=r=>String(r.category||'').toLowerCase().replace(/[_-]+/g,' ');
+  const pick=(cats)=>rows.filter(r=>cats.some(c=>cat(r)===c||cat(r).includes(c))).slice(0,10).map(r=>({name:r.name||r.label||'—',pct:liveApiNumber(r.percentage_value??r.percentage)}));
+  const nature=pick(['nature']);
+  const spreads=pick(['spread','ev','stat spread','stat']);
+  const item=pick(['item']);
+  const ability=pick(['ability']);
   return {name,data,nature,spreads,item,ability,season:data?.season||'Current'};
 }
 async function loadLivePokemonProfile(name){
@@ -556,8 +581,8 @@ async function openMetaPokemonProfile(name,teamContext=''){
     const p=await loadLivePokemonProfile(name);
     const section=(title,arr)=>arr.length?`<div class="meta-profile-stat-section"><h3>${title}</h3>${arr.map(x=>`<div class="meta-profile-stat-row"><span>${x.name}</span><b>${x.pct>0?x.pct.toFixed(1)+'%':''}</b></div>`).join('')}</div>`:'';
     const note=uiLang==='en'
-      ?'These are current aggregate Doubles Battle Data distributions, not guaranteed team-specific EV spreads for the published six-Pokémon team.'
-      :'Das sind aktuelle aggregierte Doubles-Battle-Daten. Sie sind nicht garantiert der exakte EV-Split dieses veröffentlichten 6er-Teams.';
+      ?'Important: the public API currently provides aggregate Doubles distributions for this Pokémon. It does not expose a guaranteed team-specific EV/nature spread for the published six-Pokémon team, so no values are invented here.'
+      :'Wichtig: Die öffentliche API liefert aktuell aggregierte Doubles-Verteilungen für dieses Pokémon. Einen garantiert team-spezifischen EV-/Wesen-Split für das veröffentlichte 6er-Team stellt sie nicht bereit – deshalb werden hier keine Werte erfunden.';
     $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||`Pokémon Champions Battle Data · ${p.season}`}</p>${section(uiLang==='en'?'Natures':'Wesen',p.nature)}${section(uiLang==='en'?'EV / stat spreads':'EV-/Statuswert-Splits',p.spreads)}${section(uiLang==='en'?'Items':'Items',p.item)}${section(uiLang==='en'?'Abilities':'Fähigkeiten',p.ability)}<p class="meta-profile-note">${note}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/api_guide" target="_blank" rel="noopener">Pokémon Champions Battle Data API</a></div>`;
   }catch(e){
     $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||''}</p><p class="meta-profile-note">${uiLang==='en'?'No current API profile data available for this Pokémon.':'Für dieses Pokémon sind aktuell keine Profil-Daten aus der Live-API verfügbar.'}</p></div>`;
@@ -596,8 +621,12 @@ async function renderMeta(){
        const a=$('metaTeamRows'),b=$('metaBestRows');
        const used=metaStatsExpanded?live.pairs:live.pairs.slice(0,6);
        a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
+       // The public API does not expose a live six-Pokemon team ranking. Show the
+       // published complete teams here instead of pretending that teammate pairs
+       // are full teams. Each Pokemon remains clickable for current aggregate
+       // nature/spread/item/ability data.
        const published=metaConcreteExpanded?META_CONCRETE_TEAMS:META_CONCRETE_TEAMS.slice(0,4);
-       b.innerHTML=published.map((team,i)=>`<article class="meta-published-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-concrete-pokemon">${team.pokemon.map(p=>metaTeamPokemon(p.name,true,`${team.player} · ${team.record}`)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${i}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></article>`).join('');
+       b.innerHTML=published.map((team,i)=>`<article class="meta-published-team"><div class="meta-concrete-head"><div><b>${team.player}</b><span>${team.record}</span></div><span class="meta-team-rank">#${i+1}</span></div><div class="meta-muted meta-team-event">${team.event||''}</div><div class="meta-concrete-pokemon">${team.pokemon.map(p=>metaTeamPokemon(p.name,true,`${team.player} · ${team.record}`)).join('')}</div><button class="secondary meta-profile-button" type="button" data-team-profile="${i}">${uiLang==='en'?'Complete team profile':'Komplettes Teamprofil'}</button></article>`).join('');
        document.querySelectorAll('.meta-profile-button').forEach(btn=>btn.onclick=()=>openMetaTeamProfile(Number(btn.dataset.teamProfile)));
        bindMetaPokemonButtons(document);
        const mb=$('metaMoreStats'),mbe=$('metaMoreBest');if(mb){mb.textContent=t(metaStatsExpanded?'metaShowLess':'metaShowMore');mb.hidden=live.pairs.length<=6}if(mbe){mbe.textContent=t(metaConcreteExpanded?'metaShowLessTeams':'metaShowMore');mbe.hidden=META_CONCRETE_TEAMS.length<=4}
@@ -606,7 +635,7 @@ async function renderMeta(){
        const rows=live.pokemonRows;
        $('metaPokemonRows').innerHTML=rows.length?rows.map(x=>{
          const hasUsage=Number.isFinite(x.usage)&&x.usage>0;
-         const barWidth=hasUsage?Math.min(100,Math.max(0,x.usage)):Math.max(4,Math.min(100,(21-Math.min(x.rank,20))*5));
+         const barWidth=hasUsage?Math.min(100,Math.max(0,x.usage)):4;
          const stat=hasUsage?`${x.usage.toFixed(1)}%`:(x.rank>0?`Rang #${x.rank}`:'—');
          return `<button type="button" class="meta-pokemon-row meta-pokemon-row-button" data-meta-pokemon="${String(x.name).replace(/"/g,'&quot;')}"><div class="meta-pokemon-rank">${x.rank||'—'}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${barWidth}%"></span></div></div><div class="meta-pokemon-stat">${stat}</div></button>`;
        }).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current ranked Pokémon data available.':'Keine aktuellen Pokémon-Rangdaten verfügbar.')+'</p>';bindMetaPokemonButtons(document);document.querySelector('.meta-concrete')?.setAttribute('hidden','');

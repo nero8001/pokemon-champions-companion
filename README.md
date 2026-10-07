@@ -61,3 +61,10 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
 - Published concrete tournament teams remain a separate, explicitly labelled dataset.
 - API attribution: “Battle data provided by Pokémon Champions Battle Data”.
+
+## v7.6.1 Meta/Teams corrections
+- Live Pokémon meta now reads only explicit Doubles rank/usage fields from the Champions Battle Data API; move/item/ability percentage values are never mistaken for Pokémon usage.
+- Pokémon meta is ordered by the published Doubles rank, not alphabetically.
+- Added explicit German display-name overrides for common Champions species/forms to avoid incorrect localization (e.g. Rillaboom -> Gortrom).
+- The live Teams view keeps teammate-pair data in "Häufigste Team-Kombinationen" and uses published complete six-Pokémon tournament teams in "Stärkste veröffentlichte 6er-Teams". It no longer duplicates the same teams in a second live section.
+- Clicking a Pokémon in a published team opens current aggregate nature/spread/item/ability data from the live API where available. The UI explicitly labels these as aggregate data because the public API does not currently provide guaranteed team-specific EV/nature splits for each published six-Pokémon team.
