@@ -81,3 +81,12 @@ Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht 
 - No rank, usage value, EV split or nature is fabricated.
 
 API implementation follows the documented index-first approach and uses Showdown IDs for API routes.
+
+## v7.6.5 Live Meta resilience fix
+
+- Uses the publisher's current `data/builder/meta-doubles.json` as the primary lightweight ranked-meta source.
+- If the direct `championsbattledata.com` static JSON cannot be fetched from the user's browser, falls back to the same publisher's generated GitHub copy of that exact builder dataset.
+- Parses the publisher's actual schema (`pokemon[].position`, `pokemon[].teammates`) instead of expecting a top-level usage percentage that the file does not provide.
+- If live `/api/battle/Doubles/<pokemon>` teammate rows are unavailable, uses the publisher dataset's teammate names without inventing percentages.
+- Live API percentages are shown only when actually returned by the API.
+- The UI labels the publisher-mirror fallback separately, so it is never presented as a fabricated direct API response.

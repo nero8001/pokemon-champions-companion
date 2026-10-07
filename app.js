@@ -543,11 +543,27 @@ async function loadLiveTeamPairs(finalRanked,index){
         rec.values.push({from:a,to:b,pct});pairMap.set(key,rec);
       }
     }
+    // If the battle-row endpoints are unreachable, the publisher's lightweight
+    // meta file still contains the current top teammates for every ranked
+    // Pokemon. Use those names as a truthful fallback without inventing a
+    // percentage.
+    if(!pairMap.size){
+      for(const p of finalRanked.slice(0,12)){
+        const raw=p.raw||{};
+        const teammates=Array.isArray(raw.teammates)?raw.teammates:[];
+        for(const otherName of teammates.slice(0,10)){
+          const otherId=liveApiPokemonId({name:otherName});
+          if(!otherId||otherId===p.id||!liveApiChampionsAvailable(otherName))continue;
+          const a=p.id,b=otherId,key=[a,b].sort().join('|');
+          if(!pairMap.has(key))pairMap.set(key,{a:{id:a,name:p.name},b:{id:b,name:String(otherName).trim()},values:[]});
+        }
+      }
+    }
     const pairs=[...pairMap.values()].map(x=>{
       const aRec=usageMap.get(x.a.id),bRec=usageMap.get(x.b.id),values=x.values.map(v=>v.pct).filter(Number.isFinite);
       const mutual=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
-      return {names:[x.a.name,x.b.name],score:mutual,min:Math.min(...values),max:Math.max(...values),usageA:aRec?.usage||0,usageB:bRec?.usage||0,rankA:aRec?.rank||0,rankB:bRec?.rank||0};
-    }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.rankA-b.rankA||a.rankB-b.rankB).slice(0,22);
+      return {names:[x.a.name,x.b.name],score:mutual,min:values.length?Math.min(...values):0,max:values.length?Math.max(...values):0,hasPercentage:values.length>0,usageA:aRec?.usage||0,usageB:bRec?.usage||0,rankA:aRec?.rank||0,rankB:bRec?.rank||0};
+    }).sort((a,b)=>(b.hasPercentage-a.hasPercentage)||b.score-a.score||a.rankA-b.rankA||a.rankB-b.rankB).slice(0,22);
     if(liveTeamMetaCache){
       liveTeamMetaCache.pairs=pairs;
       liveTeamMetaCache.season=seasons.size===1?[...seasons][0]:(index?.defaultSeason||liveTeamMetaCache.season||'Current');
@@ -569,18 +585,25 @@ async function loadLiveTeamMeta(){
     // ranked-meta dataset used by its own site. Loading the complete manifest
     // was the reason mobile browsers could fail almost immediately.
     const fetchOptions={cache:'no-store',headers:{Accept:'application/json'}};
+    // Primary: the publisher's live static meta file.
+    // Fallback: the same publisher's GitHub-generated copy. This is still
+    // the publisher's current builder dataset, not a third-party API.
     const metaUrls=[
-      'https://championsbattledata.com/data/builder/meta-doubles.json',
-      'https://championsbattledata.com/data/pokemon-index.json'
+      {url:'https://championsbattledata.com/data/builder/meta-doubles.json',kind:'api-meta'},
+      {url:'https://raw.githubusercontent.com/Gheist23/pokemonbattledata/main/data/builder/meta-doubles.json',kind:'publisher-mirror'}
     ];
-    let sourceData=null,sourceUrl='';
+    let sourceData=null,sourceUrl='',sourceKind='';
     let lastError=null;
-    for(const url of metaUrls){
+    for(const candidate of metaUrls){
       try{
-        sourceData=await json(url,12000,fetchOptions);
-        sourceUrl=url;
+        sourceData=await json(candidate.url,12000,fetchOptions);
+        sourceUrl=candidate.url;
+        sourceKind=candidate.kind;
         if(sourceData)break;
-      }catch(e){lastError=e}
+      }catch(e){
+        lastError=e;
+        console.warn('Live Meta source failed:',candidate.url,e);
+      }
     }
     if(!sourceData)throw(lastError||new Error('Champions Battle Data: Meta-Daten konnten nicht geladen werden.'));
 
@@ -645,7 +668,9 @@ async function loadLiveTeamMeta(){
       updatedAt:new Date(),
       hasLivePairs:false,
       pairLoading:true,
-      sourceUrl
+      sourceUrl,
+      sourceKind,
+      fallbackMirror:sourceKind==='publisher-mirror'
     };
 
     loadLiveTeamPairs(finalRanked,sourceData);
@@ -708,20 +733,21 @@ async function renderMeta(){
    try{
      const live=await loadLiveTeamMeta();
      const seasonLabel=live.season&&live.season!=='Current'?` · ${live.season}`:'';
+     const sourceLabel=live.fallbackMirror?' · Live-Meta-Spiegel':' ';
      if(status)status.textContent=view==='pokemon'
-       ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pokemonRows.length} ranked Pokémon · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · ${live.pokemonRows.length} gerankte Pokémon · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
+       ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pokemonRows.length} ranked Pokémon · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · ${live.pokemonRows.length} gerankte Pokémon · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
        :(live.pairLoading
-         ?(uiLang==='en'?`Live API${seasonLabel} · ranking loaded · loading teammate data …`:`Live-API${seasonLabel} · Ranking geladen · Teampartner-Daten werden geladen …`)
+         ?(uiLang==='en'?`Live API${seasonLabel} · ranking loaded · loading teammate data …`:`Live-API${seasonLabel}${sourceLabel} · Ranking geladen · Teampartner-Daten werden geladen …`)
          :(live.pairs.length
-           ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pairs.length} team combinations · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · ${live.pairs.length} Team-Kombinationen · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
-           :(uiLang==='en'?`Live API${seasonLabel} · no current team combinations · checked ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel} · noch keine aktuellen Team-Kombinationen · geprüft ${live.updatedAt.toLocaleTimeString()}`)));
+           ?(uiLang==='en'?`Live API${seasonLabel} · ${live.pairs.length} team combinations · updated ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · ${live.pairs.length} Team-Kombinationen · aktualisiert ${live.updatedAt.toLocaleTimeString()}`)
+           :(uiLang==='en'?`Live API${seasonLabel} · no current team combinations · checked ${live.updatedAt.toLocaleTimeString()}`:`Live-API${seasonLabel}${sourceLabel} · noch keine aktuellen Team-Kombinationen · geprüft ${live.updatedAt.toLocaleTimeString()}`)));
      const badges={teams:'LIVE API',pokemon:'LIVE API'};
      ['metaTeamsSourceBadge','metaBestSourceBadge','metaPokemonSourceBadge'].forEach(id=>{const el=$(id);if(el)el.textContent=badges[view]||'LIVE API'});
      const concreteBadge=$('metaConcreteSourceBadge');if(concreteBadge)concreteBadge.textContent='Tournament Teams';
      if(view==='teams'){
        const a=$('metaTeamRows'),b=$('metaBestRows');
        const used=metaStatsExpanded?live.pairs:live.pairs.slice(0,6);
-       a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung</div></div><div class="meta-team-stat"><b>${x.score.toFixed(1)}%</b><span>Partner-Score</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
+       a.innerHTML=used.length?used.map((x,i)=>`<div class="meta-team-row"><div class="meta-team-rank">#${i+1}</div><div><b>${x.names.map(metaTeamPokemon).join(' + ')}</b><div class="meta-muted">${x.hasPercentage?`${x.min.toFixed(1)}–${x.max.toFixed(1)}% Teampartner-Nutzung`:(uiLang==='en'?'Current teammate from the publisher meta dataset':'Aktueller Teampartner aus dem veröffentlichten Meta-Datensatz')}</div></div><div class="meta-team-stat"><b>${x.hasPercentage?x.score.toFixed(1)+'%':'LIVE'}</b><span>${x.hasPercentage?(uiLang==='en'?'Partner score':'Partner-Score'):(uiLang==='en'?'Teammate':'Teampartner')}</span></div></div>`).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current team combinations available.':'Keine aktuellen Team-Kombinationen verfügbar.')+'</p>';
        // The public API does not expose a live six-Pokemon team ranking. Show the
        // published complete teams here instead of pretending that teammate pairs
        // are full teams. Each Pokemon remains clickable for current aggregate
