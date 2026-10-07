@@ -564,29 +564,64 @@ async function loadLiveTeamMeta(){
   if(liveTeamMetaCache)return liveTeamMetaCache;
   if(liveTeamMetaPromise)return liveTeamMetaPromise;
   liveTeamMetaPromise=(async()=>{
-    // The API guide explicitly recommends loading the index first. Do not fan out
-    // one request per indexed Pokemon just to discover the ranking.
-    let index;
-    try{index=await json(`${CHAMPIONS_BATTLE_API}`,30000,{cache:'no-store',headers:{Accept:'application/json'}})}
-    catch(firstError){
-      // /api/index is documented as an equivalent index route; use it only if the
-      // root endpoint itself fails, never as a parallel duplicate request.
-      index=await json(`${CHAMPIONS_BATTLE_API}/index`,30000,{cache:'no-store',headers:{Accept:'application/json'}});
+    // Do NOT load /api here. The provider documents /api as the complete API
+    // dataset, while data/builder/meta-doubles.json is the lightweight current
+    // ranked-meta dataset used by its own site. Loading the complete manifest
+    // was the reason mobile browsers could fail almost immediately.
+    const fetchOptions={cache:'no-store',headers:{Accept:'application/json'}};
+    const metaUrls=[
+      'https://championsbattledata.com/data/builder/meta-doubles.json',
+      'https://championsbattledata.com/data/pokemon-index.json'
+    ];
+    let sourceData=null,sourceUrl='';
+    let lastError=null;
+    for(const url of metaUrls){
+      try{
+        sourceData=await json(url,12000,fetchOptions);
+        sourceUrl=url;
+        if(sourceData)break;
+      }catch(e){lastError=e}
     }
-    const raw=Array.isArray(index?.pokemon)?index.pokemon:[];
-    if(!raw.length)throw new Error('Champions Battle Data API: Index enthält keine Pokémon-Liste.');
+    if(!sourceData)throw(lastError||new Error('Champions Battle Data: Meta-Daten konnten nicht geladen werden.'));
 
-    let details=raw.map(x=>{const stats=liveApiExtractStats(x);return {raw:x,id:liveApiPokemonId(x),name:liveApiDisplayName(x),rank:stats.rank,usage:stats.usage}})
-      .filter(x=>x.id&&x.name&&liveApiChampionsAvailable(x.name));
+    const unwrapList=(data)=>{
+      if(Array.isArray(data))return data;
+      for(const key of ['pokemon','rankedPokemon','rankings','rows','results','data']){
+        if(Array.isArray(data?.[key]))return data[key];
+      }
+      return [];
+    };
+    const numberFrom=(obj,keys)=>{
+      if(!obj||typeof obj!=='object')return 0;
+      for(const key of keys){
+        const direct=obj[key];
+        const n=liveApiNumber(direct);
+        if(n>0)return n;
+        const found=Object.keys(obj).find(k=>k.toLowerCase()===key.toLowerCase());
+        if(found){const v=liveApiNumber(obj[found]);if(v>0)return v;}
+      }
+      return 0;
+    };
+    const list=unwrapList(sourceData);
+    let details=list.map(x=>{
+      const stats=liveApiExtractStats(x);
+      const rank=stats.rank||numberFrom(x,['doublesRank','doubles_rank','rank','usageRank','usage_rank','position']);
+      const usage=stats.usage||numberFrom(x,['doublesUsage','doubles_usage','usagePercentage','usage_percent','usagePercent','usage','percentage_value','percentage']);
+      const id=liveApiPokemonId(x);
+      const name=liveApiDisplayName(x);
+      return {raw:x,id,name,rank,usage};
+    }).filter(x=>x.id&&x.name&&liveApiChampionsAvailable(x.name));
 
-    // Older/partial index snapshots may omit ranking fields. Only then resolve a
-    // bounded set of individual records, with low concurrency and per-request timeouts.
+    // Some lightweight index variants do not carry ranking fields. Resolve only
+    // the first 60 candidates, with low concurrency, instead of loading the
+    // complete /api manifest or fanning out over the whole index.
     if(!details.some(x=>x.rank>0||x.usage>0)){
       const candidates=details.slice(0,Math.min(60,details.length));
       const resolved=await mapWithConcurrency(candidates,3,async p=>{
         try{
-          const rec=await json(`${CHAMPIONS_BATTLE_API}/pokemon/${encodeURIComponent(p.id)}?format=Doubles`,10000,{cache:'no-store'});
-          const stats=liveApiExtractStats(rec); return {...p,rank:stats.rank,usage:stats.usage};
+          const rec=await json(`${CHAMPIONS_BATTLE_API}/pokemon/${encodeURIComponent(p.id)}?format=Doubles`,10000,fetchOptions);
+          const stats=liveApiExtractStats(rec);
+          return {...p,rank:stats.rank,usage:stats.usage};
         }catch(e){return p}
       });
       details=resolved.filter(x=>!x.__error);
@@ -598,23 +633,22 @@ async function loadLiveTeamMeta(){
         if(a.rank>0)return -1;if(b.rank>0)return 1;
         return b.usage-a.usage||a.name.localeCompare(b.name);
       }).slice(0,30);
-    if(!ranked.length)throw new Error('Champions Battle Data API: keine aktuellen Doubles-Rangdaten gefunden.');
+    if(!ranked.length)throw new Error('Champions Battle Data: keine aktuellen Doubles-Rangdaten gefunden.');
 
-    // Never invent a rank. If only usage is supplied by the API, rank remains 0.
     const finalRanked=ranked.map(x=>({...x,rank:x.rank||0}));
+    const season=sourceData?.season||sourceData?.defaultSeason||sourceData?.currentSeason||'Current';
     liveTeamMetaCache={
       ranked:finalRanked,
       pokemonRows:finalRanked.map(x=>({name:x.name,rank:x.rank,usage:x.usage})),
       pairs:[],
-      season:index?.defaultSeason||'Current',
+      season,
       updatedAt:new Date(),
       hasLivePairs:false,
-      pairLoading:true
+      pairLoading:true,
+      sourceUrl
     };
 
-    // Ranking is the critical part and is now available immediately. Team-partner
-    // data is optional enrichment and can never turn a successful API load into an error.
-    loadLiveTeamPairs(finalRanked,index);
+    loadLiveTeamPairs(finalRanked,sourceData);
     return liveTeamMetaCache;
   })().catch(e=>{liveTeamMetaPromise=null;throw e});
   return liveTeamMetaPromise;
