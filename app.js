@@ -257,6 +257,7 @@ const calcState={attacker:null,defender:null,forms:{attacker:[],defender:[]},mov
 // v7.7 – compact six-Pokémon Team Builder state.
 const teamBuilderState=Array.from({length:6},()=>({pokemon:null,base:null,formOptions:[],moves:[],moveValues:['','','',''],nature:0,item:'',ev:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0},loading:false}));
 let teamBuilderInitialized=false;
+let teamBuilderEventsBound=false;
 
 function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
 async function loadCSV(lang,kind,file,languageId){const c=new AbortController(),tm=setTimeout(()=>c.abort(),12000);let r;try{r=await fetch(LOCAL+file,{cache:'force-cache',signal:c.signal})}finally{clearTimeout(tm)}if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(languageId))localized[lang][kind][row[0]]=row[2]}}
@@ -2127,14 +2128,31 @@ async function teamBuilderSelectForm(slot,index){
 function teamBuilderSetEV(slot,key,value){const st=teamBuilderState[slot];let v=Math.max(0,Math.min(32,Number(value)||0));const current=teamBuilderEVTotal(slot);const old=Number(st.ev[key])||0;const allowed=Math.max(0,66-(current-old));v=Math.min(v,allowed);st.ev[key]=v;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderSetMove(slot,index,value){const st=teamBuilderState[slot];if(!st.moves)return;const chosen=st.moves.find(m=>normMoveName(m.name)===value);if(!chosen){if(st.moveValues)st.moveValues[index]='';return}st.moveValues=st.moveValues||['','','',''];if(st.moveValues.some((x,i)=>i!==index&&x===value))return;st.moveValues[index]=value;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function bindTeamBuilder(){
-  document.querySelectorAll('[data-builder-search]').forEach(input=>{const slot=Number(input.dataset.builderSearch);input.addEventListener('input',()=>teamBuilderDrawSuggestions(slot,input.value));input.addEventListener('focus',()=>teamBuilderDrawSuggestions(slot,input.value));});
-  document.querySelectorAll('[data-builder-pick]').forEach(btn=>btn.onclick=()=>{const slot=Number(btn.dataset.builderPick),id=Number(btn.dataset.builderId),item=teamBuilderPokemonItems().find(x=>Number(x.id)===id);if(item){const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(list)list.hidden=true;teamBuilderSelectPokemon(slot,item)}});
+  document.querySelectorAll('[data-builder-search]').forEach(input=>{const slot=Number(input.dataset.builderSearch);input.oninput=()=>teamBuilderDrawSuggestions(slot,input.value);input.onfocus=()=>teamBuilderDrawSuggestions(slot,input.value);});
   document.querySelectorAll('[data-builder-form]').forEach(sel=>sel.onchange=()=>teamBuilderSelectForm(Number(sel.dataset.builderForm),sel.value));
   document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderNature)].nature=Number(sel.value);});
   document.querySelectorAll('[data-builder-item]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderItem)].item=sel.value;});
   document.querySelectorAll('[data-builder-ev]').forEach(inp=>inp.onchange=()=>teamBuilderSetEV(Number(inp.dataset.slot),inp.dataset.builderEv,inp.value));
   document.querySelectorAll('[data-builder-move]').forEach(sel=>sel.onchange=()=>teamBuilderSetMove(Number(sel.dataset.slot),Number(sel.dataset.builderMove),sel.value));
-  document.addEventListener('click',e=>{document.querySelectorAll('.team-builder-suggestions').forEach(list=>{const input=document.querySelector(`[data-builder-search="${list.dataset.builderSuggestions}"]`);if(input&&!list.contains(e.target)&&e.target!==input)list.hidden=true})},{once:true});
+  if(!teamBuilderEventsBound){
+    const root=$('teamBuilderSlots');
+    if(root){
+      root.addEventListener('click',e=>{
+        const btn=e.target.closest('[data-builder-pick]');
+        if(btn && root.contains(btn)){
+          e.preventDefault(); e.stopPropagation();
+          const slot=Number(btn.dataset.builderPick),id=Number(btn.dataset.builderId);
+          const item=teamBuilderPokemonItems().find(x=>Number(x.id)===id);
+          if(item){const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(list)list.hidden=true;teamBuilderSelectPokemon(slot,item);}
+          return;
+        }
+        if(!e.target.closest('.team-builder-suggestions')){
+          document.querySelectorAll('.team-builder-suggestions').forEach(list=>list.hidden=true);
+        }
+      });
+      teamBuilderEventsBound=true;
+    }
+  }
 }
 function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();}
 

@@ -1,3 +1,8 @@
+## v7.7.1 – Team-Builder selection fix
+- Team-Builder suggestion list is no longer clipped by the slot card.
+- Pokémon selection uses delegated click handling so dynamically rendered suggestions remain clickable.
+- Open Team-Builder slots are layered above following slots for reliable mobile interaction.
+
 # Pokémon Champions Companion v5.0
 
 ## v5.0 – Champions-Pokédex
