@@ -1,117 +1,18 @@
-## v7.7.1 – Team-Builder selection fix
-- Team-Builder suggestion list is no longer clipped by the slot card.
-- Pokémon selection uses delegated click handling so dynamically rendered suggestions remain clickable.
-- Open Team-Builder slots are layered above following slots for reliable mobile interaction.
+# Pokémon Champions Companion – aktuelle Änderungen
 
-# Pokémon Champions Companion v5.0
-
-## v5.0 – Champions-Pokédex
-- Bei Pokémon, die in Pokémon Champions spielbar sind, gibt es im Pokédex über den Attacken ein Auswahlfeld zwischen „Normal erlernbare Attacken“ und „Verfügbare Attacken in Champions“.
-- Die normale Attackenliste bleibt unverändert und verwendet weiterhin die PokéAPI-Learnsets.
-- Die Champions-Ansicht verwendet Pokémon-spezifische Champions-Learnsets und zeigt nur die dort verfügbaren Attacken.
-- Champions-Attacken werden nach Typ gruppiert und mit Typ-Symbolen sowie typbezogenen Markierungen dargestellt.
-- Mega- und regionale Formen werden, sofern im Champions-Datensatz separat erfasst, mit ihrem eigenen Learnset verwendet.
-- Champions-Daten werden beim Öffnen der Champions-Ansicht geladen und zwischengespeichert.
-
-## Datenquelle für Champions-Learnsets
-Die Champions-Learnsets und Move-Daten stammen aus dem öffentlich strukturierten Datensatz „Pokemon Champions Data“ von otterlyclueless/pokemon-champions-data. Der Datensatz enthält Pokémon-spezifische Learnsets sowie die Kennzeichnung, welche Attacken in Champions verfügbar sind.
-
-Quelle: https://github.com/otterlyclueless/pokemon-champions-data
-Lizenz laut Repository: CC BY 4.0.
-
-## Vorherige Erweiterungen
-- Battle Calculator mit Champions-Regelsatz M-C, Status-/Feld-/Wetterberechnung und Mehrfachtreffer-Auswahl.
-- Pokédex-Fähigkeiten als anklickbare Info-Buttons.
-- Verknüpfte Infofenster für Wetter, Felder und Status-Effekte inklusive Schadens-/Heilungswerten.
-- Deutsche/englische Lokalisierung.
-- Randomizer mit Champions-Roster und Mega-Entwicklungen.
-
-Die Schadensformel bleibt bei nicht vollständig verifizierten Spezialfällen ausdrücklich vorläufig.
-
-
-### v6.7 – Deutsche Champions-Move-Lokalisierung
-- Die alte Wort-für-Wort-Übersetzung der englischen Move-Effekte wurde entfernt.
-- Im deutschen Modus wird zuerst die deutsche Pokémon-Champions-Move-Seite von OP.GG als aktuelle Referenz geladen.
-- Englische Effekttexte werden im deutschen Modus nicht mehr als Fallback angezeigt, damit kein Denglisch entsteht.
-- Champions-Eigenschaft „Punch“ wird in der deutschen Anzeige als „Hieb“ dargestellt.
-- Statusbegriffe wie Verbrennung und Eingefroren bleiben über die bestehende Effektverlinkung anklickbar.
-
-Hinweis: Die deutsche OP.GG-Datenbank ist eine Drittanbieter-Referenz und nicht als offizieller Datendienst von The Pokémon Company gekennzeichnet. Die Spielanzeige von Pokémon Champions bleibt die maßgebliche Referenz.
-
-
-## v6.7 – Move effects: original English Champions text
-- Removed the unreliable OP.GG German move-effect scraping and the old German fallback/translation layer.
-- Serebii's Pokémon Champions Available Moves page is now the primary move-effect reference.
-- If Serebii cannot be fetched by the browser, the app falls back to the English effect already contained in the Champions move dataset.
-- No automatic translation is performed, so German mode can show an English effect rather than Denglish or a missing-description placeholder.
-- Existing Champions move properties such as Kontakt, Hieb and Schnitt remain unchanged.
-
-## v7.3 Meta & Teams improvements
-- Added concrete curated Pokémon Champions teams with player/record and six-Pokémon composition.
-- Added expandable "Mehr Datensätze anzeigen" controls for most-used and best-performing team rankings.
-- Added expandable "Weitere Teams anzeigen" control for the concrete team list.
-- Concrete team examples are based on current Pikalytics Champions Reg M-C team pages; the full automatic team feed remains reserved for the later API integration.
-
-
-## v7.3 – Teamprofile
-- Vollständige lokale Teamprofile für die konkreten Top-Teams: 6 Pokémon, Fähigkeit, Item und 4 Attacken.
-- Ranking-Einträge öffnen eine Profilansicht mit Statistik und Meta-Pokémon-Vorschau.
-- EV-Splits und Wesen werden nicht erfunden, wenn der veröffentlichte Top-Team-Feed sie nicht bereitstellt.
-
-
-## v7.5 – Live Team API
-- Meta & Teams uses the Pokémon Champions Battle Data API as the primary live source.
-- Team combinations are derived from current Doubles teammate rows; no team win rates are invented when the API does not expose a team-level win-rate feed.
-- Pokémon Meta is loaded from the same live API.
-- Live API data is loaded lazily only when the Meta & Teams tab is opened, preserving fast initial Pokédex loading.
-- Published concrete tournament teams remain a separate, explicitly labelled dataset.
-- API attribution: “Battle data provided by Pokémon Champions Battle Data”.
-
-## v7.6.1 Meta/Teams corrections
-- Live Pokémon meta now reads only explicit Doubles rank/usage fields from the Champions Battle Data API; move/item/ability percentage values are never mistaken for Pokémon usage.
-- Pokémon meta is ordered by the published Doubles rank, not alphabetically.
-- Added explicit German display-name overrides for common Champions species/forms to avoid incorrect localization (e.g. Rillaboom -> Gortrom).
-- The live Teams view keeps teammate-pair data in "Häufigste Team-Kombinationen" and uses published complete six-Pokémon tournament teams in "Stärkste veröffentlichte 6er-Teams". It no longer duplicates the same teams in a second live section.
-- Clicking a Pokémon in a published team opens current aggregate nature/spread/item/ability data from the live API where available. The UI explicitly labels these as aggregate data because the public API does not currently provide guaranteed team-specific EV/nature splits for each published six-Pokémon team.
-
-
-## v7.6.3 Live API loading fix
-- The documented `/api` index is now loaded first with a 30-second timeout and a single fallback to `/api/index` if necessary.
-- The app no longer launches one `/api/pokemon/...` request for every indexed Pokémon when the index already contains rank/usage data.
-- If an older index snapshot omits ranking fields, individual Pokémon records are resolved with low concurrency and bounded timeouts.
-- Live Pokémon ranking is rendered independently from teammate enrichment. Slow or unavailable teammate endpoints can no longer make a successfully loaded ranking appear as a complete Live API failure.
-- Teammate requests are limited to the top 12 ranked Pokémon with two concurrent requests and are treated as optional enrichment.
-- API requests use `cache: no-store` for the live source to avoid stale browser-cache failures.
-- The UI now explicitly distinguishes “Ranking geladen · Teampartner-Daten werden geladen …” from “keine aktuellen Team-Kombinationen”.
-- No rank, usage value, EV split or nature is fabricated.
-
-API implementation follows the documented index-first approach and uses Showdown IDs for API routes.
-
-
-### v7.6.7 – v7.6.4 Basis + sauberer Live-API-Fix
-- v7.6.4 bleibt die fachliche Basis für die Meta-&-Teams-Ansicht.
-- Die Live-Meta-Anbindung verwendet den veröffentlichten Doubles-Meta-Datensatz `data/builder/meta-doubles.json` zuerst; dieser enthält den aktuellen Rang (`position`) und die Teampartner direkt.
-- Fallback auf den vom API-Anbieter veröffentlichten GitHub-Mirror, ohne erfundene Usage- oder Winrate-Werte.
-- Teampartner-Abfragen über `/api/battle/Doubles/<showdownId>` sind begrenzt und dürfen das geladene Ranking nicht mehr zum Fehlschlagen bringen.
-- Teampartner aus dem veröffentlichten Meta-Datensatz werden verwendet, wenn die einzelnen Battle-Endpunkte nicht erreichbar sind.
-- Die korrupte `index.html` aus den letzten ZIPs wurde durch die echte App-HTML-Datei der funktionierenden Basis ersetzt.
-- Cache-Buster `app.js?v=7.6.7` und `.nojekyll` für GitHub Pages ergänzt.
-- Keine erfundenen Rang-, Usage-, EV-, Wesen- oder Winrate-Daten.
-
-## v7.7.2 – Team-Builder Fixes
-- Pokémon-Auswahllisten bleiben beim Öffnen über anderen Team-Slots sichtbar und werden nicht mehr von nachfolgenden Karten überdeckt.
-- Champions-Attacken werden robuster geladen: bevorzugter Champions-Learnset-Datensatz mit Fallback auf den formgenauen PokéAPI-Learnset, gefiltert auf explizit in Champions verfügbare Attacken.
-- `moves.json` und `learnsets.json` werden unabhängig voneinander geladen, damit ein temporärer Fehler einer Quelle nicht beide Datenbestände ausfällt.
+## v7.7.2 – Team-Builder Fix
+- Pokémon-Auswahllisten bleiben über anderen Team-Slots sichtbar.
+- Champions-Attacken werden robuster geladen, inklusive Fallback auf den formgenauen PokéAPI-Learnset mit Champions-Filter.
+- `moves.json` und `learnsets.json` werden unabhängig geladen.
 
 ## v7.7.1 – Team-Builder Auswahl-Fix
-- Pokémon-Auswahlliste überlappt andere Slots korrekt.
-- Dynamische Pokémon-Auswahl per Event-Delegation klickbar gemacht.
-- Auswahl eines Pokémon lädt anschließend Form, Wesen, Item, EVs und Champions-Daten.
+- Dynamische Pokémon-Auswahl per Event-Delegation zuverlässig klickbar gemacht.
+- Geöffnete Slots werden auf Mobilgeräten korrekt über nachfolgende Slots gelegt.
 
 ## v7.7.0 – Team-Builder
 - Neuer kompakter Team-Builder mit sechs Team-Slots.
-- Jeder Slot lässt sich einzeln aufklappen und bearbeiten.
-- Auswahl nur aus dem Pokémon-Champions-Roster.
-- Champions-Attacken, kompatible Items, Wesen und EV-/Statuswertpunkte pro Pokémon.
-- EVs sind auf maximal 32 je Statuswert und insgesamt 66 Punkte begrenzt.
-- Vier Attacken-Slots pro Pokémon und Formauswahl für unterstützte Formen.
+- Pro Pokémon: Form, Wesen, Item, vier Attacken und 66 Statuswertpunkte mit maximal 32 pro Wert.
+- Auswahl nur aus dem Pokémon-Champions-Roster und Champions-kompatiblen Daten.
+
+## Datenquelle
+Die Champions-Daten für Pokémon, Attacken, Learnsets, Items und weitere Spieldaten stammen aus öffentlich strukturierten Pokémon-Champions-Datensätzen und werden nur für die jeweilige App-Funktion verwendet.

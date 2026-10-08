@@ -6,6 +6,39 @@ const CHAMPIONS_TYPE_META={
   Normal:['Normal','◯'],Fire:['Feuer','🔥'],Water:['Wasser','💧'],Electric:['Elektro','⚡'],Grass:['Pflanze','🌿'],Ice:['Eis','❄'],Fighting:['Kampf','✊'],Poison:['Gift','☠'],Ground:['Boden','◆'],Flying:['Flug','🪽'],Psychic:['Psycho','◉'],Bug:['Käfer','🐞'],Rock:['Gestein','◇'],Ghost:['Geist','👻'],Dragon:['Drache','🐉'],Dark:['Unlicht','☾'],Steel:['Stahl','⚙'],Fairy:['Fee','✨']
 };
 const championsDataCache={};
+let championsShowdownMoveIds=null;
+let championsShowdownMovePromise=null;
+async function loadChampionsShowdownMoveIds(){
+  if(championsShowdownMoveIds)return championsShowdownMoveIds;
+  if(championsShowdownMovePromise)return championsShowdownMovePromise;
+  championsShowdownMovePromise=(async()=>{
+    const urls=[
+      'https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/champions/moves.ts',
+      'https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/champions/moves.ts?cache=1'
+    ];
+    for(const url of urls){
+      try{
+        const text=await fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Showdown moves '+r.status);return r.text()});
+        const ids=new Set();
+        const lines=text.split(/\r?\n/);
+        for(let i=0;i<lines.length;i++){
+          const m=lines[i].match(/^\s{1,2}([a-z0-9]+):\s*\{/);
+          if(!m)continue;
+          let depth=0,block='';
+          for(let j=i;j<lines.length;j++){
+            block+=lines[j]+'\n';
+            depth+=(lines[j].match(/\{/g)||[]).length-(lines[j].match(/\}/g)||[]).length;
+            if(j>i&&depth<=0)break;
+          }
+          if(!/isNonstandard\s*:\s*["']Past["']/.test(block))ids.add(m[1]);
+        }
+        if(ids.size>100){championsShowdownMoveIds=ids;return ids;}
+      }catch(e){console.warn('Champions Showdown move fallback:',e)}
+    }
+    championsShowdownMoveIds=new Set();return championsShowdownMoveIds;
+  })();
+  return championsShowdownMovePromise;
+}
 async function loadChampionsData(){
   if(championsMovesData&&championsLearnsetsData)return;
   if(championsDataCache.promise)return championsDataCache.promise;
@@ -46,51 +79,48 @@ function championsFormCandidates(p,s){
 async function getChampionsMovesForPokemon(p,s){
   await loadChampionsData();
   const dex=Number(p?.speciesId||s?.id||p?.id||0);
-  if(!dex||!championsLearnsetsData)return [];
+  const moveMap=new Map((Array.isArray(championsMovesData)?championsMovesData:[]).map(x=>[normMoveName(x.name),x]));
   const entries=Object.entries(championsLearnsetsData||{}).filter(([key,v])=>Number(v?.dexNumber)===dex&&Array.isArray(v?.moves));
-  // The learnset JSON is the preferred source. If it is temporarily unavailable
-  // in a mobile browser, fall back to the exact PokéAPI learnset of this form
-  // and keep only moves explicitly marked as available in Champions.
-  if(!entries.length){
-    const allowed=new Set((championsMovesData||[]).filter(m=>m?.inChampions===true).map(m=>normMoveName(m.name)));
-    const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
-    return apiNames.filter(name=>allowed.has(normMoveName(name)))
-      .map(name=>(championsMovesData||[]).find(m=>normMoveName(m.name)===normMoveName(name))||{name})
+  let names=[];
+  if(entries.length){
+    const candidates=championsFormCandidates(p,s);
+    let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
+    if(!chosen){
+      const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
+      chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
+    }
+    const overrideKey=championsFormOverrideKey(p,s);
+    const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
+    names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
+
+    const regionalSpeciesIds=new Set([26,38,53,59,80,128,157,199,503,571,618,706,713,724]);
+    const isRealApiForm=!p?._mcForm && regionalSpeciesIds.has(dex);
+    if(isRealApiForm && !overrideNames){
+      const apiMoveNames=new Set((p.moves||[]).map(x=>normMoveName(x?.move?.name||x?.name)).filter(Boolean));
+      if(apiMoveNames.size)names=names.filter(name=>apiMoveNames.has(normMoveName(name)));
+    }
+  }
+  let result=names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  if(result.length)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
+
+  // Robust fallback: if the large community learnset file could not be loaded
+  // on the mobile browser, use the selected Pokémon's PokéAPI learnset and
+  // filter it against Pokémon Showdown's current Champions move table.
+  const showdownIds=await loadChampionsShowdownMoveIds();
+  const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
+  if(showdownIds.size){
+    result=apiNames.filter(name=>showdownIds.has(normMoveName(name)))
+      .map(name=>moveMap.get(normMoveName(name))||{name})
       .filter(m=>m.inChampions!==false);
   }
-  const candidates=championsFormCandidates(p,s);
-  let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
-  if(!chosen){
-    const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
-    chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
+  // Last-resort fallback if the external move metadata is temporarily
+  // unavailable: never leave the Team Builder unusable; use the already
+  // available Champions PokéAPI learnset only when it is known to be the
+  // Champions roster form.
+  if(!result.length && !entries.length){
+    result=apiNames.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
   }
-  const overrideKey=championsFormOverrideKey(p,s);
-  const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
-  let names=(overrideNames||chosen?.[1]?.moves||[]).map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
-
-  // IMPORTANT: the Champions community dataset currently exposes a few
-  // regional-form learnsets as a union of the base + regional form. Ninetales
-  // already has an explicit hand-checked override above. For every other
-  // species with a permanent regional form, use the actual PokéAPI form's
-  // move list as a form-specific filter. This keeps the Champions move pool
-  // while removing moves that this exact form cannot learn.
-  // We intentionally use the already-loaded `p.moves` object here, so there
-  // is no extra network request and no additional loading delay.
-  const regionalSpeciesIds=new Set([26,38,53,59,80,128,157,199,503,571,618,706,713,724]);
-  const isRealApiForm=!p?._mcForm && regionalSpeciesIds.has(dex);
-  if(isRealApiForm && !overrideNames){
-    const apiMoveNames=new Set((p.moves||[]).map(x=>normMoveName(x?.move?.name||x?.name)).filter(Boolean));
-    if(apiMoveNames.size) names=names.filter(name=>apiMoveNames.has(normMoveName(name)));
-  }
-
-  const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
-  const result=names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
-  if(result.length)return result;
-  const allowed=new Set((championsMovesData||[]).filter(m=>m?.inChampions===true).map(m=>normMoveName(m.name)));
-  const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
-  return apiNames.filter(name=>allowed.has(normMoveName(name)))
-    .map(name=>moveMap.get(normMoveName(name))||{name})
-    .filter(m=>m.inChampions!==false);
+  return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 }
 // v5.2 – form-specific Champions learnset corrections.
 // The current community dataset exposes Ninetales and Alolan Ninetales with the
@@ -2078,7 +2108,20 @@ function teamBuilderPokemonItems(){
 }
 function teamBuilderMoveOptions(slot,index){
   const st=teamBuilderState[slot],moves=st?.moves||[],selected=st?.moveValues?.[index]||'';
-  return moves.map(m=>{const v=normMoveName(m.name);return `<option value="${escapeHtml(v)}" ${v===selected?'selected':''}>${escapeHtml(championsMoveLabel(m))}</option>`}).join('');
+  return moves.map(m=>{const v=normMoveName(m.name);return `<button type="button" class="team-builder-move-suggestion" data-builder-move-pick="${index}" data-slot="${slot}" data-move-value="${escapeHtml(v)}"><span>${escapeHtml(championsMoveLabel(m))}</span><small>${escapeHtml([m.type,m.category].filter(Boolean).join(' · '))}</small></button>`}).join('');
+}
+function teamBuilderMoveLabel(slot,index){
+  const v=teamBuilderState[slot]?.moveValues?.[index]||'';
+  const m=(teamBuilderState[slot]?.moves||[]).find(x=>normMoveName(x.name)===v);
+  return m?championsMoveLabel(m):'';
+}
+function teamBuilderDrawMoveSuggestions(slot,index,q=''){
+  const list=document.querySelector(`[data-builder-move-suggestions="${slot}-${index}"]`);if(!list)return;
+  document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.toggle('team-builder-active-search',Number(d.dataset.slot)===Number(slot)));
+  const moves=teamBuilderState[slot]?.moves||[],query=String(q||'').trim().toLowerCase();
+  const rows=(query?moves.filter(m=>championsMoveLabel(m).toLowerCase().includes(query)||String(m.name||'').toLowerCase().includes(query)):moves).slice(0,18);
+  list.innerHTML=rows.length?rows.map(m=>{const v=normMoveName(m.name);return `<button type="button" class="team-builder-move-suggestion" data-builder-move-pick="${index}" data-slot="${slot}" data-move-value="${escapeHtml(v)}"><span>${escapeHtml(championsMoveLabel(m))}</span><small>${escapeHtml([m.type,m.category].filter(Boolean).join(' · '))}</small></button>`}).join(''):`<div class="team-builder-move-empty">${escapeHtml(t('teamBuilderNoMoves'))}</div>`;
+  list.hidden=!rows.length;
 }
 function teamBuilderItemOptions(selected=''){
   const opts=[`<option value="">${escapeHtml(t('teamBuilderNoItem'))}</option>`];
@@ -2100,7 +2143,7 @@ function renderTeamBuilder(){
     const evKeys=[['hp','KP'],['atk','Angriff'],['def','Verteidigung'],['spa','Sp. Angriff'],['spd','Sp. Verteidigung'],['spe','Initiative']];
     const evLabels=uiLang==='en'?['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed']:evKeys.map(x=>x[1]);
     const evHtml=evKeys.map(([key],k)=>`<label>${evLabels[k]}<input type="number" min="0" max="32" step="1" data-builder-ev="${key}" data-slot="${i}" value="${slot.ev[key]||0}"></label>`).join('');
-    const movesHtml=[0,1,2,3].map(m=>`<label>${t('teamBuilderMoves')} ${m+1}<select data-builder-move="${m}" data-slot="${i}" ${slot.moves.length?'':'disabled'}><option value="">${escapeHtml(t('teamBuilderMovePlaceholder'))}</option>${teamBuilderMoveOptions(slot,m)}</select></label>`).join('');
+    const movesHtml=[0,1,2,3].map(m=>{const label=teamBuilderMoveLabel(i,m);return `<label class="team-builder-move-field">${t('teamBuilderMoves')} ${m+1}<div class="team-builder-move-search"><input type="search" autocomplete="off" data-builder-move-search="${m}" data-slot="${i}" value="${escapeHtml(label)}" placeholder="${escapeHtml(t('teamBuilderMovePlaceholder'))}" ${slot.moves.length?'':'disabled'}><div class="team-builder-move-suggestions" data-builder-move-suggestions="${i}-${m}" hidden></div></div></label>`}).join('');
     return `<details class="card team-builder-slot ${selected?'':'team-builder-empty'}" data-slot="${i}" ${selected?'':'open'}>
       <summary><span class="team-builder-slot-num">${i+1}</span><img class="team-builder-slot-sprite" src="${img}" alt=""><span class="team-builder-slot-name">${escapeHtml(name)}${slot.loading?`<span class="team-builder-slot-meta"> · ${escapeHtml(t('teamBuilderLoading'))}</span>`:''}</span><span class="team-builder-chevron">⌄</span></summary>
       <div class="team-builder-editor">
@@ -2145,18 +2188,26 @@ async function teamBuilderSelectForm(slot,index){
   try{const speciesId=st.pokemon.speciesId||st.base?.speciesId||st.base?.id;const species=await json(`${API}/pokemon-species/${speciesId}`);st.moves=await getChampionsMovesForPokemon(st.pokemon,species)}catch(e){console.warn('Team Builder form moves:',e);st.moves=[]}finally{st.loading=false;renderTeamBuilder();const x=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(x)x.open=true}
 }
 function teamBuilderSetEV(slot,key,value){const st=teamBuilderState[slot];let v=Math.max(0,Math.min(32,Number(value)||0));const current=teamBuilderEVTotal(slot);const old=Number(st.ev[key])||0;const allowed=Math.max(0,66-(current-old));v=Math.min(v,allowed);st.ev[key]=v;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
-function teamBuilderSetMove(slot,index,value){const st=teamBuilderState[slot];if(!st.moves)return;const chosen=st.moves.find(m=>normMoveName(m.name)===value);if(!chosen){if(st.moveValues)st.moveValues[index]='';return}st.moveValues=st.moveValues||['','','',''];if(st.moveValues.some((x,i)=>i!==index&&x===value))return;st.moveValues[index]=value;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
+function teamBuilderSetMove(slot,index,value){const st=teamBuilderState[slot];if(!st.moves)return;const chosen=st.moves.find(m=>normMoveName(m.name)===value);if(!chosen)return;st.moveValues=st.moveValues||['','','',''];if(st.moveValues.some((x,i)=>i!==index&&x===value))return;st.moveValues[index]=value;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function bindTeamBuilder(){
   document.querySelectorAll('[data-builder-search]').forEach(input=>{const slot=Number(input.dataset.builderSearch);input.oninput=()=>teamBuilderDrawSuggestions(slot,input.value);input.onfocus=()=>teamBuilderDrawSuggestions(slot,input.value);});
   document.querySelectorAll('[data-builder-form]').forEach(sel=>sel.onchange=()=>teamBuilderSelectForm(Number(sel.dataset.builderForm),sel.value));
   document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderNature)].nature=Number(sel.value);});
   document.querySelectorAll('[data-builder-item]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderItem)].item=sel.value;});
   document.querySelectorAll('[data-builder-ev]').forEach(inp=>inp.onchange=()=>teamBuilderSetEV(Number(inp.dataset.slot),inp.dataset.builderEv,inp.value));
-  document.querySelectorAll('[data-builder-move]').forEach(sel=>sel.onchange=()=>teamBuilderSetMove(Number(sel.dataset.slot),Number(sel.dataset.builderMove),sel.value));
+  document.querySelectorAll('[data-builder-move-search]').forEach(input=>{const slot=Number(input.dataset.slot),index=Number(input.dataset.builderMoveSearch);input.onfocus=()=>teamBuilderDrawMoveSuggestions(slot,index,input.value);input.oninput=()=>teamBuilderDrawMoveSuggestions(slot,index,input.value);input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const first=document.querySelector(`[data-builder-move-suggestions="${slot}-${index}"] .team-builder-move-suggestion`);if(first){teamBuilderSetMove(slot,index,first.dataset.moveValue);}}};input.onblur=()=>setTimeout(()=>{const list=document.querySelector(`[data-builder-move-suggestions="${slot}-${index}"]`);if(list)list.hidden=true;},180);});
   if(!teamBuilderEventsBound){
     const root=$('teamBuilderSlots');
     if(root){
       root.addEventListener('click',e=>{
+        const moveBtn=e.target.closest('[data-builder-move-pick]');
+        if(moveBtn && root.contains(moveBtn)){
+          e.preventDefault(); e.stopPropagation();
+          const slot=Number(moveBtn.dataset.slot),index=Number(moveBtn.dataset.builderMovePick),value=moveBtn.dataset.moveValue||'';
+          teamBuilderSetMove(slot,index,value);
+          const list=document.querySelector(`[data-builder-move-suggestions=\"${slot}-${index}\"]`);if(list)list.hidden=true;
+          return;
+        }
         const btn=e.target.closest('[data-builder-pick]');
         if(btn && root.contains(btn)){
           e.preventDefault(); e.stopPropagation();
@@ -2166,7 +2217,7 @@ function bindTeamBuilder(){
           return;
         }
         if(!e.target.closest('.team-builder-suggestions')){
-          document.querySelectorAll('.team-builder-suggestions').forEach(list=>list.hidden=true);
+          document.querySelectorAll('.team-builder-suggestions,.team-builder-move-suggestions').forEach(list=>list.hidden=true);
           document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.remove('team-builder-active-search'));
         }
       });
