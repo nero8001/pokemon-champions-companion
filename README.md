@@ -99,3 +99,16 @@ API implementation follows the documented index-first approach and uses Showdown
 - Pokémon profiles now show top moves and top teammates in addition to items, abilities, natures and stat spreads.
 - The lightweight live builder meta file provides rank/position but does not include an overall Pokémon usage percentage, so the app no longer displays misleading 0.0% values as if they were real usage percentages.
 - Teammate pair percentages are shown only when the battle-row API actually provides them; fallback teammate names are labelled as live teammate data without a fabricated percentage.
+
+
+## v7.7.0 – Team-Builder
+- Neuer kompakter Team-Builder mit sechs Team-Slots.
+- Jeder Slot lässt sich einzeln aufklappen und bearbeiten, damit die Seite bei einem vollständigen 6er-Team kompakt bleibt.
+- Auswahl nur aus dem Pokémon-Champions-Roster (`CHAMPIONS_AVAILABLE_IDS`).
+- Champions-Attacken werden über den vorhandenen Champions-Learnset-Datensatz geladen.
+- Champions-kompatible Items werden über die bereits im Battle Calculator verwendete Item-Liste angeboten.
+- Wesen und EV-/Statuswertpunkte pro Pokémon separat einstellbar.
+- EVs sind auf maximal 32 je Statuswert und insgesamt 66 Punkte begrenzt.
+- Formauswahl für unterstützte Mega-/Regional-/M-C-Formen ist pro Slot vorbereitet.
+- Vier Attacken-Slots pro Pokémon.
+- Die bisherige Pokédex-, Calculator-, Randomizer- und Live-Meta/Teams-Funktion bleibt unverändert.
