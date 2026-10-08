@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.7.5</title>
+<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.7.6</title>
 <link rel="stylesheet" href="style.css?v=7.7.0">
 
 <style id="v14-calculator">
@@ -62,11 +62,14 @@
 
     <div id="attackerPreview" class="calc-preview">Noch kein Pokémon ausgewählt.</div>
 
-    <label>Attacke suchen
-      <input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …">
-      <div id="moveSuggestions" class="calc-suggestions" hidden></div>
-    </label>
-    <div id="moveInfo" class="move-info">Wähle einen Angreifer und danach eine Attacke.</div>
+    <div class="calc-moves-v17">
+      <div class="calc-moves-head"><strong>Attacken</strong><span>Wähle eine der Attacken für die Kalkulation.</span></div>
+      <div class="calc-move-slot"><label>Attacke 1<input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …"></label><div id="moveSuggestions" class="calc-suggestions" hidden></div></div>
+      <div class="calc-move-slot"><label>Attacke 2<input id="moveSearch2" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions2" class="calc-suggestions" hidden></div></div>
+      <div class="calc-move-slot"><label>Attacke 3<input id="moveSearch3" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions3" class="calc-suggestions" hidden></div></div>
+      <div class="calc-move-slot"><label>Attacke 4<input id="moveSearch4" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions4" class="calc-suggestions" hidden></div></div>
+    </div>
+    <div id="moveInfo" class="move-info">Wähle eine Attacke für die Kalkulation.</div>
 
     <div class="twocol">
       <label>Wesen<select id="atkNature"></select></label>

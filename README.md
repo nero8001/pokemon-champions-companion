@@ -1,19 +1,16 @@
-# Pokémon Champions Companion – aktuelle Änderungen
+# Pokémon Champions Companion
 
-## v7.7.5 – Meine Teams & JSON Import/Export
-- Team-Builder-Teams können jetzt lokal im Browser bzw. in der App gespeichert, geladen, umbenannt und gelöscht werden.
-- Teams lassen sich als JSON-Datei exportieren und später wieder importieren; enthalten sind Pokémon, Form, Wesen, Item, Fähigkeit, Attacken und Statuswertpunkte.
-- Gespeicherte Teams bleiben pro Browser/App-Installation getrennt und werden nicht global mit anderen Nutzern geteilt.
+## Aktuelle Version: v7.7.6
 
-## v7.7.4 – Team-Builder Komfort & Statuswerte
-- Items im Team-Builder jetzt per Suchfeld auswählbar; die Auswahl bleibt auf die aktuell im Champions-Regelsatz M-C vorgesehenen Items und Mega-Steine begrenzt.
-- Fähigkeiten pro Pokémon als Dropdown ergänzt, inklusive formabhängiger Fähigkeit bei Mega-/Sonderformen.
-- Lv.-50-Statuswerte ergänzt; sie aktualisieren sich direkt mit Wesen und Statuswertpunkte-Verteilung nach dem im Team-Builder verwendeten Champions-SP-Modell.
+### v7.7.6 – Team → Calculator
+- Jedes Pokémon im Team-Builder hat auch im zugeklappten Zustand den Button „In Calculator übernehmen“.
+- Pokémon, Form, Wesen, Item, Fähigkeit und alle Statuswertpunkte werden in den Angreifer des Battle Calculators übernommen und überschreiben dort vorhandene Angreifer-Daten.
+- Der Calculator besitzt vier Attacken-Slots. Die vier im Team-Builder gesetzten Attacken werden übernommen; die erste übertragene Attacke wird zunächst als Kalkulationsattacke ausgewählt, weitere Attacken können per Klick aktiviert werden.
 
-## v7.7.3 – Team-Builder Attacken-Suche
-- Attackenfelder durch mobile-freundliche Suchfelder ersetzt.
-- Champions-Learnsets robuster geladen, mit zusätzlichem Fallback auf die aktuelle Champions-Move-Tabelle.
-- README wieder auf die letzten drei größeren Änderungen begrenzt.
+### v7.7.5 – Meine Teams
+- Teams lokal pro Browser/App-Installation speichern, laden, umbenennen und löschen.
+- Teamdaten als JSON exportieren und wieder importieren.
 
-## Datenquelle
-Die Champions-Daten für Pokémon, Attacken, Fähigkeiten, Items, Learnsets und weitere Spieldaten stammen aus öffentlich strukturierten Pokémon-Champions-Datensätzen und werden nur für die jeweilige App-Funktion verwendet.
+### v7.7.4 – Team-Builder Statuswerte
+- Item-Suche mit Champions/M-C-relevanten Items und Fähigkeitsauswahl ergänzt.
+- Lv.-50-Statuswerte reagieren auf Wesen und die 66 Statuswertpunkte.
