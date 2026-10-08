@@ -1620,7 +1620,7 @@ function applyWeatherDefense(m,d,defense,physical){
 function moveAbilityTypeAndPower(m,a,d){
  const ability=selectedAbility('atk');
  let type=m.type?.name||'', powerMult=1, notes=[];
- const name=String(m.name||'').toLowerCase();
+ const name=normalizeMoveName(m.name);
  const ab=normalizeAbilityName(ability?.name);
  const aTypes=(a?.types||[]).map(t=>t.type?.name).filter(Boolean);
  if(ab==='aerilate'&&type==='normal'){type='flying';powerMult*=1.2;notes.push('Aerilate: Normal → Flying, ×1,2')}
