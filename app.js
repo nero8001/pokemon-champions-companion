@@ -1628,6 +1628,19 @@ function moveAbilityTypeAndPower(m,a,d){
  if(ab==='pixilate'&&type==='normal'){type='fairy';powerMult*=1.2;notes.push('Pixilate: Normal → Fairy, ×1,2')}
  if(ab==='galvanize'&&type==='normal'){type='electric';powerMult*=1.2;notes.push('Galvanize: Normal → Electric, ×1,2')}
  if(ab==='dragonize'&&type==='normal'){type='dragon';powerMult*=1.2;notes.push('Dragonize: Normal → Dragon, ×1,2')}
+ // Meteorologe (Weather Ball): Wetter bestimmt Typ und verdoppelt die Basisstärke.
+ // Das Wetter muss vor Typenwirkung/STAB/Items berücksichtigt werden, damit die
+ // komplette Schadensberechnung den durch das Wetter geänderten Typ verwendet.
+ if(name==='weather ball'){
+   const weather=$('weatherStatus')?.value||'none';
+   const weatherBallTypes={sun:'fire',rain:'water',sand:'rock',snow:'ice'};
+   if(weatherBallTypes[weather]){
+     type=weatherBallTypes[weather];
+     powerMult*=2;
+     const labels={sun:'Sonnenschein: Feuer',rain:'Regen: Wasser',sand:'Sandsturm: Gestein',snow:'Schnee: Eis'};
+     notes.push(`Meteorologe: ${labels[weather]} · ×2`);
+   }
+ }
  if(ab==='liquid voice'&&['sound-based'].includes(name)){type='water';notes.push('Liquid Voice: Schall-Attacke → Wasser')}
  if(ab==='iron fist'&&['drain punch','dynamic punch','focus punch','hammer arm','ice hammer','mach punch','meteor mash','power-up punch','shadow punch','sky uppercut','surging strikes','thunder punch','fire punch','bullet punch','double iron bash','plasma fists','wicked blow'].includes(name)){powerMult*=1.2;notes.push('Iron Fist: ×1,2')}
  const pulse=['aura sphere','dark pulse','dragon pulse','origin pulse','terrain pulse','water pulse','heal pulse','focus blast'];
