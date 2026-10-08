@@ -163,3 +163,38 @@
 .team-builder-stat span{font-size:.82rem;opacity:.78}
 .team-builder-stat b{font-size:1.05rem}
 @media(max-width:700px){.team-builder-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* v7.7.5 Team-Builder – lokale Teams & JSON Import/Export */
+.team-builder-toolbar-main{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.team-builder-save-panel{margin-top:14px;padding-top:14px;border-top:1px solid #26314c}
+.team-builder-save-panel>label{display:block;font-size:.84rem;font-weight:800}
+.team-builder-save-panel input{width:100%;margin-top:6px}
+.team-builder-save-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.team-builder-save-actions button{margin:0}
+.team-builder-save-status{min-height:1.3em;margin-top:8px;color:#8fdbb2;font-size:.82rem;font-weight:700}
+.team-builder-saved-wrap{margin-top:14px}
+.team-builder-saved-head-main{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.team-builder-saved-head-main h2{margin:0}
+.team-builder-saved-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.team-builder-empty-list{margin:0;padding:14px;border:1px dashed #34405e;border-radius:10px;opacity:.7;grid-column:1/-1}
+.team-builder-saved-card{border:1px solid rgba(100,130,190,.22);border-radius:12px;padding:12px;background:rgba(100,130,190,.05)}
+.team-builder-saved-card.active{border-color:#6f88c7;box-shadow:0 0 0 1px rgba(111,136,199,.2)}
+.team-builder-saved-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.team-builder-saved-head b{display:block;font-size:1rem}
+.team-builder-saved-head small,.team-builder-saved-head>span{display:block;margin-top:3px;color:#8f9ab5;font-size:.74rem}
+.team-builder-saved-head>span{text-align:right;white-space:nowrap}
+.team-builder-saved-preview{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:10px}
+.team-builder-saved-preview>div{min-width:0;text-align:center}
+.team-builder-saved-preview img{width:44px;height:44px;object-fit:contain;display:block;margin:auto}
+.team-builder-saved-preview span{display:block;margin-top:2px;font-size:.62rem;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.72}
+.team-builder-saved-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.team-builder-saved-actions button{width:100%;margin:0;padding:7px 6px;font-size:.75rem}
+.team-builder-saved-actions .danger{background:transparent;border:1px solid #7a3d4a;color:#ffb4be;border-radius:8px;cursor:pointer}
+@media(max-width:700px){
+ .team-builder-toolbar-main{flex-direction:column;gap:8px}
+ .team-builder-save-actions{display:grid;grid-template-columns:1fr 1fr}
+ .team-builder-save-actions button{width:100%}
+ .team-builder-saved-list{grid-template-columns:1fr}
+ .team-builder-saved-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .team-builder-saved-preview img{width:40px;height:40px}
+}
