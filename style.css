@@ -149,3 +149,17 @@
  .team-builder-moves{grid-template-columns:1fr}
  .team-builder-ev{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* v7.7.4 Team-Builder item search + Lv50 stats */
+.team-builder-item-field{position:relative}
+.team-builder-item-search{position:relative}
+.team-builder-item-search input{width:100%}
+.team-builder-item-suggestions{position:absolute;z-index:10003;left:0;right:0;top:100%;background:#0b1020;border:1px solid #34405e;border-radius:10px;overflow:auto;max-height:280px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.team-builder-item-suggestion{width:100%;display:block;text-align:left;background:transparent;border:0;color:#fff;padding:9px 10px;cursor:pointer}
+.team-builder-item-suggestion:hover{background:#17213a}
+.team-builder-item-none{border-bottom:1px solid rgba(130,150,190,.2);font-weight:700}
+.team-builder-stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.team-builder-stat{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border:1px solid rgba(100,130,190,.22);border-radius:9px;background:rgba(100,130,190,.07)}
+.team-builder-stat span{font-size:.82rem;opacity:.78}
+.team-builder-stat b{font-size:1.05rem}
+@media(max-width:700px){.team-builder-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
