@@ -10,12 +10,15 @@ async function loadChampionsData(){
   if(championsMovesData&&championsLearnsetsData)return;
   if(championsDataCache.promise)return championsDataCache.promise;
   championsDataCache.promise=(async()=>{
-    const [moves,learnsets]=await Promise.all([
+    const [movesResult,learnsetsResult]=await Promise.allSettled([
       fetch(CHAMPIONS_DATA+'moves/moves.json',{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error('Champions moves '+r.status);return r.json()}),
       fetch(CHAMPIONS_DATA+'learnsets/learnsets.json',{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error('Champions learnsets '+r.status);return r.json()})
     ]);
-    championsMovesData=moves;championsLearnsetsData=learnsets;
-  })().catch(e=>{console.warn('Champions move data:',e);championsMovesData=[];championsLearnsetsData={};});
+    championsMovesData=movesResult.status==='fulfilled'&&Array.isArray(movesResult.value)?movesResult.value:[];
+    championsLearnsetsData=learnsetsResult.status==='fulfilled'&&learnsetsResult.value&&typeof learnsetsResult.value==='object'?learnsetsResult.value:{};
+    if(movesResult.status==='rejected')console.warn('Champions move data:',movesResult.reason);
+    if(learnsetsResult.status==='rejected')console.warn('Champions learnset data:',learnsetsResult.reason);
+  })().catch(e=>{console.warn('Champions data:',e);championsMovesData=[];championsLearnsetsData={};});
   return championsDataCache.promise;
 }
 function normMoveName(v){return String(v||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,'');}
@@ -44,8 +47,17 @@ async function getChampionsMovesForPokemon(p,s){
   await loadChampionsData();
   const dex=Number(p?.speciesId||s?.id||p?.id||0);
   if(!dex||!championsLearnsetsData)return [];
-  const entries=Object.entries(championsLearnsetsData).filter(([key,v])=>Number(v?.dexNumber)===dex&&Array.isArray(v?.moves));
-  if(!entries.length)return [];
+  const entries=Object.entries(championsLearnsetsData||{}).filter(([key,v])=>Number(v?.dexNumber)===dex&&Array.isArray(v?.moves));
+  // The learnset JSON is the preferred source. If it is temporarily unavailable
+  // in a mobile browser, fall back to the exact PokéAPI learnset of this form
+  // and keep only moves explicitly marked as available in Champions.
+  if(!entries.length){
+    const allowed=new Set((championsMovesData||[]).filter(m=>m?.inChampions===true).map(m=>normMoveName(m.name)));
+    const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
+    return apiNames.filter(name=>allowed.has(normMoveName(name)))
+      .map(name=>(championsMovesData||[]).find(m=>normMoveName(m.name)===normMoveName(name))||{name})
+      .filter(m=>m.inChampions!==false);
+  }
   const candidates=championsFormCandidates(p,s);
   let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
   if(!chosen){
@@ -72,7 +84,13 @@ async function getChampionsMovesForPokemon(p,s){
   }
 
   const moveMap=new Map((championsMovesData||[]).map(x=>[normMoveName(x.name),x]));
-  return names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  const result=names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  if(result.length)return result;
+  const allowed=new Set((championsMovesData||[]).filter(m=>m?.inChampions===true).map(m=>normMoveName(m.name)));
+  const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
+  return apiNames.filter(name=>allowed.has(normMoveName(name)))
+    .map(name=>moveMap.get(normMoveName(name))||{name})
+    .filter(m=>m.inChampions!==false);
 }
 // v5.2 – form-specific Champions learnset corrections.
 // The current community dataset exposes Ninetales and Alolan Ninetales with the
@@ -2102,6 +2120,7 @@ function renderTeamBuilder(){
 }
 function teamBuilderDrawSuggestions(slot,q){
   const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(!list)return;
+  document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.toggle('team-builder-active-search',Number(d.dataset.slot)===Number(slot)));
   const items=teamBuilderPokemonItems();const query=q.trim().toLowerCase();
   const rows=(query?items.filter(x=>x.label.toLowerCase().includes(query)||x.name.toLowerCase().includes(query)||String(x.id)===query||String(x.id).padStart(4,'0')===query):items).slice(0,12);
   list.innerHTML=rows.map((x,i)=>`<button type="button" class="team-builder-suggestion" data-builder-pick="${slot}" data-builder-id="${x.id}"><img src="${sprite(x.id)}" alt=""><span>${escapeHtml(x.label)}<small>#${String(x.id).padStart(4,'0')}</small></span></button>`).join('');list.hidden=!rows.length;
@@ -2143,11 +2162,12 @@ function bindTeamBuilder(){
           e.preventDefault(); e.stopPropagation();
           const slot=Number(btn.dataset.builderPick),id=Number(btn.dataset.builderId);
           const item=teamBuilderPokemonItems().find(x=>Number(x.id)===id);
-          if(item){const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(list)list.hidden=true;teamBuilderSelectPokemon(slot,item);}
+          if(item){const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(list)list.hidden=true;document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.remove('team-builder-active-search'));teamBuilderSelectPokemon(slot,item);}
           return;
         }
         if(!e.target.closest('.team-builder-suggestions')){
           document.querySelectorAll('.team-builder-suggestions').forEach(list=>list.hidden=true);
+          document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.remove('team-builder-active-search'));
         }
       });
       teamBuilderEventsBound=true;

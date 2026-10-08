@@ -98,22 +98,20 @@ API implementation follows the documented index-first approach and uses Showdown
 - Cache-Buster `app.js?v=7.6.7` und `.nojekyll` für GitHub Pages ergänzt.
 - Keine erfundenen Rang-, Usage-, EV-, Wesen- oder Winrate-Daten.
 
-## v7.6.8 – Live Meta interaction improvements
-- Both Pokémon in every live teammate combination are now clickable.
-- Clicking either Pokémon opens the same current Doubles profile data from the Battle Data API.
-- Pokémon profiles now show top moves and top teammates in addition to items, abilities, natures and stat spreads.
-- The lightweight live builder meta file provides rank/position but does not include an overall Pokémon usage percentage, so the app no longer displays misleading 0.0% values as if they were real usage percentages.
-- Teammate pair percentages are shown only when the battle-row API actually provides them; fallback teammate names are labelled as live teammate data without a fabricated percentage.
+## v7.7.2 – Team-Builder Fixes
+- Pokémon-Auswahllisten bleiben beim Öffnen über anderen Team-Slots sichtbar und werden nicht mehr von nachfolgenden Karten überdeckt.
+- Champions-Attacken werden robuster geladen: bevorzugter Champions-Learnset-Datensatz mit Fallback auf den formgenauen PokéAPI-Learnset, gefiltert auf explizit in Champions verfügbare Attacken.
+- `moves.json` und `learnsets.json` werden unabhängig voneinander geladen, damit ein temporärer Fehler einer Quelle nicht beide Datenbestände ausfällt.
 
+## v7.7.1 – Team-Builder Auswahl-Fix
+- Pokémon-Auswahlliste überlappt andere Slots korrekt.
+- Dynamische Pokémon-Auswahl per Event-Delegation klickbar gemacht.
+- Auswahl eines Pokémon lädt anschließend Form, Wesen, Item, EVs und Champions-Daten.
 
 ## v7.7.0 – Team-Builder
 - Neuer kompakter Team-Builder mit sechs Team-Slots.
-- Jeder Slot lässt sich einzeln aufklappen und bearbeiten, damit die Seite bei einem vollständigen 6er-Team kompakt bleibt.
-- Auswahl nur aus dem Pokémon-Champions-Roster (`CHAMPIONS_AVAILABLE_IDS`).
-- Champions-Attacken werden über den vorhandenen Champions-Learnset-Datensatz geladen.
-- Champions-kompatible Items werden über die bereits im Battle Calculator verwendete Item-Liste angeboten.
-- Wesen und EV-/Statuswertpunkte pro Pokémon separat einstellbar.
+- Jeder Slot lässt sich einzeln aufklappen und bearbeiten.
+- Auswahl nur aus dem Pokémon-Champions-Roster.
+- Champions-Attacken, kompatible Items, Wesen und EV-/Statuswertpunkte pro Pokémon.
 - EVs sind auf maximal 32 je Statuswert und insgesamt 66 Punkte begrenzt.
-- Formauswahl für unterstützte Mega-/Regional-/M-C-Formen ist pro Slot vorbereitet.
-- Vier Attacken-Slots pro Pokémon.
-- Die bisherige Pokédex-, Calculator-, Randomizer- und Live-Meta/Teams-Funktion bleibt unverändert.
+- Vier Attacken-Slots pro Pokémon und Formauswahl für unterstützte Formen.
