@@ -719,7 +719,7 @@ function metaTeamPokemon(name,clickable=false,context=''){
   return clickable?`<button type="button" class="meta-team-poke meta-team-poke-button" data-meta-pokemon="${String(name).replace(/"/g,'&quot;')}" data-meta-context="${String(context).replace(/"/g,'&quot;')}">${label}</button>`:`<span class="meta-team-poke">${label}</span>`;
 }
 function metaProfilePokemon(p){return `<button type="button" class="meta-profile-poke meta-profile-poke-button" data-meta-pokemon="${String(p.name).replace(/"/g,'&quot;')}" data-meta-context="${String(p.item||'').replace(/"/g,'&quot;')}"><div class="meta-profile-poke-head"><b>${metaPokemonLabel(p.name)}</b><span>${p.item||'—'}</span></div><div class="meta-profile-meta"><span><strong>${uiLang==='en'?'Ability':'Fähigkeit'}:</strong> ${p.ability||'—'}</span><span><strong>${uiLang==='en'?'Nature / EVs':'Wesen / EVs'}:</strong> ${p.nature||'—'}${p.evs?` · ${p.evs}`:''}</span></div><div class="meta-profile-moves">${(p.moves||[]).map(m=>`<span>${m}</span>`).join('')}</div></button>`}
-function bindMetaPokemonButtons(root=document){root.querySelectorAll('.meta-profile-poke-button,.meta-team-poke-button').forEach(btn=>btn.onclick=()=>openMetaPokemonProfile(btn.dataset.metaPokemon,btn.dataset.metaContext||''))}
+function bindMetaPokemonButtons(root=document){root.querySelectorAll('.meta-profile-poke-button,.meta-team-poke-button,.meta-pokemon-row-button').forEach(btn=>btn.onclick=()=>openMetaPokemonProfile(btn.dataset.metaPokemon,btn.dataset.metaContext||''))}
 function openMetaTeamProfile(index){const team=META_CONCRETE_TEAMS[index];if(!team)return;$('infoTitle').textContent=`${team.player} · ${team.record}`;$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${team.event||''}</p><div class="meta-profile-grid">${team.pokemon.map(metaProfilePokemon).join('')}</div><p class="meta-profile-note">${META_TEAM_PROFILE_NOTE}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/pokemon-champions-tournament-teams/" target="_blank" rel="noopener">Pokémon Champions Battle Data – Tournament Teams</a></div>`;$('infoModal').hidden=false;bindMetaPokemonButtons($('infoBody'))}
 function metaRankingPreview(index){const arr=META_RANKING_PREVIEWS[index%META_RANKING_PREVIEWS.length]||[];return arr.map(metaTeamPokemon).join('')}
 
@@ -772,11 +772,13 @@ async function renderMeta(){
      }else{
        const rows=live.pokemonRows;
        $('metaPokemonRows').innerHTML=rows.length?rows.map(x=>{
-         const hasUsage=Number.isFinite(x.usage)&&x.usage>0;
-         const barWidth=hasUsage?Math.min(100,Math.max(0,x.usage)):4;
-         const stat=hasUsage?`${x.usage.toFixed(1)}%`:(x.rank>0?`Rang #${x.rank}`:'—');
-         const barTitle=hasUsage?`${x.usage.toFixed(1)}% Nutzung`:`Live-Rang #${x.rank||'—'} · kein Nutzungsprozentsatz im Live-Meta-Datensatz`;
-         return `<button title="${barTitle.replace(/"/g,'&quot;')}" type="button" class="meta-pokemon-row meta-pokemon-row-button" data-meta-pokemon="${String(x.name).replace(/"/g,'&quot;')}"><div class="meta-pokemon-rank">${x.rank||'—'}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${barWidth}%"></span></div></div><div class="meta-pokemon-stat">${stat}</div></button>`;
+         const rank=Number(x.rank)||0;
+         // The lightweight ranked-meta feed exposes the Doubles position, but
+         // not an overall Pokemon usage percentage. Never render a fake 4% bar.
+         const barWidth=rank>0?Math.max(8,Math.min(100,100-(rank-1)*3.2)):0;
+         const stat=rank>0?`Rang #${rank}`:'—';
+         const barTitle=rank>0?`Live-Rang #${rank} · kein Gesamt-Nutzungsprozentsatz im Live-Meta-Datensatz`:'Kein aktueller Live-Rang';
+         return `<button title="${barTitle.replace(/"/g,'&quot;')}" type="button" class="meta-pokemon-row meta-pokemon-row-button" data-meta-pokemon="${String(x.name).replace(/"/g,'&quot;')}" data-meta-context="Live-Pokémon-Meta · Rang #${rank||'—'}"><div class="meta-pokemon-rank">${x.rank||'—'}</div><div class="meta-pokemon-name">${metaPokemonLabel(x.name)}</div><div><div class="meta-pokemon-bar"><span style="width:${barWidth}%"></span></div></div><div class="meta-pokemon-stat">${stat}</div></button>`;
        }).join(''):'<p class="meta-muted">'+(uiLang==='en'?'No current ranked Pokémon data available.':'Keine aktuellen Pokémon-Rangdaten verfügbar.')+'</p>';bindMetaPokemonButtons(document);document.querySelector('.meta-concrete')?.setAttribute('hidden','');
      }
    }catch(e){
