@@ -1510,7 +1510,7 @@ async function loadCalcMoves(){
  const input=$('moveSearch');
  calcState.moves=[];calcState.selectedMove=null;calcActiveMoveSlot=0;
  calcMoveInputIds.forEach((id,i)=>{const el=$(id),list=$(calcMoveSuggestionIds[i]);if(el){el.value='';el.disabled=true;el.placeholder=t('moveSearch')+' …'}if(list){list.innerHTML='';list.hidden=true}});
- document.querySelectorAll('.calc-move-slot').forEach(x=>x.classList.remove('is-selected'));
+ document.querySelectorAll('.calc-move-slot').forEach(x=>x.classList.remove('is-selected'));document.querySelectorAll('.calc-move-choice').forEach((x,i)=>x.checked=i===0);calcActiveMoveSlot=0;
  $('moveInfo').textContent=p?`${t('moveSearch')} …`:(uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.');
  if(!p)return;
  try{
@@ -2141,7 +2141,17 @@ async function switchCombatantsV14(){
 function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions();
  setupSearchBox('atkSearch','atkSuggestions','atk',pokemonSearchItems,x=>selectCalcPokemon('atk',x));
  setupSearchBox('defSearch','defSuggestions','def',pokemonSearchItems,x=>selectCalcPokemon('def',x));
- calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{calcActiveMoveSlot=i;document.querySelectorAll('.calc-move-slot').forEach((slot,j)=>slot.classList.toggle('is-selected',j===i));$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
+ function selectCalculatorMoveSlot(i,loadMove=true){
+  calcActiveMoveSlot=i;
+  document.querySelectorAll('.calc-move-choice').forEach((choice,j)=>{choice.checked=j===i;});
+  document.querySelectorAll('.calc-move-slot').forEach((slot,j)=>slot.classList.toggle('is-selected',j===i));
+  const input=$(calcMoveInputIds[i]);
+  const chosen=calcState.moves.find(m=>m.label===input?.value||m.name===input?.value);
+  if(loadMove&&chosen){showMoveInfoById(chosen.id);return}
+  if(loadMove&&!chosen){calcState.selectedMove=null;$('moveInfo').textContent=uiLang==='en'?'Choose a move in this slot to calculate damage.':'Wähle in diesem Slot eine Attacke für die Kalkulation.';$('damageResult').innerHTML='<div class="damage-box">Bitte eine Attacke im ausgewählten Slot wählen.</div>';}
+}
+ document.querySelectorAll('.calc-move-choice').forEach((choice,i)=>choice.addEventListener('change',()=>{if(choice.checked)selectCalculatorMoveSlot(i,true);else choice.checked=true;}));
+ calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{selectCalculatorMoveSlot(i,false);$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
  $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateCalcSide('atk')});
  $('defAbility').addEventListener('change',()=>{const x=calcState.abilities.defender.find(a=>String(a.id)===String($('defAbility').value));calcState.selectedAbility.defender=x||null;updateCalcSide('def')});
@@ -2312,7 +2322,7 @@ async function teamBuilderApplyToCalculator(slot){
       const wanted=String(st.moveValues?.[i]||'');
       if(!wanted)continue;
       const move=calcState.moves.find(m=>normMoveName(m.name)===wanted||normMoveName(m.label)===wanted);
-      if(move){const el=$(calcMoveInputIds[i]);if(el)el.value=move.label;transferred++;if(transferred===1){calcActiveMoveSlot=i;calcState.selectedMove=move.id;document.querySelectorAll('.calc-move-slot').forEach((slot,j)=>slot.classList.toggle('is-selected',j===i));await showMoveInfoById(move.id)}}
+      if(move){const el=$(calcMoveInputIds[i]);if(el)el.value=move.label;transferred++;if(transferred===1){calcActiveMoveSlot=i;calcState.selectedMove=move.id;document.querySelectorAll('.calc-move-choice').forEach((choice,j)=>choice.checked=j===i);document.querySelectorAll('.calc-move-slot').forEach((slot,j)=>slot.classList.toggle('is-selected',j===i));await showMoveInfoById(move.id)}}
     }
     const navBtn=document.querySelector('.nav[data-page="calc"]');if(navBtn)navBtn.click();
     if($('moveInfo')&&transferred===0)$('moveInfo').textContent=t('teamBuilderCalcNoMoves');

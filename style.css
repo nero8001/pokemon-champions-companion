@@ -209,6 +209,9 @@
 .calc-moves-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin:0 0 8px}
 .calc-moves-head span{font-size:.82rem;opacity:.7}
 .calc-move-slot{position:relative;margin-bottom:8px}
+.calc-move-slot .calc-move-choice-label{display:flex;align-items:center;gap:9px;margin:0 0 6px;font-size:.9rem;font-weight:750;cursor:pointer}
+.calc-move-slot .calc-move-choice{width:20px;height:20px;min-width:20px;margin:0;accent-color:#5d9cff;cursor:pointer}
+.calc-move-slot .calc-move-search-label{display:block;margin:0}
 .calc-move-slot .calc-suggestions{position:absolute;left:0;right:0;top:100%;z-index:2000}
 .calc-move-slot.is-selected input{border-color:#5d9cff;box-shadow:0 0 0 2px rgba(93,156,255,.14)}
 @media(max-width:700px){.team-builder-slot summary{grid-template-columns:30px 44px minmax(0,1fr) auto 18px;gap:7px;padding:9px}.team-builder-slot-sprite{width:42px;height:42px}.team-builder-calc-btn{font-size:.7rem;padding:7px 7px;max-width:150px;white-space:normal}.calc-moves-head{display:block}.calc-moves-head span{display:block;margin-top:2px}}
