@@ -110,6 +110,15 @@ async function getChampionsMovesForPokemon(p,s){
     }
   }
   let result=names.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  // Espinodon's signature move is available in Champions, but some upstream
+  // learnset snapshots omit it. Keep it selectable for both the base species
+  // and its Mega form (which uses the base form's move list in Team Builder).
+  const includeEspinodonSignatureMove=()=>{
+    if(dex!==998 || result.some(m=>normMoveName(m?.name)==='glaiverush'))return;
+    const move=moveMap.get('glaiverush');
+    result.push(move?{...move,inChampions:true}:{name:'Glaive Rush',type:'Dragon',category:'Physical',power:120,accuracy:100,inChampions:true});
+  };
+  includeEspinodonSignatureMove();
   if(result.length)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 
   // Robust fallback: if the large community learnset file could not be loaded
@@ -140,6 +149,7 @@ async function getChampionsMovesForPokemon(p,s){
       result=apiNames.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
     }
   }
+  includeEspinodonSignatureMove();
   return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 }
 // v5.2 – form-specific Champions learnset corrections.
