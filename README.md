@@ -1,5 +1,5 @@
 # Pokémon Champions Companion – letzte Änderungen
 
-- **v7.7.16:** Team-Builder nutzt zuerst dieselbe Pokémon-Attackenquelle wie der Calculator und gleicht sie mit den Champions-Attackendaten ab. Verhindert unvollständige Form-Lernsets mit nur einer Attacke.
-- **v7.7.15:** Team-Builder-Fallback für leere Champions-Lernsets.
-- **v7.7.14:** Deutsche Attackensuche nach dem Laden der Übersetzungen verbessert.
+- **v7.7.17:** Team-Builder aktualisiert die Statuswerte nach einer Wesen-Änderung wieder sofort und hält den bearbeiteten Slot geöffnet.
+- **v7.7.16:** Team-Builder-Attackenauswahl vereinheitlicht; Mega-Formen nutzen das Moveset der Basisform.
+- **v7.7.15:** Team-Builder-Fallback für leere Champions-Lernsets und Espinodons Signatur-Attacke.
