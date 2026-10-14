@@ -2309,7 +2309,10 @@ async function teamBuilderSelectPokemon(slot,item){
 }
 async function teamBuilderSelectForm(slot,index){
   const st=teamBuilderState[slot],f=st.formOptions[Number(index)];if(!f)return;st.pokemon=f.pokemon;st._formLabel=f.label;st.loading=true;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true;
-  try{const speciesId=st.pokemon.speciesId||st.base?.speciesId||st.base?.id;const species=await json(`${API}/pokemon-species/${speciesId}`);st.moves=await getChampionsMovesForPokemon(st.pokemon,species);const abilities=teamBuilderAbilityList(st.pokemon);st.ability=abilities[0]?.key||''}catch(e){console.warn('Team Builder form moves:',e);st.moves=[]}finally{st.loading=false;renderTeamBuilder();const x=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(x)x.open=true}
+  try{const speciesId=st.pokemon.speciesId||st.base?.speciesId||st.base?.id;const species=await json(`${API}/pokemon-species/${speciesId}`);const formLabel=String(f.label||st.pokemon?._formName||st.pokemon?._mcLabel||st.pokemon?.name||'');const isMegaForm=/mega/i.test(formLabel)||/mega/i.test(String(st.pokemon?._mcLabel||st.pokemon?.name||''));
+    // Mega Evolutions keep the exact move list of their base Pokémon in Champions.
+    // Resolve Mega move choices from the stored base form, not the Mega learnset.
+    st.moves=await getChampionsMovesForPokemon(isMegaForm&&st.base?st.base:st.pokemon,species);const abilities=teamBuilderAbilityList(st.pokemon);st.ability=abilities[0]?.key||''}catch(e){console.warn('Team Builder form moves:',e);st.moves=[]}finally{st.loading=false;renderTeamBuilder();const x=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(x)x.open=true}
 }
 function teamBuilderSetItem(slot,value){const st=teamBuilderState[slot];st.item=String(value||'');renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderSetEV(slot,key,value){const st=teamBuilderState[slot];let v=Math.max(0,Math.min(32,Number(value)||0));const current=teamBuilderEVTotal(slot);const old=Number(st.ev[key])||0;const allowed=Math.max(0,66-(current-old));v=Math.min(v,allowed);st.ev[key]=v;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
