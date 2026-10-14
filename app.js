@@ -84,10 +84,19 @@ async function getChampionsMovesForPokemon(p,s){
   let names=[];
   if(entries.length){
     const candidates=championsFormCandidates(p,s);
+    const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
     let chosen=entries.find(([key])=>candidates.includes(normFormName(key)));
-    if(!chosen){
-      const isMega=String(p?._mcLabel||p?.name||'').toLowerCase().includes('mega');
-      chosen=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base')||entries[0];
+    // A custom M-C Mega form can match its localized form label in the source
+    // even when that form's move list is empty. Prefer a non-empty exact form
+    // entry, then fall back to the species' Base Champions learnset.
+    if(!chosen || !Array.isArray(chosen[1]?.moves) || !chosen[1].moves.length){
+      const preferred=entries.find(([key,v])=>isMega?v.form==='Mega':v.form==='Base');
+      if(preferred && Array.isArray(preferred[1]?.moves) && preferred[1].moves.length)chosen=preferred;
+    }
+    if(!chosen || !Array.isArray(chosen[1]?.moves) || !chosen[1].moves.length){
+      chosen=entries.find(([key,v])=>v.form==='Base' && Array.isArray(v.moves) && v.moves.length)
+        || entries.find(([key,v])=>Array.isArray(v.moves) && v.moves.length)
+        || chosen;
     }
     const overrideKey=championsFormOverrideKey(p,s);
     const overrideNames=CHAMPIONS_FORM_MOVE_OVERRIDES[overrideKey];
@@ -117,8 +126,19 @@ async function getChampionsMovesForPokemon(p,s){
   // unavailable: never leave the Team Builder unusable; use the already
   // available Champions PokéAPI learnset only when it is known to be the
   // Champions roster form.
-  if(!result.length && !entries.length){
-    result=apiNames.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+  if(!result.length){
+    // Never disable the Team Builder's move inputs merely because a form's
+    // dedicated Champions learnset is missing/empty. Try the base-form
+    // Champions learnset first, then use the filtered API move list as a last
+    // resort. This also covers synthetic M-C forms such as Mega-Espinodon.
+    const baseEntry=entries.find(([key,v])=>v.form==='Base' && Array.isArray(v.moves) && v.moves.length);
+    if(baseEntry){
+      const fallbackNames=baseEntry[1].moves.map(x=>typeof x==='string'?x:x?.name).filter(Boolean);
+      result=fallbackNames.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+    }
+    if(!result.length){
+      result=apiNames.map(name=>moveMap.get(normMoveName(name))||{name}).filter(m=>m.inChampions!==false);
+    }
   }
   return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 }
@@ -2291,7 +2311,6 @@ async function teamBuilderSelectForm(slot,index){
   const st=teamBuilderState[slot],f=st.formOptions[Number(index)];if(!f)return;st.pokemon=f.pokemon;st._formLabel=f.label;st.loading=true;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true;
   try{const speciesId=st.pokemon.speciesId||st.base?.speciesId||st.base?.id;const species=await json(`${API}/pokemon-species/${speciesId}`);st.moves=await getChampionsMovesForPokemon(st.pokemon,species);const abilities=teamBuilderAbilityList(st.pokemon);st.ability=abilities[0]?.key||''}catch(e){console.warn('Team Builder form moves:',e);st.moves=[]}finally{st.loading=false;renderTeamBuilder();const x=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(x)x.open=true}
 }
-function teamBuilderSetNature(slot,value){const st=teamBuilderState[slot];if(!st)return;st.nature=Math.max(0,Math.min(24,Number(value)||0));renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderSetItem(slot,value){const st=teamBuilderState[slot];st.item=String(value||'');renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderSetEV(slot,key,value){const st=teamBuilderState[slot];let v=Math.max(0,Math.min(32,Number(value)||0));const current=teamBuilderEVTotal(slot);const old=Number(st.ev[key])||0;const allowed=Math.max(0,66-(current-old));v=Math.min(v,allowed);st.ev[key]=v;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderSetMove(slot,index,value){const st=teamBuilderState[slot];if(!st.moves)return;const chosen=st.moves.find(m=>normMoveName(m.name)===value);if(!chosen)return;st.moveValues=st.moveValues||['','','',''];if(st.moveValues.some((x,i)=>i!==index&&x===value))return;st.moveValues[index]=value;renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
@@ -2334,7 +2353,7 @@ async function teamBuilderApplyToCalculator(slot){
 function bindTeamBuilder(){
   document.querySelectorAll('[data-builder-search]').forEach(input=>{const slot=Number(input.dataset.builderSearch);input.oninput=()=>teamBuilderDrawSuggestions(slot,input.value);input.onfocus=()=>teamBuilderDrawSuggestions(slot,input.value);});
   document.querySelectorAll('[data-builder-form]').forEach(sel=>sel.onchange=()=>teamBuilderSelectForm(Number(sel.dataset.builderForm),sel.value));
-  document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>teamBuilderSetNature(Number(sel.dataset.builderNature),sel.value));
+  document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderNature)].nature=Number(sel.value);});
   document.querySelectorAll('[data-builder-item-search]').forEach(input=>{const slot=Number(input.dataset.builderItemSearch);input.onfocus=()=>teamBuilderDrawItemSuggestions(slot,input.value);input.oninput=()=>teamBuilderDrawItemSuggestions(slot,input.value);input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const first=document.querySelector(`[data-builder-item-suggestions="${slot}"] .team-builder-item-suggestion`);if(first)teamBuilderSetItem(slot,first.dataset.builderItemPick||'');}};input.onblur=()=>setTimeout(()=>{const list=document.querySelector(`[data-builder-item-suggestions="${slot}"]`);if(list)list.hidden=true;},180);});
   document.querySelectorAll('[data-builder-ability]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderAbility)].ability=sel.value;});
   document.querySelectorAll('[data-builder-ev]').forEach(inp=>inp.onchange=()=>teamBuilderSetEV(Number(inp.dataset.slot),inp.dataset.builderEv,inp.value));
