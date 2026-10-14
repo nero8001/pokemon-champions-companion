@@ -118,8 +118,13 @@ async function getChampionsMovesForPokemon(p,s){
     const move=moveMap.get('glaiverush');
     result.push(move?{...move,inChampions:true}:{name:'Glaive Rush',type:'Dragon',category:'Physical',power:120,accuracy:100,inChampions:true});
   };
+  // Only return early when the species' actual learnset produced moves.
+  // Adding Espinodon's signature move must not make an otherwise empty
+  // learnset look complete; otherwise the fallback below is skipped and the
+  // Team Builder shows Großklingenstoß as the sole option.
+  const hasLearnsetMoves=result.length>0;
   includeEspinodonSignatureMove();
-  if(result.length)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
+  if(hasLearnsetMoves)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 
   // Robust fallback: if the large community learnset file could not be loaded
   // on the mobile browser, use the selected Pokémon's PokéAPI learnset and
