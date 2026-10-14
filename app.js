@@ -81,6 +81,23 @@ async function getChampionsMovesForPokemon(p,s){
   const dex=Number(p?.speciesId||s?.id||p?.id||0);
   const moveMap=new Map((Array.isArray(championsMovesData)?championsMovesData:[]).map(x=>[normMoveName(x.name),x]));
   const entries=Object.entries(championsLearnsetsData||{}).filter(([key,v])=>Number(v?.dexNumber)===dex&&Array.isArray(v?.moves));
+  // Prefer the same per-Pokémon move pool that the Calculator reads from PokéAPI,
+  // intersected with the canonical Champions move metadata. The previous flow
+  // trusted a possibly incomplete form-specific community learnset and could
+  // return a one-move list (e.g. only Glaive Rush for Baxcalibur/Mega-Espinodon).
+  const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
+  const apiChampionsMoves=apiNames
+    .map(name=>moveMap.get(normMoveName(name)))
+    .filter(m=>m && m.inChampions!==false);
+  if(apiChampionsMoves.length){
+    const unique=new Map(apiChampionsMoves.map(m=>[normMoveName(m.name),m]));
+    if(dex===998){
+      const signature=moveMap.get('glaiverush');
+      if(signature)unique.set('glaiverush',{...signature,inChampions:true});
+      else unique.set('glaiverush',{name:'Glaive Rush',type:'Dragon',category:'Physical',power:120,accuracy:100,inChampions:true});
+    }
+    return [...unique.values()].sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
+  }
   let names=[];
   if(entries.length){
     const candidates=championsFormCandidates(p,s);
@@ -130,7 +147,6 @@ async function getChampionsMovesForPokemon(p,s){
   // on the mobile browser, use the selected Pokémon's PokéAPI learnset and
   // filter it against Pokémon Showdown's current Champions move table.
   const showdownIds=await loadChampionsShowdownMoveIds();
-  const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
   if(showdownIds.size){
     result=apiNames.filter(name=>showdownIds.has(normMoveName(name)))
       .map(name=>moveMap.get(normMoveName(name))||{name})
