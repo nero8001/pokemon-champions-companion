@@ -994,8 +994,8 @@ function openEvolutionRequirements(name,details){
 async function openEvolutionModal(species){
  $('infoTitle').textContent=uiLang==='en'?'Evolution line':'Entwicklungen';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Loading evolution data …':'Entwicklungsdaten werden geladen …'}</p>`;$('infoModal').hidden=false;
  try{
-  const chain=await getEvolutionChain(species);const rows=flattenEvolutionChain(chain);const currentId=Number(species.id);
-  const normalized=rows.map(row=>({...row,id:rid(row.species.url)}));
+  const chain=await getEvolutionChain(species);const rows=flattenEvolutionChain(chain);const currentId=String(species.id);
+  const normalized=rows.map(row=>({...row,id:String(rid(row.species.url)||'')}));
   const currentRow=normalized.find(r=>r.id===currentId);
   const ancestorIds=new Set();let parentMap=new Map();
   const walk=(node,parent=null)=>{if(parent)parentMap.set(rid(node.species.url),parent);(node.evolves_to||[]).forEach(c=>walk(c,rid(node.species.url)))};walk(chain);
