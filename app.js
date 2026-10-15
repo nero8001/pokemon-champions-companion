@@ -2282,7 +2282,6 @@ function teamBuilderStatsHtml(slot){
   return `<div class="team-builder-stats-grid">${vals.map((v,i)=>`<div class="team-builder-stat"><span>${escapeHtml(statLabel(i))}</span><b>${v}</b></div>`).join('')}</div>`;
 }
 
-function teamBuilderSetNature(slot,value){const st=teamBuilderState[slot];if(!st)return;st.nature=Math.max(0,Math.min(24,Number(value)||0));renderTeamBuilder();const d=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(d)d.open=true}
 function teamBuilderEVTotal(slot){return Object.values(teamBuilderState[slot]?.ev||{}).reduce((a,b)=>a+(Number(b)||0),0)}
 function teamBuilderMoveSelected(slot,index){const moves=teamBuilderState[slot]?.moves||[];return moves[index]?.selected||''}
 function renderTeamBuilder(){
@@ -2391,7 +2390,7 @@ async function teamBuilderApplyToCalculator(slot){
 function bindTeamBuilder(){
   document.querySelectorAll('[data-builder-search]').forEach(input=>{const slot=Number(input.dataset.builderSearch);input.oninput=()=>teamBuilderDrawSuggestions(slot,input.value);input.onfocus=()=>teamBuilderDrawSuggestions(slot,input.value);});
   document.querySelectorAll('[data-builder-form]').forEach(sel=>sel.onchange=()=>teamBuilderSelectForm(Number(sel.dataset.builderForm),sel.value));
-  document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>teamBuilderSetNature(Number(sel.dataset.builderNature),sel.value));
+  document.querySelectorAll('[data-builder-nature]').forEach(sel=>sel.onchange=()=>{const slot=Number(sel.dataset.builderNature);teamBuilderState[slot].nature=Number(sel.value);renderTeamBuilder();const details=document.querySelector(`.team-builder-slot[data-slot="${slot}"]`);if(details)details.open=true;});
   document.querySelectorAll('[data-builder-item-search]').forEach(input=>{const slot=Number(input.dataset.builderItemSearch);input.onfocus=()=>teamBuilderDrawItemSuggestions(slot,input.value);input.oninput=()=>teamBuilderDrawItemSuggestions(slot,input.value);input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const first=document.querySelector(`[data-builder-item-suggestions="${slot}"] .team-builder-item-suggestion`);if(first)teamBuilderSetItem(slot,first.dataset.builderItemPick||'');}};input.onblur=()=>setTimeout(()=>{const list=document.querySelector(`[data-builder-item-suggestions="${slot}"]`);if(list)list.hidden=true;},180);});
   document.querySelectorAll('[data-builder-ability]').forEach(sel=>sel.onchange=()=>{teamBuilderState[Number(sel.dataset.builderAbility)].ability=sel.value;});
   document.querySelectorAll('[data-builder-ev]').forEach(inp=>inp.onchange=()=>teamBuilderSetEV(Number(inp.dataset.slot),inp.dataset.builderEv,inp.value));
