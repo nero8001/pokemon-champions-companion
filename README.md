@@ -1,5 +1,6 @@
-# Pokémon Champions Companion – letzte Änderungen
+# Pokémon Champions Companion
 
-- **v7.7.18:** Team-Builder rendert die Statuswertanzeige nach jeder Wesen-Änderung neu und lässt den bearbeiteten Slot geöffnet.
-- **v7.7.16:** Team-Builder-Attackenauswahl über die gemeinsame Attackenquelle; Mega-Formen übernehmen das Moveset der Basisform.
-- **v7.7.14:** Deutsche Attackensuche nach dem Laden der Übersetzungen verbessert.
+## Letzte 3 größeren Änderungen
+- **v7.8.0:** Neuer Pokédex-Bereich „Entwicklungen“ mit Entwicklungsstufen, Standard-Voraussetzungen, Detailansicht und direktem „Poké Info“-Aufruf.
+- **v7.7.18:** Wesen-Änderungen aktualisieren die Statuswerte im Team-Builder direkt.
+- **v7.7.16:** Team-Builder-Attackenauswahl verwendet die gemeinsame Attackenquelle und unterstützt Mega-Formen über das Moveset der Basisform.
