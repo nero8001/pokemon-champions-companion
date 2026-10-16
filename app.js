@@ -970,10 +970,26 @@ function evolutionRequirement(d){
  if(d.min_level!=null&&d.trigger?.name!=='level-up')parts.push(`${uiLang==='en'?'Minimum level':'Mindestlevel'} ${d.min_level}`);
  return parts.join(' · ')||(uiLang==='en'?'Special condition (see details)':'Spezielle Voraussetzung (siehe Details)');
 }
+function evolutionGenerationNumber(name){
+ const roman=String(name||'').toLowerCase().replace(/^generation-/,'');
+ const values={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10};
+ return values[roman]||99;
+}
+function evolutionVersionGroups(d){
+ const groups=(d?.version_group_details||[]).map(v=>({
+  game:String(v.version_group?.name||''),
+  generation:String(v.version_group?.generation?.name||'')
+ })).filter(v=>v.game);
+ groups.sort((a,b)=>evolutionGenerationNumber(a.generation)-evolutionGenerationNumber(b.generation)||a.game.localeCompare(b.game));
+ return groups;
+}
 function evolutionDetailRows(d){
- const req=evolutionRequirement(d);
- const versions=(d.version_group_details||[]).map(v=>`${evoTitle(v.version_group?.name)}${v.version_group?.generation?.name?' · '+evoTitle(v.version_group.generation.name):''}`).filter(Boolean);
- return `<div class="evo-detail-row"><b>${req}</b>${versions.length?`<div class="muted">${uiLang==='en'?'Games / version groups':'Spiele / Editionsgruppen'}: ${[...new Set(versions)].join(', ')}</div>`:''}</div>`;
+ const req=evolutionRequirement(d),versions=evolutionVersionGroups(d);
+ if(!versions.length)return `<div class="evo-detail-row"><b>${req}</b><div class="muted">${uiLang==='en'?'General condition; game-specific data is not available from this source.':'Allgemeine Voraussetzung; editionsspezifische Angaben sind für diese Bedingung in der Datenquelle nicht verfügbar.'}</div></div>`;
+ const grouped=new Map();
+ versions.forEach(v=>{const key=v.generation||'unknown';if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(v.game)});
+ const genHtml=[...grouped.entries()].sort((a,b)=>evolutionGenerationNumber(a[0])-evolutionGenerationNumber(b[0])).map(([gen,games])=>`<div class="evo-version-generation"><b>${gen==='unknown'?(uiLang==='en'?'Generation not specified':'Generation nicht angegeben'):evoTitle(gen)}</b><div>${[...new Set(games)].map(evoTitle).join(', ')}</div></div>`).join('');
+ return `<div class="evo-detail-row"><b>${req}</b><div class="evo-version-list"><strong>${uiLang==='en'?'Games, sorted by generation':'Spiele, nach Generation sortiert'}</strong>${genHtml}</div></div>`;
 }
 async function getEvolutionChain(species){
  const id=rid(species?.evolution_chain?.url||'');if(!id)return null;
@@ -988,7 +1004,11 @@ function flattenEvolutionChain(node,depth=0,incoming=[],out=[]){
 }
 function openEvolutionRequirements(name,details){
  $('infoTitle').textContent=(uiLang==='en'?'Evolution details: ':'Entwicklungsbedingungen: ')+name;
- $('infoBody').innerHTML=`<div class="evo-requirements">${(details||[]).length?(details||[]).map(d=>`<article class="evo-requirement-card">${evolutionDetailRows(d)}<div class="muted">${uiLang==='en'?'Trigger':'Auslöser'}: ${evoTitle(d.trigger?.name||'—')}</div>${d.min_level!=null?`<div>${uiLang==='en'?'Minimum level':'Mindestlevel'}: ${d.min_level}</div>`:''}${d.item?`<div>${uiLang==='en'?'Item':'Item'}: ${evoTitle(d.item.name)}</div>`:''}${d.held_item?`<div>${uiLang==='en'?'Held item':'Getragenes Item'}: ${evoTitle(d.held_item.name)}</div>`:''}${d.location?`<div>${uiLang==='en'?'Location':'Ort'}: ${evoTitle(d.location.name)}</div>`:''}${d.known_move?`<div>${uiLang==='en'?'Known move':'Bekannte Attacke'}: ${evoTitle(d.known_move.name)}</div>`:''}${d.known_move_type?`<div>${uiLang==='en'?'Move type':'Attackentyp'}: ${evoTitle(d.known_move_type.name)}</div>`:''}${d.min_happiness!=null?`<div>${uiLang==='en'?'Minimum friendship':'Mindestfreundschaft'}: ${d.min_happiness}</div>`:''}${d.time_of_day?`<div>${uiLang==='en'?'Time of day':'Tageszeit'}: ${d.time_of_day}</div>`:''}${(d.version_group_details||[]).length?`<div class="evo-version-list"><b>${uiLang==='en'?'Game-specific availability':'Spiel-/Editionsabhängige Angaben'}</b>${d.version_group_details.map(v=>`<div>${evoTitle(v.version_group?.name||'')}${v.version_group?.generation?.name?' · '+evoTitle(v.version_group.generation.name):''}</div>`).join('')}</div>`:''}</article>`).join(''):`<p>${uiLang==='en'?'The available evolution API does not provide a complete per-game history for this evolution. The general conditions above are the documented data; older game-specific changes may need a separate source.':'Die verfügbare Entwicklungs-API liefert keine vollständige Historie je Spiel/Generation. Angezeigt werden die dort dokumentierten allgemeinen Bedingungen; ältere spielabhängige Änderungen benötigen eine separate Quelle.'}</p>`}</div>`;
+ const list=(details||[]).slice().sort((a,b)=>{
+  const av=evolutionVersionGroups(a)[0],bv=evolutionVersionGroups(b)[0];
+  return evolutionGenerationNumber(av?.generation)-evolutionGenerationNumber(bv?.generation)||String(av?.game||'').localeCompare(String(bv?.game||''));
+ });
+ $('infoBody').innerHTML=`<div class="evo-requirements">${list.length?list.map(d=>`<article class="evo-requirement-card">${evolutionDetailRows(d)}<div class="muted">${uiLang==='en'?'Trigger':'Auslöser'}: ${evoTitle(d.trigger?.name||'—')}</div>${d.min_level!=null?`<div>${uiLang==='en'?'Minimum level':'Mindestlevel'}: ${d.min_level}</div>`:''}${d.item?`<div>${uiLang==='en'?'Item':'Item'}: ${evoTitle(d.item.name)}</div>`:''}${d.held_item?`<div>${uiLang==='en'?'Held item':'Getragenes Item'}: ${evoTitle(d.held_item.name)}</div>`:''}${d.location?`<div>${uiLang==='en'?'Location':'Ort'}: ${evoTitle(d.location.name)}</div>`:''}${d.known_move?`<div>${uiLang==='en'?'Known move':'Bekannte Attacke'}: ${evoTitle(d.known_move.name)}</div>`:''}${d.known_move_type?`<div>${uiLang==='en'?'Move type':'Attackentyp'}: ${evoTitle(d.known_move_type.name)}</div>`:''}${d.min_happiness!=null?`<div>${uiLang==='en'?'Minimum friendship':'Mindestfreundschaft'}: ${d.min_happiness}</div>`:''}${d.time_of_day?`<div>${uiLang==='en'?'Time of day':'Tageszeit'}: ${d.time_of_day}</div>`:''}</article>`).join(''):`<p>${uiLang==='en'?'The available evolution API does not provide a complete per-game history for this evolution. The general conditions above are the documented data; older game-specific changes may need a separate source.':'Die verfügbare Entwicklungs-API liefert keine vollständige Historie je Spiel/Generation. Angezeigt werden die dort dokumentierten allgemeinen Bedingungen; ältere spielabhängige Änderungen benötigen eine separate Quelle.'}</p>`}</div>`;
  $('infoModal').hidden=false;
 }
 async function openEvolutionModal(species){
