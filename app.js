@@ -948,6 +948,7 @@ async function renderMeta(){
 }
 
 const evolutionCache=new Map();
+let currentEvolutionSpecies=null;
 function evoTitle(name){return String(name||'').split('-').map(x=>x?x[0].toUpperCase()+x.slice(1):'').join(' ')}
 function evolutionRequirement(d){
  if(!d)return uiLang==='en'?'Base form':'Basisform';
@@ -1008,6 +1009,7 @@ function flattenEvolutionChain(node,depth=0,incoming=[],out=[]){
  return out;
 }
 function openEvolutionRequirements(name,details){
+ $('infoBack').hidden=false;
  $('infoTitle').textContent=(uiLang==='en'?'Evolution details: ':'Entwicklungsbedingungen: ')+name;
  const list=(details||[]).slice().sort((a,b)=>{
   const av=evolutionVersionGroups(a)[0],bv=evolutionVersionGroups(b)[0];
@@ -1017,6 +1019,8 @@ function openEvolutionRequirements(name,details){
  $('infoModal').hidden=false;
 }
 async function openEvolutionModal(species){
+ currentEvolutionSpecies=species;
+ $('infoBack').hidden=true;
  $('infoTitle').textContent=uiLang==='en'?'Evolution line':'Entwicklungen';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Loading evolution data …':'Entwicklungsdaten werden geladen …'}</p>`;$('infoModal').hidden=false;
  try{
   const chain=await getEvolutionChain(species);const rows=flattenEvolutionChain(chain);const currentId=String(species.id);
@@ -2527,7 +2531,7 @@ function bindTeamBuilder(){
 function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();bindTeamBuilderSaved();$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
 
 async function init(){nav();$('metaSource')?.addEventListener('change',renderMeta);$('metaView')?.addEventListener('change',renderMeta);$('metaMoreStats')?.addEventListener('click',()=>{metaStatsExpanded=!metaStatsExpanded;renderMeta()});$('metaMoreBest')?.addEventListener('click',()=>{metaBestExpanded=!metaBestExpanded;renderMeta()});$('metaShowAllTeams')?.addEventListener('click',()=>{metaConcreteExpanded=!metaConcreteExpanded;renderMeta()});$('randomizeButton')?.addEventListener('click',randomizeTeam);$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(dexInitialList());$('search').focus()};$('dexTypeFilter')?.addEventListener('change',e=>changeDexType(e.target.value));$('dexFilter')?.addEventListener('change',e=>{dexFilter=e.target.value==='champions'?'champions':'all';showMCOnly=false;showAllPokemon=false;$('showMCPokemon').textContent=t('showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList())});$('showAllPokemon').onclick=()=>{showAllPokemon=!showAllPokemon;showMCOnly=false;$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');if($('showMCPokemon'))$('showMCPokemon').textContent=t('showMC');$('suggestions').innerHTML='';if($('search').value.trim())$('search').value='';render(dexInitialList());};
-  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
+  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBack').onclick=()=>{if(currentEvolutionSpecies)openEvolutionModal(currentEvolutionSpecies)};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
  const pokemonListPromise=json(`${API}/pokemon?limit=1025`);const languagePromise=loadLanguages();try{const d=await pokemonListPromise;mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=uiLang==='en'?`${mons.length} Pokémon loaded`:`${mons.length} Pokémon geladen`;render(dexInitialList());setupCalculator();setupTeamBuilder();applyLanguage();$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value));languagePromise.then(()=>{championsMoveLabelCache.de.clear();championsMoveLabelCache.en.clear();if(mons.length)render(dexInitialList());applyLanguage();if($('builder'))renderTeamBuilder();$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');}).catch(e=>console.warn('Languages:',e));}catch(e){console.error(e);$('status').textContent=t('loadError');setupCalculator();applyLanguage();$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value))}
  loadAllItems().then(()=>{fillOptions();setupItemSearchV14('atk');setupItemSearchV14('def');if($('builder'))renderTeamBuilder()}).catch(e=>console.warn('Items:',e));
 }

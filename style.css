@@ -271,3 +271,6 @@
 }
 .team-builder-editor select option,
 .team-builder-save-panel select option { background: #123b4b; color: #eefaff; }
+
+/* v7.8.6 – Back navigation from evolution details */
+.info-back{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;margin:0 0 12px;border:1px solid #286f80;border-radius:12px;background:#123b4b;color:#e8fbff;font-size:27px;font-weight:800;line-height:1;cursor:pointer}.info-back:hover{background:#185064;border-color:#45b8c8}.info-back[hidden]{display:none!important}
