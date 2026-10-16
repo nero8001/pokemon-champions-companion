@@ -2392,7 +2392,7 @@ function renderTeamBuilder(){
     const selected=!!slot.pokemon;
     const p=slot.pokemon;
     const name=p?calcDisplayName(p):t('teamBuilderEmpty');
-    const img=p?sprite(p.id):'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Ccircle cx="40" cy="40" r="28" fill="%2334405e"/%3E%3C/svg%3E';
+    const img=p?sprite(p.id):'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"%3E%3Cdefs%3E%3CclipPath id="ballClip"%3E%3Ccircle cx="40" cy="40" r="29"/%3E%3C/clipPath%3E%3C/defs%3E%3Ccircle cx="40" cy="40" r="30" fill="%23f4f7fb" stroke="%2314212b" stroke-width="3"/%3E%3Cg clip-path="url(%23ballClip)"%3E%3Cpath d="M8 8H72V40H8Z" fill="%23e84b54"/%3E%3Cpath d="M8 40H72V72H8Z" fill="%23f4f7fb"/%3E%3Cpath d="M8 40H72" stroke="%2314212b" stroke-width="7"/%3E%3C/g%3E%3Ccircle cx="40" cy="40" r="10" fill="%23f4f7fb" stroke="%2314212b" stroke-width="4"/%3E%3Ccircle cx="40" cy="40" r="4.5" fill="%23dbe7ef" stroke="%2314212b" stroke-width="1.5"/%3E%3C/svg%3E';
     const formOpts=slot.formOptions.map((f,j)=>`<option value="${j}" ${f.pokemon===p?'selected':''}>${escapeHtml(f.label)}</option>`).join('');
     const evKeys=[['hp','KP'],['atk','Angriff'],['def','Verteidigung'],['spa','Sp. Angriff'],['spd','Sp. Verteidigung'],['spe','Initiative']];
     const evLabels=uiLang==='en'?['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed']:evKeys.map(x=>x[1]);

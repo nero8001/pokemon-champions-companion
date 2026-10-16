@@ -113,7 +113,7 @@
 .team-builder-slot-meta{font-size:.8rem;opacity:.65;font-weight:500}
 .team-builder-chevron{font-size:1.15rem;opacity:.7;transition:transform .15s ease}
 .team-builder-slot[open] .team-builder-chevron{transform:rotate(180deg)}
-.team-builder-empty .team-builder-slot-sprite{opacity:.25}
+.team-builder-empty .team-builder-slot-sprite{opacity:.92}
 .team-builder-empty .team-builder-slot-name{opacity:.8;font-weight:700}
 .team-builder-editor{border-top:1px solid #26314c;padding:14px}
 .team-builder-search{position:relative}
