@@ -223,3 +223,21 @@
 .evo-version-generation:first-of-type{border-top:0}
 .evo-version-generation>div{overflow-wrap:anywhere}
 @media(max-width:520px){.evo-version-generation{grid-template-columns:1fr;gap:.15rem}}
+
+/* v7.8.4 – Türkis-blaue Eingabefelder und einheitliche Aktionsbuttons */
+:root{--field-teal-bg:#123b4b;--field-teal-bg-hover:#17495a;--field-teal-border:#2c7185;--field-teal-focus:#55b7c8;--field-teal-text:#f0fbff;--action-blue:#26385f;--action-blue-border:#40577e}
+/* Dropdowns und beschreibbare Felder sollen als interaktive Elemente klar erkennbar sein. */
+#languageSelect,#dexFilter,#dexTypeFilter,.combatant-card-v14 select,.combatant-card-v14 input:not([type="checkbox"]),.changegrid select,.randomizer-controls>select,.team-builder select,.team-builder input:not([type="checkbox"]):not([type="file"]),.team-builder-search input,.team-builder-move-search input,.team-builder-item-search input,.team-builder-save-panel input,.twocol select,.evgrid input,.nature-inline select,.calc-move-search-label input,.calc-move-slot input[type="search"]{
+  background-color:var(--field-teal-bg)!important;border:1px solid var(--field-teal-border)!important;color:var(--field-teal-text)!important;border-radius:10px;transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease
+}
+#languageSelect:hover,#dexFilter:hover,#dexTypeFilter:hover,.combatant-card-v14 select:hover,.combatant-card-v14 input:not([type="checkbox"]):hover,.changegrid select:hover,.randomizer-controls>select:hover,.team-builder select:hover,.team-builder input:not([type="checkbox"]):not([type="file"]):hover,.team-builder-search input:hover,.team-builder-move-search input:hover,.team-builder-item-search input:hover,.team-builder-save-panel input:hover,.twocol select:hover,.evgrid input:hover,.nature-inline select:hover,.calc-move-search-label input:hover,.calc-move-slot input[type="search"]:hover{background-color:var(--field-teal-bg-hover)!important}
+#languageSelect:focus,#dexFilter:focus,#dexTypeFilter:focus,.combatant-card-v14 select:focus,.combatant-card-v14 input:not([type="checkbox"]):focus,.changegrid select:focus,.randomizer-controls>select:focus,.team-builder select:focus,.team-builder input:not([type="checkbox"]):not([type="file"]):focus,.team-builder-search input:focus,.team-builder-move-search input:focus,.team-builder-item-search input:focus,.team-builder-save-panel input:focus,.twocol select:focus,.evgrid input:focus,.nature-inline select:focus,.calc-move-search-label input:focus,.calc-move-slot input[type="search"]:focus{outline:none;border-color:var(--field-teal-focus)!important;box-shadow:0 0 0 3px rgba(85,183,200,.2)}
+#languageSelect option,#dexFilter option,#dexTypeFilter option,.combatant-card-v14 select option,.team-builder select option,.randomizer-controls>select option{background:#12303e;color:#f0fbff}
+/* Aktionsbuttons an den vorhandenen „Alle Pokémon anzeigen“-Stil angleichen. */
+#showMCPokemon,.combatant-card-v14 button:not(.calc-suggest):not(.switch-btn-v14),.team-builder button:not(.team-builder-calc-btn):not(.danger),.team-builder-save-actions button,.team-builder-saved-actions button{
+  border:1px solid var(--action-blue-border);border-radius:11px;background:var(--action-blue);color:#f4f7ff;font-weight:750;transition:background-color .15s ease,border-color .15s ease,transform .15s ease
+}
+#showMCPokemon:hover,.combatant-card-v14 button:not(.calc-suggest):not(.switch-btn-v14):hover,.team-builder button:not(.team-builder-calc-btn):not(.danger):hover,.team-builder-save-actions button:hover,.team-builder-saved-actions button:hover{background:#344a75;border-color:#5a759f}
+#showMCPokemon:active,.combatant-card-v14 button:not(.calc-suggest):not(.switch-btn-v14):active,.team-builder button:not(.team-builder-calc-btn):not(.danger):active{transform:translateY(1px)}
+/* Die vorhandenen Dropdown-/Suchvorschläge behalten ihren dunklen Kartenkontrast. */
+.calc-suggestions,.team-builder-suggestions{background:#0b1727;border-color:#2c7185}
