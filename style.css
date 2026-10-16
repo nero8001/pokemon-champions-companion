@@ -241,3 +241,33 @@
 #showMCPokemon:active,.combatant-card-v14 button:not(.calc-suggest):not(.switch-btn-v14):active,.team-builder button:not(.team-builder-calc-btn):not(.danger):active{transform:translateY(1px)}
 /* Die vorhandenen Dropdown-/Suchvorschläge behalten ihren dunklen Kartenkontrast. */
 .calc-suggestions,.team-builder-suggestions{background:#0b1727;border-color:#2c7185}
+
+
+/* v7.8.5 – Team-Builder: alle bisher hellen Eingabefelder an das Türkis-Blau anpassen */
+.team-builder-editor input:not([type="checkbox"]):not([type="radio"]),
+.team-builder-editor select,
+.team-builder-editor textarea,
+.team-builder-save-panel input,
+.team-builder-save-panel select,
+.team-builder-save-panel textarea {
+  background-color: #123b4b !important;
+  color: #eefaff !important;
+  border: 1px solid #347f91 !important;
+  border-radius: 10px;
+  color-scheme: dark;
+}
+.team-builder-editor input::placeholder,
+.team-builder-save-panel input::placeholder,
+.team-builder-editor textarea::placeholder { color: #a8cbd4 !important; opacity: 1; }
+.team-builder-editor input:focus,
+.team-builder-editor select:focus,
+.team-builder-editor textarea:focus,
+.team-builder-save-panel input:focus,
+.team-builder-save-panel select:focus,
+.team-builder-save-panel textarea:focus {
+  outline: none;
+  border-color: #56c5d8 !important;
+  box-shadow: 0 0 0 3px rgba(86,197,216,.18);
+}
+.team-builder-editor select option,
+.team-builder-save-panel select option { background: #123b4b; color: #eefaff; }
