@@ -2547,7 +2547,7 @@ function bindTeamBuilder(){
           if(item){const list=document.querySelector(`[data-builder-suggestions="${slot}"]`);if(list)list.hidden=true;document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.remove('team-builder-active-search'));teamBuilderSelectPokemon(slot,item);}
           return;
         }
-        if(!e.target.closest('.team-builder-suggestions')){
+        if(!e.target.closest('.team-builder-suggestions,.team-builder-move-suggestions,.team-builder-search input,.team-builder-move-search input')){
           document.querySelectorAll('.team-builder-suggestions,.team-builder-move-suggestions').forEach(list=>list.hidden=true);
           document.querySelectorAll('.team-builder-slot').forEach(d=>d.classList.remove('team-builder-active-search'));
         }
