@@ -470,7 +470,35 @@ function dexInitialList(){const pool=dexPool();return showAllPokemon?pool:pool.s
 async function changeDexType(value){dexTypeFilter=DEX_TYPES.some(x=>x[0]===value)?value:'all';$('suggestions').innerHTML='';if(dexTypeFilter!=='all'&&!dexTypeIdsCache.has(dexTypeFilter)){const status=$('status');if(status)status.textContent=uiLang==='en'?'Loading Pokémon type …':'Pokémon-Typ wird geladen …';try{await loadDexTypeIds(dexTypeFilter)}catch(e){console.error('Pokédex type filter:',e);if(status)status.textContent=uiLang==='en'?'Could not load this type. Please try again.':'Der Typ konnte nicht geladen werden. Bitte erneut versuchen.';return}}if($('status'))$('status').textContent=uiLang==='en'?`${dexPool().length} Pokémon match the filter`:`${dexPool().length} Pokémon passen zum Filter`;if($('search').value.trim())search();else render(dexInitialList())}
 function setLanguage(lang){uiLang=lang==='en'?'en':'de';localStorage.setItem('ccc-language',uiLang);applyLanguage();fillOptions();if(mons.length)render(dexInitialList());if(calcState.attacker)updateCalcSide('atk');if(calcState.defender)updateCalcSide('def');if(calcState.attacker)loadCalcMoves();if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()}
 
-function nav(){const menu=$('mainNav'),toggle=$('menuToggle');const activatePage=(page,scroll=true)=>{const target=document.querySelector(`.nav[data-page="${page}"]`),section=$(page);if(!target||!section)return;document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x===target));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x===section));try{localStorage.setItem('ccc-active-page',page)}catch(e){}if(page==='meta')renderMeta();if(menu){menu.classList.remove('open');toggle?.setAttribute('aria-expanded','false')}if(scroll)scrollTo(0,0)};document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>activatePage(b.dataset.page));toggle?.addEventListener('click',()=>{const open=!menu.classList.contains('open');menu.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open))});document.addEventListener('click',e=>{if(menu&&!menu.contains(e.target)&&toggle&&!toggle.contains(e.target)){menu.classList.remove('open');toggle.setAttribute('aria-expanded','false')}});let saved='dex';try{saved=localStorage.getItem('ccc-active-page')||'dex'}catch(e){}if(!document.querySelector(`.nav[data-page="${saved}"]`))saved='dex';activatePage(saved,false)}
+function nav(){
+ const menu=$('mainNav'),toggle=$('menuToggle');
+ const validPages=['dex','calc','randomizer','builder','meta'];
+ const readSavedPage=()=>{
+   let fromUrl='';
+   try{fromUrl=new URLSearchParams(window.location.search).get('page')||''}catch(e){}
+   if(validPages.includes(fromUrl))return fromUrl;
+   try{const stored=localStorage.getItem('ccc-active-page');if(validPages.includes(stored))return stored}catch(e){}
+   return 'dex';
+ };
+ const activatePage=(page,scroll=true,writeState=true)=>{
+   if(!validPages.includes(page))page='dex';
+   const target=document.querySelector(`.nav[data-page="${page}"]`),section=$(page);
+   if(!target||!section)return;
+   document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x===target));
+   document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x===section));
+   if(writeState){
+     try{localStorage.setItem('ccc-active-page',page)}catch(e){}
+     try{const url=new URL(window.location.href);url.searchParams.set('page',page);window.history.replaceState({},'',url.pathname+url.search+url.hash)}catch(e){}
+   }
+   if(page==='meta')renderMeta();
+   if(menu){menu.classList.remove('open');toggle?.setAttribute('aria-expanded','false')}
+   if(scroll)window.scrollTo(0,0);
+ };
+ document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>activatePage(b.dataset.page,true,true));
+ toggle?.addEventListener('click',()=>{const open=!menu.classList.contains('open');menu.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open))});
+ document.addEventListener('click',e=>{if(menu&&!menu.contains(e.target)&&toggle&&!toggle.contains(e.target)){menu.classList.remove('open');toggle.setAttribute('aria-expanded','false')}});
+ activatePage(readSavedPage(),false,true);
+}
 
 const META_POKEMON=[['Kingambit',33.4,52.0,28645],['Sneasler',33.3,50.2,28527],['Garchomp',33.1,50.5,28368],['Incineroar',32.2,49.9,27627],['Basculegion',28.4,51.6,24304],['Charizard',23.0,51.2,19699],['Sinistcha',21.5,49.3,18425],['Whimsicott',16.8,49.3,14418],['Farigiraf',16.6,48.8,14257],['Eternal Flower Floette',16.2,53.2,13911],['Aerodactyl',13.8,50.6,11820],['Archaludon',13.2,50.1,11332]];
 const META_TEAM_STATS=[['#1',315,53.50,834,725],['#2',158,48.33,361,386],['#3',143,48.77,356,374],['#4',118,61.26,408,258],['#5',100,54.90,308,253],['#6',99,49.20,215,222],['#7',96,50.58,218,213],['#8',90,57.11,265,199],['#9',89,56.88,273,207],['#10',79,51.59,195,183],['#11',75,39.36,135,208],['#12',73,54.30,202,169],['#13',70,51.40,183,173],['#14',64,55.27,173,140],['#15',61,55.64,148,118],['#16',61,38.91,100,157],['#17',56,47.19,143,159],['#18',56,42.00,105,145],['#19',55,50.85,120,116],['#20',55,47.93,116,126],['#21',51,54.55,114,95],['#22',50,51.39,111,105]];
