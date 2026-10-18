@@ -291,3 +291,7 @@
   position:absolute; left:50%; top:50%; width:6px; height:6px; transform:translate(-50%,-50%);
   border-radius:50%; background:#dbe7ef; border:1px solid #101827; z-index:2; box-sizing:border-box;
 }
+
+/* v7.9.3 critical-hit calculator toggle */
+.critical-hit-toggle{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--border,#2b3a4f);border-radius:12px;background:rgba(20,184,166,.08);font-weight:700;cursor:pointer}
+.critical-hit-toggle input{width:18px;height:18px;accent-color:#14b8a6;flex:0 0 auto}
