@@ -1582,7 +1582,8 @@ function setAbilityOptions(side,p){
  calcState.abilities[key]=list;const current=calcState.selectedAbility[key];sel.innerHTML=list.length?list.map((a,i)=>`<option value="${a.id}" ${String(current?.id||list[0].id)===String(a.id)?'selected':''}>${abilityLabel(a)}</option>`).join(''):`<option value="">${uiLang==='en'?'No ability data':'Keine Fähigkeitendaten'}</option>`;const picked=list.find(a=>String(a.id)===String(current?.id))||list[0]||null;calcState.selectedAbility[key]=picked;sel.disabled=!list.length}
 function selectedAbility(side){const key=side==='atk'?'attacker':'defender';return calcState.selectedAbility[key]||null}
 function hasStabChangingAbility(){const a=selectedAbility('atk');const n=normalizeAbilityName(a?.name||a?.raw||'');return ['protean','libero','wandlungskunst'].includes(n)}
-function updateStabToggle(){const wrap=$('stabToggleWrap'),box=$('forceSTAB');if(!wrap||!box)return;const visible=hasStabChangingAbility();wrap.hidden=!visible;if(!visible)box.checked=false}
+function updateStabToggle(){const wrap=$('stabToggleWrap'),box=$('forceSTAB');if(!wrap||!box)return;const visible=hasStabChangingAbility();wrap.hidden=!visible;if(!visible)box.checked=false;updateAttackerTypeLossToggle()}
+function updateAttackerTypeLossToggle(){const wrap=$('atkTypeLossWrap'),sel=$('atkTypeLoss');if(!wrap||!sel)return;const p=calcState.attacker,vals=Array.isArray(p?._typeLossRemainingTypes)?p._typeLossRemainingTypes:[];wrap.hidden=!p||!vals.length;if(!p||!vals.length){sel.value='';return}const names={normal:['Normal','Normal'],fire:['Fire','Feuer'],water:['Water','Wasser'],electric:['Electric','Elektro'],grass:['Grass','Pflanze'],ice:['Ice','Eis'],fighting:['Fighting','Kampf'],poison:['Poison','Gift'],ground:['Ground','Boden'],flying:['Flying','Flug'],psychic:['Psychic','Psycho'],bug:['Bug','Käfer'],rock:['Rock','Gestein'],ghost:['Ghost','Geist'],dragon:['Dragon','Drache'],dark:['Dark','Unlicht'],steel:['Steel','Stahl'],fairy:['Fairy','Fee']};const old=sel.value;sel.innerHTML='<option value="">-</option>'+vals.map(v=>`<option value="${v}">${names[v]?.[uiLang==='en'?0:1]||v}</option>`).join('');sel.value=vals.includes(old)?old:'';wrap.firstChild.textContent=(uiLang==='en'?'Remaining type':'Verbleibender Typ')+' '}
 function hasDefenderTypeChangingAbility(){const a=selectedAbility('def');const n=normalizeAbilityName(a?.name||a?.raw||'');return ['protean','libero','wandlungskunst'].includes(n)}
 function updateDefenderTypeToggle(){const wrap=$('defTypeOverrideWrap'),sel=$('defTypeOverride');if(!wrap||!sel)return;const p=calcState.defender;const abilityMode=!!p&&hasDefenderTypeChangingAbility();const lossTypes=Array.isArray(p?._typeLossRemainingTypes)?p._typeLossRemainingTypes:[];const lossMode=!!p&&lossTypes.length>0;const visible=abilityMode||lossMode;wrap.hidden=!visible;if(!visible){sel.value='';return}const names={normal:['Normal','Normal'],fire:['Fire','Feuer'],water:['Water','Wasser'],electric:['Electric','Elektro'],grass:['Grass','Pflanze'],ice:['Ice','Eis'],fighting:['Fighting','Kampf'],poison:['Poison','Gift'],ground:['Ground','Boden'],flying:['Flying','Flug'],psychic:['Psychic','Psycho'],bug:['Bug','Käfer'],rock:['Rock','Gestein'],ghost:['Ghost','Geist'],dragon:['Dragon','Drache'],dark:['Dark','Unlicht'],steel:['Steel','Stahl'],fairy:['Fairy','Fee']};const all=['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];const vals=abilityMode?all:lossTypes;const old=sel.value;sel.innerHTML=`<option value="">-</option>`+vals.map(v=>`<option value="${v}">${names[v]?.[uiLang==='en'?0:1]||v}</option>`).join('');sel.value=vals.includes(old)?old:'';wrap.firstChild.textContent=lossMode&&!abilityMode?(uiLang==='en'?'Remaining type':'Verbleibender Typ')+' ': (uiLang==='en'?'Current type':'Aktueller Typ')+' '}
 async function detectDefenderTypeLoss(p){
@@ -1612,10 +1613,37 @@ async function detectDefenderTypeLoss(p){
  }
  if(calcState.defender===selectedForm)updateDefenderTypeToggle();
 }
+async function detectAttackerTypeLoss(p){
+ if(!p)return;
+ const id=String(p.id),selectedForm=p;
+ p._typeLossRemainingTypes=[];
+ try{
+  const data=await json(`${API}/pokemon/${id}`);
+  // Ignore a delayed response if the defender or its selected form changed.
+  if(calcState.attacker!==selectedForm)return;
+  const normalizeMove=n=>String(n||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+  const moveNames=new Set((data.moves||p.moves||[]).map(x=>normalizeMove(x.move?.name||x.name)));
+  // Use the selected form's type data first: base-species types are wrong for some regional forms.
+  const typeSource=(p.types&&p.types.length)?p.types:(data.types||[]);
+  const baseTypes=typeSource.map(x=>x.type?.name||x.name).filter(Boolean);
+  const remain=new Set();
+  if(moveNames.has('burn up')&&baseTypes.includes('fire'))baseTypes.filter(t=>t!=='fire').forEach(t=>remain.add(t));
+  if(moveNames.has('double shock')&&baseTypes.includes('electric'))baseTypes.filter(t=>t!=='electric').forEach(t=>remain.add(t));
+  p._typeLossRemainingTypes=[...remain];
+ }catch(e){
+  // Preserve the current form's type list and retry from any already-loaded moves.
+  const names=new Set((p.moves||[]).map(x=>String(x.move?.name||x.name||'').toLowerCase().replace(/[-_]+/g,' ')));
+  const types=(p.types||[]).map(x=>x.type?.name||x.name).filter(Boolean),remain=new Set();
+  if(names.has('burn up')&&types.includes('fire'))types.filter(t=>t!=='fire').forEach(t=>remain.add(t));
+  if(names.has('double shock')&&types.includes('electric'))types.filter(t=>t!=='electric').forEach(t=>remain.add(t));
+  p._typeLossRemainingTypes=[...remain];
+ }
+ if(calcState.attacker===selectedForm)updateAttackerTypeLossToggle();
+}
 
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);if(side==='atk')updateStabToggle();return}setAbilityOptions(side,p);if(side==='atk')updateStabToggle();if(side==='def')updateDefenderTypeToggle();const vals=calcLevel50Stats(p,side);const ab=selectedAbility(side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div><div class="abilityline">${uiLang==='en'?'Ability':'Fähigkeit'}: <strong>${ab?abilityLabel(ab):'—'}</strong></div></div>`;calcEV(side)}
+function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);if(side==='atk')updateStabToggle();return}setAbilityOptions(side,p);if(side==='atk'){updateStabToggle();updateAttackerTypeLossToggle()}if(side==='def')updateDefenderTypeToggle();const vals=calcLevel50Stats(p,side);const ab=selectedAbility(side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div><div class="abilityline">${uiLang==='en'?'Ability':'Fähigkeit'}: <strong>${ab?abilityLabel(ab):'—'}</strong></div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];let pickedKey='';function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;pickedKey=String(x.id);onPick(x)})}
@@ -1652,7 +1680,7 @@ async function selectCalcPokemon(side,item){
   setAbilityOptions(side,p);
   search.value=calcDisplayName(p);
   updateCalcSide(side);
-  if(side==='def')detectDefenderTypeLoss(p);
+  if(side==='def')detectDefenderTypeLoss(p);else detectAttackerTypeLoss(p);
   try{
    const species=await json(`${API}/pokemon-species/${speciesId}`);
    if(String(calcState[key]?.id)!==selectedId)return;
@@ -1719,7 +1747,7 @@ async function changeCalcForm(side,id){
  updateCalcSide(side);
  // Form changes replace the selected Pokémon object, so re-detect any move-based
  // type loss for the actual selected form (e.g. Hisuian Typhlosion -> Ghost).
- if(side==='def')detectDefenderTypeLoss(p);
+ if(side==='def')detectDefenderTypeLoss(p);else detectAttackerTypeLoss(p);
  if(side==='atk')await loadCalcMoves();
 }
 async function loadCalcMoves(){
@@ -2262,7 +2290,8 @@ async function calculateDamage(){
   if(typeMult===0){
     $('damageResult').innerHTML=`<div class="damage-box"><div class="damage-number">0 KP</div><div class="damage-percent">Keine Wirkung</div><div class="damage-muted">${deM(mid)||title(m.name)} · ${physical?'physisch':'speziell'} · ${uiLang==='de'?'Typimmunität':'Type immunity'}</div></div>`;return;
   }
-  const aTypes=(a.types||[]).map(x=>x.type?.name).filter(Boolean);
+  const selectedAtkType=$('atkTypeLoss')?.value||'';
+  const aTypes=selectedAtkType?[selectedAtkType]:(a.types||[]).map(x=>x.type?.name).filter(Boolean);
   const forcedSTAB=hasStabChangingAbility()&&!!$('forceSTAB')?.checked;
   const stab=(aTypes.includes(abilityMove.type)||forcedSTAB)?1.5:1;
   if(forcedSTAB)notes.push(uiLang==='en'?'STAB enabled for Protean/Libero':'STAB erzwungen (Wandlungskunst/Libero)');
@@ -2394,7 +2423,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
  $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateStabToggle();updateCalcSide('atk');if(calcState.selectedMove)calculateDamage()});
  $('defAbility').addEventListener('change',()=>{const x=calcState.abilities.defender.find(a=>String(a.id)===String($('defAbility').value));calcState.selectedAbility.defender=x||null;updateCalcSide('def');if(calcState.selectedMove)calculateDamage()});
- $('defTypeOverride').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
+ $('defTypeOverride').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('atkTypeLoss')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
  $('atkForm').addEventListener('change',()=>changeCalcForm('atk',$('atkForm').value));$('defForm').addEventListener('change',()=>changeCalcForm('def',$('defForm').value));$('calcButton').addEventListener('click',calculateDamage);
  setupItemSearchV14('atk');setupItemSearchV14('def');updateStabToggle();$('forceSTAB').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});

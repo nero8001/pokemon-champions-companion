@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.9.3</title>
-<link rel="stylesheet" href="style.css?v=7.9.8">
+<link rel="stylesheet" href="style.css?v=7.9.9">
 
 <style id="v14-calculator">
 .calc-duo-v14{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);gap:14px;align-items:stretch}
@@ -31,7 +31,7 @@
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 7.9.8</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 7.9.9</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -49,7 +49,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 7.9.8</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 7.9.9</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -69,6 +69,7 @@
     <div class="calc-moves-v17">
       <div class="calc-moves-head"><strong>Attacken</strong><span>Wähle eine der Attacken für die Kalkulation.</span></div>
       <label id="stabToggleWrap" class="stab-toggle" for="forceSTAB" hidden><input id="forceSTAB" type="checkbox"> <span data-i18n="forceSTAB">STAB</span></label>
+      <label id="atkTypeLossWrap" hidden>Verbleibender Typ<select id="atkTypeLoss"><option value="">-</option></select></label>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="0" aria-label="Attacke 1 für die Kalkulation auswählen" checked><span>Attacke 1</span></label><label class="calc-move-search-label"><input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …"></label><div id="moveSuggestions" class="calc-suggestions" hidden></div></div>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="1" aria-label="Attacke 2 für die Kalkulation auswählen" ><span>Attacke 2</span></label><label class="calc-move-search-label"><input id="moveSearch2" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions2" class="calc-suggestions" hidden></div></div>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="2" aria-label="Attacke 3 für die Kalkulation auswählen" ><span>Attacke 3</span></label><label class="calc-move-search-label"><input id="moveSearch3" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions3" class="calc-suggestions" hidden></div></div>
@@ -167,7 +168,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 7.9.8</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 7.9.9</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -181,7 +182,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 7.9.8</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 7.9.9</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -228,5 +229,5 @@
 
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><button id="infoBack" class="info-back" type="button" hidden aria-label="Zurück zu den Entwicklungen" title="Zurück zu den Entwicklungen">←</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
-<script src="app.js?v=7.9.8"></script>
+<script src="app.js?v=7.9.9"></script>
 </body></html>
