@@ -295,3 +295,9 @@
 /* v7.9.3 critical-hit calculator toggle */
 .critical-hit-toggle{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--border,#2b3a4f);border-radius:12px;background:rgba(20,184,166,.08);font-weight:700;cursor:pointer}
 .critical-hit-toggle input{width:18px;height:18px;accent-color:#14b8a6;flex:0 0 auto}
+
+
+/* v7.9.4: STAB override for Protean / Libero */
+.stab-toggle{display:flex;align-items:center;gap:9px;margin:10px 0;padding:9px 12px;border:1px solid var(--field-teal-border,#2c7185);border-radius:10px;background:rgba(20,184,166,.08);font-weight:700;cursor:pointer}
+.stab-toggle[hidden]{display:none!important}
+.stab-toggle input{width:18px;height:18px;accent-color:#14b8a6;flex:0 0 auto}

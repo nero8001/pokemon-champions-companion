@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.9.3</title>
-<link rel="stylesheet" href="style.css?v=7.9.2">
+<link rel="stylesheet" href="style.css?v=7.9.4">
 
 <style id="v14-calculator">
 .calc-duo-v14{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);gap:14px;align-items:stretch}
@@ -68,6 +68,7 @@
 
     <div class="calc-moves-v17">
       <div class="calc-moves-head"><strong>Attacken</strong><span>Wähle eine der Attacken für die Kalkulation.</span></div>
+      <label id="stabToggleWrap" class="stab-toggle" for="forceSTAB" hidden><input id="forceSTAB" type="checkbox"> <span data-i18n="forceSTAB">STAB</span></label>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="0" aria-label="Attacke 1 für die Kalkulation auswählen" checked><span>Attacke 1</span></label><label class="calc-move-search-label"><input id="moveSearch" type="search" autocomplete="off" disabled placeholder="Zuerst einen Angreifer wählen …"></label><div id="moveSuggestions" class="calc-suggestions" hidden></div></div>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="1" aria-label="Attacke 2 für die Kalkulation auswählen" ><span>Attacke 2</span></label><label class="calc-move-search-label"><input id="moveSearch2" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions2" class="calc-suggestions" hidden></div></div>
       <div class="calc-move-slot"><label class="calc-move-choice-label"><input class="calc-move-choice" type="checkbox" data-move-slot="2" aria-label="Attacke 3 für die Kalkulation auswählen" ><span>Attacke 3</span></label><label class="calc-move-search-label"><input id="moveSearch3" type="search" autocomplete="off" disabled placeholder="Attacke auswählen …"></label><div id="moveSuggestions3" class="calc-suggestions" hidden></div></div>
@@ -226,5 +227,5 @@
 
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><button id="infoBack" class="info-back" type="button" hidden aria-label="Zurück zu den Entwicklungen" title="Zurück zu den Entwicklungen">←</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
-<script src="app.js?v=7.9.2"></script>
+<script src="app.js?v=7.9.4"></script>
 </body></html>
