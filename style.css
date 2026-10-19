@@ -301,3 +301,5 @@
 .stab-toggle{display:flex;align-items:center;gap:9px;margin:10px 0;padding:9px 12px;border:1px solid var(--field-teal-border,#2c7185);border-radius:10px;background:rgba(20,184,166,.08);font-weight:700;cursor:pointer}
 .stab-toggle[hidden]{display:none!important}
 .stab-toggle input{width:18px;height:18px;accent-color:#14b8a6;flex:0 0 auto}
+
+#defTypeOverrideWrap[hidden]{display:none!important}
