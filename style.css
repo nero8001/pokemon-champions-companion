@@ -303,3 +303,5 @@
 .stab-toggle input{width:18px;height:18px;accent-color:#14b8a6;flex:0 0 auto}
 
 #defTypeOverrideWrap[hidden]{display:none!important}
+
+#atkTypeLossWrap[hidden]{display:none!important}
