@@ -1752,6 +1752,7 @@ async function changeCalcForm(side,id){
 }
 async function loadCalcMoves(){
  const p=calcState.attacker;
+ updateRageFistStacksVisibility('');
  const input=$('moveSearch');
  calcState.moves=[];calcState.selectedMove=null;calcActiveMoveSlot=0;
  calcMoveInputIds.forEach((id,i)=>{const el=$(id),list=$(calcMoveSuggestionIds[i]);if(el){el.value='';el.disabled=true;el.placeholder=t('moveSearch')+' …'}if(list){list.innerHTML='';list.hidden=true}});
@@ -1786,10 +1787,19 @@ async function loadCalcMoves(){
   input.placeholder=uiLang==='en'?'Moves could not be loaded':'Attacken konnten nicht geladen werden';
  }
 }
+function updateRageFistStacksVisibility(moveName){
+ const wrap=$('rageFistStacksWrap');if(!wrap)return;
+ const attackerName=String(calcState.attacker?.name||'').toLowerCase().replace(/[^a-z]/g,'');
+ const formName=String(calcState.attacker?._formName||'').toLowerCase().replace(/[^a-z]/g,'');
+ const isAnnihilape=attackerName==='annihilape'||attackerName==='epitaff'||formName.includes('annihilape')||formName.includes('epitaff');
+ const isRageFist=normalizeMoveName(moveName)==='rage fist';
+ wrap.hidden=!(isAnnihilape&&isRageFist);
+}
 async function showMoveInfoById(id){
  if(!id)return;const sameMove=String(calcState.selectedMove)===String(id);calcState.selectedMove=id;
  try{
   const m=await json(`${API}/move/${id}`);
+   updateRageFistStacksVisibility(m.name);
   const type=deT(rid(m.type?.url))||title(m.type?.name||'—');
   const cls=m.damage_class?.name==='physical'?(uiLang==='en'?'Physical':'Physisch'):m.damage_class?.name==='special'?(uiLang==='en'?'Special':'Speziell'):(uiLang==='en'?'Status':'Status');
   // PokeAPI does not consistently expose hit metadata for newer moves.
@@ -2272,8 +2282,15 @@ async function calculateDamage(){
   const abilityMove=moveAbilityTypeAndPower(m,a,d);
   const abilityDef=abilityDefenseMultiplier({...m,type:{name:abilityMove.type}},d);
   const fw=fieldWeatherPowerMultiplier({...m,type:{name:abilityMove.type}},a,d);
-  let power=Math.floor(Number(m.power)*abilityMove.powerMult*fw.mult);
-  const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
+   const isRageFist=normalizeMoveName(m.name)==='rage fist';
+   const attackerName=String(a?.name||'').toLowerCase().replace(/[^a-z]/g,'');
+   const attackerForm=String(a?._formName||'').toLowerCase().replace(/[^a-z]/g,'');
+   const isEpitaff=attackerName==='annihilape'||attackerName==='epitaff'||attackerForm.includes('annihilape')||attackerForm.includes('epitaff');
+   const rageFistStacks=Math.max(0,Math.min(6,Number($('rageFistStacks')?.value)||0));
+   const basePower=isRageFist&&isEpitaff?Math.min(350,50+50*rageFistStacks):Number(m.power);
+  let power=Math.floor(basePower*abilityMove.powerMult*fw.mult);
+   const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
+   if(isRageFist&&basePower!==Number(m.power))notes.push(`Zornesfaust: ${rageFistStacks} Stacks · Basisstärke ${basePower}`);
   if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase()))notes.push('Verbrennung: Angriff ×0,5');
   if(getStage('atk',attackStat)!==0)notes.push(`Angriffs-Stufe: ${getStage('atk',attackStat)>0?'+':''}${getStage('atk',attackStat)}`);
   if(getStage('def',defenseStat)!==0)notes.push(`Verteidigungs-Stufe: ${getStage('def',defenseStat)>0?'+':''}${getStage('def',defenseStat)}`);
@@ -2426,7 +2443,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  $('defTypeOverride').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('atkTypeLoss')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
  $('atkForm').addEventListener('change',()=>changeCalcForm('atk',$('atkForm').value));$('defForm').addEventListener('change',()=>changeCalcForm('def',$('defForm').value));$('calcButton').addEventListener('click',calculateDamage);
- setupItemSearchV14('atk');setupItemSearchV14('def');updateStabToggle();$('forceSTAB').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});
+ setupItemSearchV14('atk');$('rageFistStacks')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});setupItemSearchV14('def');updateStabToggle();$('forceSTAB').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('switchCombatants').addEventListener('click',switchCombatantsV14);$('fieldStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});$('weatherStatus').addEventListener('change',()=>{if(calcState.selectedMove)showMoveInfoById(calcState.selectedMove);if($('builder'))renderTeamBuilder()});
 }
 
 function teamBuilderPokemonItems(){
