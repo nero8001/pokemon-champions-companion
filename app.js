@@ -1,3 +1,41 @@
+
+// Supabase authentication bootstrap (publishable key only; never place service-role keys in the client).
+let pccSupabase = null;
+function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
+async function pccRefreshAuth(){
+  if(!pccSupabase)return;
+  const {data,error}=await pccSupabase.auth.getSession();
+  const session=data?.session;
+  const signIn=document.getElementById('authSignIn'),signUp=document.getElementById('authSignUp'),signOut=document.getElementById('authSignOut');
+  if(signIn)signIn.hidden=!!session;if(signUp)signUp.hidden=!!session;if(signOut)signOut.hidden=!session;
+  if(error)pccAuthStatus('Sitzungsstatus konnte nicht geladen werden: '+error.message);
+  else if(session)pccAuthStatus('Angemeldet als '+(session.user.email||'Nutzer')+'. Anmeldung funktioniert.');
+  else pccAuthStatus('Nicht angemeldet. Melde dich an oder erstelle ein Konto.');
+}
+function pccInitSupabaseAuth(){
+  const status=document.getElementById('accountStatus');
+  if(!window.supabase?.createClient){if(status)status.textContent='Supabase-Bibliothek konnte nicht geladen werden. Prüfe die Internetverbindung.';return;}
+  try{pccSupabase=window.supabase.createClient(window.PCC_SUPABASE_URL,window.PCC_SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){pccAuthStatus('Supabase konnte nicht initialisiert werden: '+e.message);return;}
+  document.getElementById('authSignUp')?.addEventListener('click',async()=>{
+    const email=document.getElementById('authEmail')?.value.trim(),password=document.getElementById('authPassword')?.value;
+    if(!email||!password){pccAuthStatus('Bitte E-Mail und Passwort eingeben.');return;}
+    pccAuthStatus('Konto wird erstellt …');const {data,error}=await pccSupabase.auth.signUp({email,password});
+    if(error){pccAuthStatus('Registrierung fehlgeschlagen: '+error.message);return;}
+    if(data.session){pccAuthStatus('Konto erstellt und angemeldet als '+email+'.');await pccRefreshAuth();}
+    else pccAuthStatus('Registrierung gestartet. Prüfe dein E-Mail-Postfach auf den Bestätigungslink, dann melde dich an.');
+  });
+  document.getElementById('authSignIn')?.addEventListener('click',async()=>{
+    const email=document.getElementById('authEmail')?.value.trim(),password=document.getElementById('authPassword')?.value;
+    if(!email||!password){pccAuthStatus('Bitte E-Mail und Passwort eingeben.');return;}
+    pccAuthStatus('Anmeldung läuft …');const {error}=await pccSupabase.auth.signInWithPassword({email,password});
+    if(error){pccAuthStatus('Anmeldung fehlgeschlagen: '+error.message);return;}await pccRefreshAuth();
+  });
+  document.getElementById('authSignOut')?.addEventListener('click',async()=>{const {error}=await pccSupabase.auth.signOut();if(error)pccAuthStatus('Abmeldung fehlgeschlagen: '+error.message);else await pccRefreshAuth();});
+  pccSupabase.auth.onAuthStateChange(()=>{pccRefreshAuth().catch(console.error)});
+  pccRefreshAuth().catch(console.error);
+}
+document.addEventListener('DOMContentLoaded',pccInitSupabaseAuth);
+
 const API='https://pokeapi.co/api/v2';
 const LOCAL='https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/';
 const CHAMPIONS_DATA='https://raw.githubusercontent.com/otterlyclueless/pokemon-champions-data/main/';

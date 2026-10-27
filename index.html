@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.10.4</title>
-<link rel="stylesheet" href="style.css?v=7.10.3">
+<link rel="stylesheet" href="style.css?v=7.10.4">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style id="v14-calculator">
 .calc-duo-v14{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);gap:14px;align-items:stretch}
@@ -28,6 +29,16 @@
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
   <div class="menu-wrap"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
+<section id="accountPanel" class="card" style="margin:16px auto;max-width:1100px;padding:16px">
+  <h2 style="margin-top:0">Konto &amp; Cloud-Speicherung</h2>
+  <p id="accountStatus" role="status">Nicht angemeldet. Melde dich an oder erstelle ein Konto, um die Cloud-Anbindung zu testen.</p>
+  <div id="authControls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+    <label style="flex:1;min-width:200px">E-Mail<input id="authEmail" type="email" autocomplete="email" style="width:100%" placeholder="name@example.com"></label>
+    <label style="flex:1;min-width:200px">Passwort<input id="authPassword" type="password" autocomplete="current-password" style="width:100%" placeholder="Mindestens 6 Zeichen"></label>
+    <button id="authSignIn" type="button">Anmelden</button><button id="authSignUp" type="button" class="secondary">Konto erstellen</button><button id="authSignOut" type="button" class="secondary" hidden>Abmelden</button>
+  </div>
+  <small>Dein Passwort wird nicht in dieser App gespeichert. Teams bleiben vorerst zusätzlich lokal gespeichert, bis die Cloud-Synchronisierung geprüft ist.</small>
+</section>
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <main>
 <section id="dex" class="page active">
@@ -238,5 +249,6 @@
 
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><button id="infoBack" class="info-back" type="button" hidden aria-label="Zurück zu den Entwicklungen" title="Zurück zu den Entwicklungen">←</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
-<script src="app.js?v=7.10.3"></script>
+<script>window.PCC_SUPABASE_URL="https://sgaejcrfxaxzutkkceio.supabase.co";window.PCC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_VwDgGoolKrDfPIaSqu72jg_Kfi949Lp";</script>
+<script src="app.js?v=7.10.4"></script>
 </body></html>
