@@ -1643,7 +1643,7 @@ async function detectAttackerTypeLoss(p){
 
 function natureMultiplier(index,key){const n=natureData[Number(index)||0];return n[1]===key?1.1:n[2]===key?.9:1}
 function calcLevel50Stats(p,side){const vals=[];const nature=$(side==='atk'?'atkNature':'defNature').value;calcStatKeys.forEach((key,i)=>{const base=p.stats[i]?.base_stat||0,sp=Math.max(0,Math.min(32,Number($(`${side}-${key}`).value)||0));if(i===0)vals.push(base+sp+75);else vals.push(Math.floor((base+sp+20)*natureMultiplier(nature,key)))});return vals}
-function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);if(side==='atk')updateStabToggle();return}setAbilityOptions(side,p);if(side==='atk'){updateStabToggle();updateAttackerTypeLossToggle()}if(side==='def')updateDefenderTypeToggle();const vals=calcLevel50Stats(p,side);const ab=selectedAbility(side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div><div class="abilityline">${uiLang==='en'?'Ability':'Fähigkeit'}: <strong>${ab?abilityLabel(ab):'—'}</strong></div></div>`;calcEV(side)}
+function updateCalcSide(side){const p=calcState[side==='atk'?'attacker':'defender'];const box=$(side==='atk'?'attackerPreview':'defenderPreview');if(!p){box.textContent='Noch kein Pokémon ausgewählt.';calcEV(side);if(side==='atk')updateStabToggle();return}setAbilityOptions(side,p);if(side==='atk'){updateStabToggle();updateAttackerTypeLossToggle();updateChargedStateVisibility()}if(side==='def')updateDefenderTypeToggle();const vals=calcLevel50Stats(p,side);const ab=selectedAbility(side);box.innerHTML=`<img src="${sprite(p.id)}" alt=""><div><b>${calcDisplayName(p)}</b><div class="statsline">${vals.map((v,i)=>`${statLabel(i)} ${v}`).join(' · ')}</div><div class="abilityline">${uiLang==='en'?'Ability':'Fähigkeit'}: <strong>${ab?abilityLabel(ab):'—'}</strong></div></div>`;calcEV(side)}
 function calcDisplayName(p){return p._formName||deP(p.speciesId||p.id)||title(p.name)}
 
 function setupSearchBox(inputId,listId,side,itemsProvider,onPick){const input=$(inputId),list=$(listId);let lastItems=[];let pickedKey='';function draw(items){lastItems=items.slice(0,12);list.innerHTML=lastItems.map((x,i)=>`<button type="button" class="calc-suggest" data-index="${i}"><img src="${sprite(x.id)}" alt=""><span>${x.label}<small>${x.meta||''}</small></span></button>`).join('');list.hidden=!lastItems.length;list.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=lastItems[+b.dataset.index];input.value=x.label;list.hidden=true;pickedKey=String(x.id);onPick(x)})}
@@ -1795,11 +1795,29 @@ function updateRageFistStacksVisibility(moveName){
  const isRageFist=normalizeMoveName(moveName)==='rage fist';
  wrap.hidden=!(isAnnihilape&&isRageFist);
 }
+function hasChargeMoveSelected(){
+ return (calcMoveInputIds||[]).some(id=>{
+  const value=$(id)?.value||'';
+  const found=(calcState.moves||[]).find(m=>m.label===value||m.name===value);
+  return normalizeMoveName(found?.name||value)==='charge';
+ });
+}
+function hasDynamoAbility(){
+ const n=normalizeAbilityName(selectedAbility('atk')?.name||selectedAbility('atk')?.raw||'');
+ return n==='dynamo'||n==='electromorphosis';
+}
+function updateChargedStateVisibility(moveName){
+ const wrap=$('chargedStateWrap');if(!wrap)return;
+ const eligible=hasDynamoAbility()||hasChargeMoveSelected()||normalizeMoveName(moveName)==='charge';
+ wrap.hidden=!eligible;
+ if(!eligible)$('chargedState').value='no';
+}
 async function showMoveInfoById(id){
  if(!id)return;const sameMove=String(calcState.selectedMove)===String(id);calcState.selectedMove=id;
  try{
   const m=await json(`${API}/move/${id}`);
    updateRageFistStacksVisibility(m.name);
+  updateChargedStateVisibility(m.name);
   const type=deT(rid(m.type?.url))||title(m.type?.name||'—');
   const cls=m.damage_class?.name==='physical'?(uiLang==='en'?'Physical':'Physisch'):m.damage_class?.name==='special'?(uiLang==='en'?'Special':'Speziell'):(uiLang==='en'?'Status':'Status');
   // PokeAPI does not consistently expose hit metadata for newer moves.
@@ -2290,6 +2308,10 @@ async function calculateDamage(){
    const basePower=isRageFist&&isEpitaff?Math.min(350,50+50*rageFistStacks):Number(m.power);
   let power=Math.floor(basePower*abilityMove.powerMult*fw.mult);
    const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
+  const isElectricMove=String(abilityMove.type||m.type?.name||'').toLowerCase()==='electric';
+  const chargedEligible=hasDynamoAbility()||hasChargeMoveSelected();
+  const chargedYes=$('chargedState')?.value==='yes';
+  if(isElectricMove&&chargedEligible&&chargedYes){power*=2;notes.push('Aufgeladen: Elektroattacke ×2');}
    if(isRageFist&&basePower!==Number(m.power))notes.push(`Zornesfaust: ${rageFistStacks} Stacks · Basisstärke ${basePower}`);
   if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase()))notes.push('Verbrennung: Angriff ×0,5');
   if(getStage('atk',attackStat)!==0)notes.push(`Angriffs-Stufe: ${getStage('atk',attackStat)>0?'+':''}${getStage('atk',attackStat)}`);
@@ -2437,8 +2459,9 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
 }
  document.querySelectorAll('.calc-move-choice').forEach((choice,i)=>choice.addEventListener('change',()=>{if(choice.checked)selectCalculatorMoveSlot(i,true);else choice.checked=true;}));
  calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{selectCalculatorMoveSlot(i,false);$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
+ $('chargedState')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
- $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateStabToggle();updateCalcSide('atk');if(calcState.selectedMove)calculateDamage()});
+ $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateStabToggle();updateCalcSide('atk');updateChargedStateVisibility();if(calcState.selectedMove)calculateDamage()});
  $('defAbility').addEventListener('change',()=>{const x=calcState.abilities.defender.find(a=>String(a.id)===String($('defAbility').value));calcState.selectedAbility.defender=x||null;updateCalcSide('def');if(calcState.selectedMove)calculateDamage()});
  $('defTypeOverride').addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});$('atkTypeLoss')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['defNature','defItem','defStatus','defBoost','defSpDBoost','defSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('def')));
