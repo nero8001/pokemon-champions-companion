@@ -2,6 +2,7 @@
 // Supabase authentication and account menu (publishable key only).
 let pccSupabase = null;
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
+function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
 function pccShowAccountPage(show=true){
   const panel=document.getElementById('accountPanel');
   if(panel)panel.style.display=show?'block':'none';
@@ -13,9 +14,9 @@ function pccShowAccountPage(show=true){
 async function pccRefreshAuth(){
   if(!pccSupabase)return;
   const {data,error}=await pccSupabase.auth.getSession(); const session=data?.session;
-  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout');
+  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const del=document.getElementById('accountMenuDelete');
   if(entry)entry.textContent=session?'Mein Konto':'Anmelden/Registrieren';
-  if(logout)logout.hidden=!session;
+  if(logout)logout.hidden=!session;if(del)del.hidden=!session;
   if(error)pccAuthStatus('Sitzungsstatus konnte nicht geladen werden: '+error.message);
   else if(session)pccAuthStatus('Angemeldet als '+(session.user.email||'Nutzer')+'.');
   else pccAuthStatus('Melde dich an oder erstelle ein Konto.');
@@ -31,6 +32,23 @@ function pccInitSupabaseAuth(){
     else pccShowAccountPage(true);
   });
   document.getElementById('accountBack')?.addEventListener('click',()=>pccShowAccountPage(false));
+  const deleteDialog=document.getElementById('deleteAccountDialog'),deleteInput=document.getElementById('deleteAccountConfirm'),deleteButton=document.getElementById('deleteAccountConfirmButton'),deleteStatus=document.getElementById('deleteAccountStatus');
+  const closeDelete=()=>{if(deleteDialog)deleteDialog.hidden=true;if(deleteInput)deleteInput.value='';if(deleteButton)deleteButton.disabled=true;if(deleteStatus)deleteStatus.textContent='';};
+  document.getElementById('accountMenuDelete')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;deleteDialog.hidden=false;deleteInput.value='';deleteButton.disabled=true;deleteInput.focus();});
+  document.getElementById('deleteAccountCancel')?.addEventListener('click',closeDelete);
+  deleteDialog?.querySelector('[data-delete-cancel]')?.addEventListener('click',closeDelete);
+  deleteInput?.addEventListener('input',()=>{deleteButton.disabled=deleteInput.value!=='Löschen';});
+  deleteButton?.addEventListener('click',async()=>{
+    if(deleteInput.value!=='Löschen')return;
+    deleteButton.disabled=true;deleteStatus.textContent='Konto wird gelöscht …';
+    try{
+      const {data:{session}}=await pccSupabase.auth.getSession();
+      if(!session)throw new Error('Bitte melde dich erneut an.');
+      const {error}=await pccSupabase.functions.invoke('delete-account',{headers:{Authorization:'Bearer '+session.access_token}});
+      if(error)throw error;
+      closeDelete();await pccSupabase.auth.signOut();await pccRefreshAuth();pccShowAccountPage(false);pccToast('Dein Konto wurde gelöscht.');
+    }catch(e){deleteStatus.textContent='Konto konnte nicht gelöscht werden: '+(e.message||'Unbekannter Fehler')+'. Prüfe, ob die sichere delete-account-Funktion in Supabase eingerichtet wurde.';deleteButton.disabled=deleteInput.value!=='Löschen';}
+  });
   document.getElementById('accountMenuLogout')?.addEventListener('click',async()=>{
     const {error}=await pccSupabase.auth.signOut();
     if(error){pccAuthStatus('Abmeldung fehlgeschlagen: '+error.message);pccShowAccountPage(true);return;}
@@ -54,10 +72,12 @@ function pccInitSupabaseAuth(){
     if(error){pccAuthStatus('Anmeldung fehlgeschlagen: '+error.message);return;}
     await pccRefreshAuth();pccShowAccountPage(false);
   });
+  const confirmationInUrl=window.location.hash.includes('access_token')||new URLSearchParams(window.location.search).has('code');
   pccSupabase.auth.onAuthStateChange((event)=>{
     pccRefreshAuth().catch(console.error);
-    if(event==='SIGNED_IN'&&window.location.hash.includes('access_token')){history.replaceState(null,'',window.location.pathname+window.location.search);pccShowAccountPage(false);}
+    if(event==='SIGNED_IN'&&confirmationInUrl){history.replaceState(null,'',window.location.pathname+window.location.search);pccShowAccountPage(false);pccToast('Bestätigung erfolgreich');}
   });
+  if(confirmationInUrl){setTimeout(async()=>{const {data}=await pccSupabase.auth.getSession();if(data?.session){history.replaceState(null,'',window.location.pathname+window.location.search);pccShowAccountPage(false);pccToast('Bestätigung erfolgreich');}},900);}
   pccRefreshAuth().catch(console.error);
 }
 document.addEventListener('DOMContentLoaded',pccInitSupabaseAuth);
