@@ -27,19 +27,24 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <div class="menu-wrap"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
-<section id="accountPanel" class="card" style="margin:16px auto;max-width:1100px;padding:16px">
-  <h2 style="margin-top:0">Konto &amp; Cloud-Speicherung</h2>
-  <p id="accountStatus" role="status">Nicht angemeldet. Melde dich an oder erstelle ein Konto, um die Cloud-Anbindung zu testen.</p>
-  <div id="authControls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-    <label style="flex:1;min-width:200px">E-Mail<input id="authEmail" type="email" autocomplete="email" style="width:100%" placeholder="name@example.com"></label>
-    <label style="flex:1;min-width:200px">Passwort<input id="authPassword" type="password" autocomplete="current-password" style="width:100%" placeholder="Mindestens 6 Zeichen"></label>
-    <button id="authSignIn" type="button">Anmelden</button><button id="authSignUp" type="button" class="secondary">Konto erstellen</button><button id="authSignOut" type="button" class="secondary" hidden>Abmelden</button>
-  </div>
-  <small>Dein Passwort wird nicht in dieser App gespeichert. Teams bleiben vorerst zusätzlich lokal gespeichert, bis die Cloud-Synchronisierung geprüft ist.</small>
+<section id="accountPanel" class="account-page card" style="display:none;margin:16px auto;max-width:700px;padding:22px" aria-labelledby="accountPageTitle">
+  <button id="accountBack" type="button" class="secondary">← Zur Startseite</button>
+  <h2 id="accountPageTitle">Anmelden oder registrieren</h2>
+  <p id="accountStatus" role="status" aria-live="polite">Melde dich an oder erstelle ein Konto.</p>
+  <form id="authForm">
+    <label>E-Mail<input id="authEmail" type="email" autocomplete="email" required style="width:100%" placeholder="name@example.com"></label>
+    <label>Passwort<input id="authPassword" type="password" autocomplete="current-password" required minlength="8" style="width:100%" placeholder="Mindestens 8 Zeichen"></label>
+    <div class="auth-actions"><button id="authSignIn" type="button">Anmelden</button><button id="authSignUp" type="button" class="secondary">Registrieren</button></div>
+  </form>
+  <small>Dein Passwort wird nicht in dieser App gespeichert. Deine Teams bleiben vorerst lokal gespeichert, bis die Cloud-Synchronisierung eingerichtet ist.</small>
 </section>
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
+<style>
+.account-entry{white-space:nowrap}.account-dropdown{position:absolute;right:0;top:calc(100% + 8px);z-index:1000;min-width:150px;padding:8px;background:#10182b;border:1px solid #34405e;border-radius:12px;box-shadow:0 8px 28px #0008}.account-dropdown[hidden]{display:none}.menu-wrap{position:relative}.account-page label{display:block;margin:14px 0;color:#cbd3e8}.account-page input{box-sizing:border-box;margin-top:6px;padding:12px;border-radius:9px;border:1px solid #465477;background:#080e1b;color:#fff}.auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.account-page small{display:block;margin-top:12px;opacity:.8}.account-page[style*="display: none"]{display:none!important}
+@media(max-width:700px){.account-entry{font-size:12px;padding:9px 10px}.menu-wrap{display:flex;gap:7px;align-items:center}}
+</style>
 <main>
 <section id="dex" class="page active">
   <div class="hero"><small>VERSION 7.10.3</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
