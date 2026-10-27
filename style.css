@@ -306,4 +306,4 @@
 
 #atkTypeLossWrap[hidden]{display:none!important}
 
-.target-area-control{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-width:420px;font-weight:600}.target-area-control select{width:100%;font:inherit;font-weight:400;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--card,#fff);color:inherit}
+.target-area-control{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-width:420px;font-weight:600}.target-area-control select{width:100%;font:inherit;font-weight:400;padding:10px;border:1px solid var(--field-teal-border,#2c7185);border-radius:12px;background:var(--field-teal-bg,#123b4b);color:var(--field-teal-text,#f0fbff);transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease}.target-area-control select:hover{background:var(--field-teal-bg-hover,#17495a)}.target-area-control select:focus{outline:none;border-color:var(--field-teal-focus,#55b7c8);box-shadow:0 0 0 3px rgba(85,183,200,.2)}.target-area-control select option{background:#12303e;color:#f0fbff}
