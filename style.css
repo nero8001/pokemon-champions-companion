@@ -305,3 +305,5 @@
 #defTypeOverrideWrap[hidden]{display:none!important}
 
 #atkTypeLossWrap[hidden]{display:none!important}
+
+.target-area-control{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-width:420px;font-weight:600}.target-area-control select{width:100%;font:inherit;font-weight:400;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--card,#fff);color:inherit}

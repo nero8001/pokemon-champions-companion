@@ -1818,6 +1818,7 @@ async function showMoveInfoById(id){
   const m=await json(`${API}/move/${id}`);
    updateRageFistStacksVisibility(m.name);
   updateChargedStateVisibility(m.name);
+  updateTargetArea(m,true);
   const type=deT(rid(m.type?.url))||title(m.type?.name||'—');
   const cls=m.damage_class?.name==='physical'?(uiLang==='en'?'Physical':'Physisch'):m.damage_class?.name==='special'?(uiLang==='en'?'Special':'Speziell'):(uiLang==='en'?'Status':'Status');
   // PokeAPI does not consistently expose hit metadata for newer moves.
@@ -2273,11 +2274,33 @@ function itemDefenseMultiplier(item,moveType,defender,isSuperEffective){
  return {mult,notes};
 }
 function itemLabel(item){return item?(dataName('item',item.id,item.raw)||title(item.raw)):''}
+const TARGET_AREA_LABELS={one:{de:'Ein Pokémon',en:'One Pokémon'},opponents:{de:'Alle Gegner',en:'All opponents'},others:{de:'Alle anderen Pokémon',en:'All other Pokémon'}};
+function targetAreaOptionsForMove(m){
+ const target=String(m?.target?.name||'selected-pokemon');
+ const moveName=normalizeMoveName(m?.name);
+ let max='one';
+ if(['all-opponents','all-opponents-field'].includes(target))max='opponents';
+ if(['all-other-pokemon','all-pokemon'].includes(target))max='others';
+ // Expanding Force normally targets one Pokémon, but spreads to all opponents in Psychic Terrain.
+ if(moveName==='expanding force'&&$('fieldStatus')?.value==='psychic')max='opponents';
+ const allowed=max==='others'?['one','opponents','others']:max==='opponents'?['one','opponents']:['one'];
+ let defaultValue=max;
+ if(moveName==='expanding force'&&$('fieldStatus')?.value==='psychic')defaultValue='opponents';
+ return {allowed,defaultValue,max};
+}
+function updateTargetArea(m,reset=false){
+ const sel=$('targetArea');if(!sel||!m)return;
+ const old=sel.value;const {allowed,defaultValue}=targetAreaOptionsForMove(m);
+ sel.innerHTML=allowed.map(v=>`<option value="${v}">${TARGET_AREA_LABELS[v][uiLang==='en'?'en':'de']}</option>`).join('');
+ sel.value=!reset&&allowed.includes(old)?old:defaultValue;
+}
+function selectedTargetArea(){return $('targetArea')?.value||'one'}
 async function calculateDamage(){
  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
  try{
   const m=await json(`${API}/move/${mid}`);
+  updateTargetArea(m,false);
   if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
   const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def');
   const physical=m.damage_class?.name==='physical';
@@ -2346,7 +2369,9 @@ async function calculateDamage(){
     if(atkStage<0)notes.push(uiLang==='en'?'Critical hit ignores negative Attack stages':'Kritischer Treffer ignoriert negative Angriffs-Stufen');
     if(defStage>0)notes.push(uiLang==='en'?'Critical hit ignores positive Defense stages':'Kritischer Treffer ignoriert positive Verteidigungs-Stufen');
   }
-  const post=abilityDef.mult*stab*typeMult*itemAtk.mult*itemDef.mult*criticalMult;
+  let spreadMult=1;
+  if(selectedTargetArea()==='opponents'||selectedTargetArea()==='others'){spreadMult=.75;notes.push(uiLang==='en'?'Spread move: damage ×0.75':'Mehrziel-Attacke: Schaden ×0,75');}
+  const post=abilityDef.mult*stab*typeMult*itemAtk.mult*itemDef.mult*criticalMult*spreadMult;
   const hitCount=Math.max(1,Number($('hitCount')?.value)||calcState.selectedHits||1);
   // These moves increase their power on successive hits rather than dealing identical hits.
   const progressiveHitPowers=m.name==='triple-axel'?[20,40,60]:m.name==='triple-kick'?[10,20,30]:null;
@@ -2372,7 +2397,7 @@ async function calculateDamage(){
    <div class="damage-number">${min}–${max} KP</div>
    <div class="damage-percent">${minPct.toFixed(1).replace('.',',')}–${maxPct.toFixed(1).replace('.',',')} % Schaden · Ø ${avg.toFixed(1).replace('.',',')} KP</div>
    <div class="hpbar-wrap"><div class="hpbar"><div class="hpbar-fill" style="width:${Math.max(0,100-maxPct)}%"></div></div><div class="hpbar-label">${Math.max(0,hp-max)}–${Math.max(0,hp-min)} KP verbleibend</div></div>
-   <div class="damage-muted">${label}${hitCount>1?` · ${hitCount} ${t('hits')}`:''} · 16 ${uiLang==='en'?'damage rolls per hit':'Schadenswürfe pro Treffer'} (85–100 %) · ${physical?(uiLang==='en'?'physical':'physisch'):(uiLang==='en'?'special':'speziell')}${env?' · '+env:''}</div>
+   <div class="damage-muted">${label}${hitCount>1?` · ${hitCount} ${t('hits')}`:''} · ${TARGET_AREA_LABELS[selectedTargetArea()][uiLang==='en'?'en':'de']} · 16 ${uiLang==='en'?'damage rolls per hit':'Schadenswürfe pro Treffer'} (85–100 %) · ${physical?(uiLang==='en'?'physical':'physisch'):(uiLang==='en'?'special':'speziell')}${env?' · '+env:''}</div>
    ${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}
   </div>`;
  }catch(e){console.error(e);$('damageResult').innerHTML='<div class="damage-box">Berechnung konnte nicht durchgeführt werden.</div>'}
@@ -2460,6 +2485,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  document.querySelectorAll('.calc-move-choice').forEach((choice,i)=>choice.addEventListener('change',()=>{if(choice.checked)selectCalculatorMoveSlot(i,true);else choice.checked=true;}));
  calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{selectCalculatorMoveSlot(i,false);$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
  $('chargedState')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
+ $('targetArea')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
  $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateStabToggle();updateCalcSide('atk');updateChargedStateVisibility();if(calcState.selectedMove)calculateDamage()});
  $('defAbility').addEventListener('change',()=>{const x=calcState.abilities.defender.find(a=>String(a.id)===String($('defAbility').value));calcState.selectedAbility.defender=x||null;updateCalcSide('def');if(calcState.selectedMove)calculateDamage()});
