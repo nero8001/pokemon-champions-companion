@@ -42,12 +42,38 @@ function pccInitSupabaseAuth(){
     if(deleteInput.value!=='Löschen')return;
     deleteButton.disabled=true;deleteStatus.textContent='Konto wird gelöscht …';
     try{
-      const {data:{session}}=await pccSupabase.auth.getSession();
-      if(!session)throw new Error('Bitte melde dich erneut an.');
-      const {error}=await pccSupabase.functions.invoke('delete-account',{headers:{Authorization:'Bearer '+session.access_token}});
-      if(error)throw error;
-      closeDelete();await pccSupabase.auth.signOut();await pccRefreshAuth();pccShowAccountPage(false);pccToast('Dein Konto wurde gelöscht.');
-    }catch(e){deleteStatus.textContent='Konto konnte nicht gelöscht werden: '+(e.message||'Unbekannter Fehler')+'. Prüfe, ob die sichere delete-account-Funktion in Supabase eingerichtet wurde.';deleteButton.disabled=deleteInput.value!=='Löschen';}
+      const {data:{session},error:sessionError}=await pccSupabase.auth.getSession();
+      if(sessionError)throw new Error('Anmeldestatus konnte nicht geprüft werden. Bitte melde dich erneut an.');
+      if(!session?.access_token)throw new Error('Du bist nicht mehr angemeldet. Bitte melde dich erneut an.');
+      const {data,error}=await pccSupabase.functions.invoke('delete-account',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+session.access_token}
+      });
+      if(error){
+        let detail='';
+        try{
+          const response=error.context;
+          if(response && typeof response.clone==='function'){
+            const body=await response.clone().json();
+            detail=body?.error||body?.message||'';
+          }
+        }catch(_ignored){}
+        if(error.name==='FunctionsFetchError'){
+          throw new Error('Die Löschfunktion ist nicht erreichbar. Prüfe, ob „delete-account“ in Supabase bereitgestellt wurde und die Internetverbindung funktioniert.');
+        }
+        throw new Error(detail||error.message||'Supabase hat die Anfrage abgelehnt.');
+      }
+      if(data?.error)throw new Error(data.error);
+      // The user has been deleted server-side; clear this browser's saved session locally.
+      await pccSupabase.auth.signOut({scope:'local'});
+      closeDelete();
+      await pccRefreshAuth();
+      pccShowAccountPage(false);
+      pccToast('Dein Konto wurde gelöscht.');
+    }catch(e){
+      deleteStatus.textContent='Konto konnte nicht gelöscht werden: '+(e.message||'Unbekannter Fehler');
+      deleteButton.disabled=deleteInput.value!=='Löschen';
+    }
   });
   document.getElementById('accountMenuLogout')?.addEventListener('click',async()=>{
     const {error}=await pccSupabase.auth.signOut();
