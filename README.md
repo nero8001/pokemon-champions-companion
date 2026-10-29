@@ -1,6 +1,6 @@
-# Pokémon Champions Companion v8.3
+# Pokémon Champions Companion v8.4
 
-## Neu in v8.3
+## Neu in v8.4
 - Beim lokalen Speichern und beim Speichern im Konto erscheint eine Bestätigung mit dem Teamnamen.
 - Die Bestätigung verwendet jeweils den vorhandenen Statusbereich und ersetzt die vorherige Meldung, statt Meldungen zu stapeln.
 - Die Erfolgsmeldung beim Speichern im Konto bleibt nach dem Aktualisieren der Teamliste sichtbar.

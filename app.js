@@ -525,7 +525,14 @@ async function teamBuilderCloudClient(){
   if(!data?.session?.user?.id)throw new Error(uiLang==='en'?'Please sign in to save teams to your account.':'Bitte melde dich an, um Teams in deinem Konto zu speichern.');
   return {client:pccSupabase,user:data.session.user};
 }
-function teamBuilderCloudMessage(message){const el=$('teamBuilderCloudStatus');if(el)el.textContent=message||'';}
+function teamBuilderCloudMessage(message){
+  const text=message||'';
+  // Show account-save feedback in the Team-Builder too, alongside local-save feedback.
+  const accountStatus=$('teamBuilderCloudStatus');
+  const builderStatus=$('teamBuilderSaveStatus');
+  if(accountStatus)accountStatus.textContent=text;
+  if(builderStatus)builderStatus.textContent=text;
+}
 function teamBuilderCloudFriendlyError(error){
   const msg=String(error?.message||'');
   if(/saved_teams|schema cache|does not exist|could not find the table/i.test(msg))return uiLang==='en'?'The saved_teams table is not set up yet. Run the SQL from SUPABASE_TEAMS_SETUP.sql in Supabase first.':'Die Tabelle „saved_teams“ ist noch nicht eingerichtet. Bitte führe zuerst die SQL-Datei SUPABASE_TEAMS_SETUP.sql in Supabase aus.';
