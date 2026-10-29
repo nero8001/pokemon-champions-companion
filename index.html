@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.0</title>
+<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.1</title>
 <link rel="stylesheet" href="style.css?v=8.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -27,7 +27,7 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
 <section id="accountPanel" class="account-page card" style="display:none;margin:16px auto;max-width:700px;padding:22px" aria-labelledby="accountPageTitle">
   <button id="accountBack" type="button" class="secondary">← Zur Startseite</button>
@@ -59,7 +59,7 @@
 </style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 8.1</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -77,7 +77,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 8.0</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 8.1</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -205,7 +205,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 8.1</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -219,7 +219,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 8.1</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -229,7 +229,7 @@
       <label><span data-i18n="teamBuilderNameLabel">Teamname</span><input id="teamBuilderName" type="text" maxlength="60" placeholder="Mein Team" autocomplete="off"></label>
       <div class="team-builder-save-actions">
         <button id="teamBuilderNew" class="secondary" type="button" data-i18n="teamBuilderNew">Neues Team</button>
-        <button id="teamBuilderSave" class="primary" type="button" data-i18n="teamBuilderSave">Lokal speichern</button>
+        <button id="teamBuilderSave" class="primary" type="button" data-i18n="teamBuilderSave">Lokal Speichern</button>
         <button id="teamBuilderCloudSave" class="primary" type="button">Im Konto speichern</button>
         <button id="teamBuilderCloudRefresh" class="secondary" type="button">Konto-Teams laden</button>
         <button id="teamBuilderImport" class="secondary" type="button" data-i18n="teamBuilderImport">Importieren</button>
@@ -240,15 +240,16 @@
     </div>
   </div>
   <div id="teamBuilderSlots" class="team-builder-slots"></div>
-  <div class="card team-builder-saved-wrap">
-    <div class="team-builder-saved-head-main"><div><h2>Meine lokal gespeicherten Teams</h2><p class="team-builder-hint">Diese Teams liegen nur in diesem Browser bzw. auf diesem Gerät.</p></div></div>
-    <div id="teamBuilderSavedTeams" class="team-builder-saved-list"></div>
+  <div class="card team-builder-saved-wrap recent-teams-wrap">
+    <div class="team-builder-saved-head-main"><div><h2 data-i18n="recentTeamsTitle">Letzte Teams</h2><p class="team-builder-hint" data-i18n="recentTeamsHint">Die letzten drei verwendeten Teams.</p></div><label class="team-source-label"><span data-i18n="teamSource">Quelle</span><select id="recentTeamsSource"><option value="account">Account</option><option value="local">Lokal</option></select></label></div>
+    <div id="recentTeamsList" class="team-builder-saved-list"></div>
   </div>
-  <div class="card team-builder-saved-wrap">
-    <div class="team-builder-saved-head-main"><div><h2>Meine Konto-Teams</h2><p class="team-builder-hint">Diese Teams werden in deinem angemeldeten Supabase-Konto gespeichert und sind auf anderen Geräten verfügbar.</p></div></div>
-    <div id="teamBuilderCloudStatus" class="team-builder-save-status" role="status"></div>
-    <div id="teamBuilderCloudTeams" class="team-builder-saved-list"></div>
-  </div>
+</section>
+<section id="myteams" class="page">
+  <div class="hero"><small>TEAMVERWALTUNG</small><h1 data-i18n="myTeamsTitle">Meine Teams</h1><p data-i18n="myTeamsHint">Verwalte deine lokal gespeicherten und mit deinem Konto synchronisierten Teams an einem Ort.</p></div>
+  <div class="card my-teams-toolbar"><label for="myTeamsSource"><span data-i18n="teamSource">Quelle</span><select id="myTeamsSource" class="dex-filter"><option value="account">Account-Teams</option><option value="local">Lokale Teams</option></select></label><button id="myTeamsRefresh" class="secondary" type="button" data-i18n="refreshTeams">Aktualisieren</button></div>
+  <div id="myTeamsAccountPanel" class="card team-builder-saved-wrap"><div class="team-builder-saved-head-main"><div><h2 data-i18n="accountTeamsTitle">Account-Teams</h2><p class="team-builder-hint" data-i18n="accountTeamsHint">Über dein Konto synchronisierte Teams.</p></div></div><div id="teamBuilderCloudStatus" class="team-builder-save-status" role="status"></div><div id="teamBuilderCloudTeams" class="team-builder-saved-list"></div></div>
+  <div id="myTeamsLocalPanel" class="card team-builder-saved-wrap"><div class="team-builder-saved-head-main"><div><h2 data-i18n="localTeamsTitle">Lokale Teams</h2><p class="team-builder-hint" data-i18n="localTeamsHint">Diese Teams liegen nur in diesem Browser bzw. auf diesem Gerät.</p></div></div><div id="teamBuilderSavedTeams" class="team-builder-saved-list"></div></div>
 </section>
 <section id="meta" class="page">
   <div class="hero"><small>LIVE META API</small><h1 data-i18n="meta">Meta &amp; Teams</h1><p data-i18n="metaHero">Aktuelle Turnierdaten, Team-Rankings und Meta-Analysen für Pokémon Champions.</p></div>

@@ -307,3 +307,12 @@
 #atkTypeLossWrap[hidden]{display:none!important}
 
 .target-area-control{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-width:420px;font-weight:600}.target-area-control select{width:100%;font:inherit;font-weight:400;padding:10px;border:1px solid var(--field-teal-border,#2c7185);border-radius:12px;background:var(--field-teal-bg,#123b4b);color:var(--field-teal-text,#f0fbff);transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease}.target-area-control select:hover{background:var(--field-teal-bg-hover,#17495a)}.target-area-control select:focus{outline:none;border-color:var(--field-teal-focus,#55b7c8);box-shadow:0 0 0 3px rgba(85,183,200,.2)}.target-area-control select option{background:#12303e;color:#f0fbff}
+/* v8.1 — centralized team management and recent teams */
+.my-teams-toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.my-teams-toolbar label{flex:1;min-width:220px;margin:0}
+.my-teams-toolbar button{min-height:46px}
+.team-source-label{display:flex;align-items:center;gap:8px;margin:0!important;white-space:nowrap}
+.team-source-label select{min-width:125px;padding:9px 12px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff}
+#myTeamsAccountPanel[hidden],#myTeamsLocalPanel[hidden]{display:none!important}
+.recent-teams-wrap{margin-top:16px}
+@media(max-width:650px){.team-builder-save-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.team-source-label{width:100%;justify-content:space-between}.team-source-label select{flex:1}}
