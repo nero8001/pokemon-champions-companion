@@ -22,3 +22,9 @@
 ## Einrichtung
 - Die Supabase-Tabelle und RLS-Richtlinien müssen einmalig mit `SUPABASE_TEAMS_SETUP.sql` eingerichtet sein.
 - Die App nutzt die vorhandene Supabase-Konfiguration; es werden keine geheimen Schlüssel in der Web-App benötigt.
+
+
+## Version 8.5 – Team-Sharing per Link
+- Teams können aus dem Team-Builder sowie aus lokalen und Account-Teamkarten über einen Link geteilt werden.
+- Der Link enthält die Teamkonfiguration direkt im URL-Fragment; keine zusätzliche Supabase-Tabelle oder SQL-Änderung nötig.
+- Beim Öffnen kann das Team in den Team-Builder geladen und anschließend lokal oder im Konto als eigene Kopie gespeichert werden.

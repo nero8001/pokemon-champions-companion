@@ -187,7 +187,7 @@
 .team-builder-saved-preview>div{min-width:0;text-align:center}
 .team-builder-saved-preview img{width:44px;height:44px;object-fit:contain;display:block;margin:auto}
 .team-builder-saved-preview span{display:block;margin-top:2px;font-size:.62rem;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.72}
-.team-builder-saved-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.team-builder-saved-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
 .team-builder-saved-actions button{width:100%;margin:0;padding:7px 6px;font-size:.75rem}
 .team-builder-saved-actions .danger{background:transparent;border:1px solid #7a3d4a;color:#ffb4be;border-radius:8px;cursor:pointer}
 @media(max-width:700px){
