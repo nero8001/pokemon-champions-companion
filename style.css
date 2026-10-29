@@ -352,3 +352,7 @@ header{z-index:20000}
 .pcc-share-footer button{min-height:38px}
 @media(max-width:760px){.pcc-share-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.pcc-share-dialog{max-height:calc(100vh - 16px)}.pcc-share-mon{padding:9px 6px}.pcc-share-footer{align-items:stretch;flex-direction:column}.pcc-share-footer>div{justify-content:flex-end}}
 @media(max-width:380px){.pcc-share-grid{gap:6px}.pcc-share-mon-name{font-size:.75rem}.pcc-share-item{font-size:.65rem}.pcc-share-moves span{font-size:.6rem}}
+
+/* v8.7: item icons in shared-team preview */
+.pcc-share-item-icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px;image-rendering:auto}
+.pcc-share-item{min-width:0}

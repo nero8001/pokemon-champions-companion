@@ -558,15 +558,26 @@ function teamBuilderShowSharePreview(snapshot){
     const monName=String(s.formLabel||title(s.pokemonId)||'Pokémon');
     const formLabel=String(s.formLabel||'');
     const baseName=String(title(s.pokemonId)||'');
-    const form=formLabel&&formLabel.toLowerCase()!==baseName.toLowerCase()?formLabel:'';
+    const form=formLabel&&formLabel.toLowerCase()!==baseName.toLowerCase()&&formLabel.toLowerCase()!=='basisform'?formLabel:'';
     const moves=(Array.isArray(s.moves)?s.moves:[]).filter(Boolean).slice(0,4);
+    const natureIndex=Number(s.nature);
+    const nature=natureData[Number.isInteger(natureIndex)&&natureIndex>=0&&natureIndex<natureData.length?natureIndex:20];
+    const natureText=nature? natureLabel(nature):'';
+    const selectedItem=(calcItems||[]).find(x=>String(x.id)===String(s.item));
+    const itemText=selectedItem?(dataName('item',selectedItem.id,selectedItem.raw)||selectedItem.name||selectedItem.raw):(!s.item?(uiLang==='en'?'No item':'Kein Item'):(String(s.item)));
+    const itemSlug=selectedItem?normalizeItemName(selectedItem.raw):'';
+    const itemIcon=itemSlug?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${encodeURIComponent(itemSlug)}.png`:'';
+    const formSlug=form?(/mega/i.test(formLabel)?'mega':/alola|alolan/i.test(formLabel)?'alola':/galar|galarian/i.test(formLabel)?'galar':/hisui|hisuian/i.test(formLabel)?'hisui':/paldea|paldean/i.test(formLabel)?'paldea':null):null;
+    const formSprite=formSlug?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.pokemonId}-${formSlug}.png`:null;
+    const spriteUrl=formSprite||sprite(s.pokemonId);
+    const fallbackSprite=escapeHtml(sprite(s.pokemonId));
     return `<article class="pcc-share-mon">
       <div class="pcc-share-number">${i+1}</div>
-      <img class="pcc-share-sprite" src="${escapeHtml(sprite(s.pokemonId))}" alt="${escapeHtml(monName)}" loading="lazy">
+      <img class="pcc-share-sprite" src="${escapeHtml(spriteUrl)}" alt="${escapeHtml(monName)}" loading="lazy" ${formSprite?`onerror="this.onerror=null;this.src='${fallbackSprite}'"`:''}>
       <div class="pcc-share-mon-name" title="${escapeHtml(monName)}">${escapeHtml(monName)}</div>
       ${form?`<div class="pcc-share-form">✨ ${escapeHtml(form)}</div>`:''}
-      <div class="pcc-share-item" title="${escapeHtml(s.item|| (uiLang==='en'?'No item':'Kein Item'))}"><span aria-hidden="true">🎒</span><span>${escapeHtml(s.item|| (uiLang==='en'?'No item':'Kein Item'))}</span></div>
-      <div class="pcc-share-meta">${escapeHtml(s.ability||'')}${s.nature!==undefined?` · ${escapeHtml(natureLabel(s.nature))}`:''}</div>
+      <div class="pcc-share-item" title="${escapeHtml(itemText)}">${itemIcon?`<img class="pcc-share-item-icon" src="${escapeHtml(itemIcon)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<span aria-hidden="true">🎒</span>`}<span>${escapeHtml(itemText)}</span></div>
+      <div class="pcc-share-meta">${s.ability?escapeHtml(s.ability):''}${natureText?`${s.ability?' · ':''}${escapeHtml(natureText)}`:''}</div>
       ${moves.length?`<div class="pcc-share-moves">${moves.map(m=>`<span>${escapeHtml(m)}</span>`).join('')}</div>`:''}
     </article>`;
   }).join('');

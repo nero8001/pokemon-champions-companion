@@ -34,3 +34,4 @@
 - Geteilte Team-Links öffnen eine kompakte Vorschauseite mit sechs Pokémon-Slots, Form, Item, Fähigkeit, Wesen und Attacken.
 - Nutzer können das Team erst nach Auswahl von „Team übernehmen“ in den Team-Builder laden.
 - Beim Erstellen eines Links erscheint eine kurze Bestätigung „Link in der Zwischenablage gespeichert“.
+\n\n## Version 8.7 – Vorschau: Wesen, Itemgrafiken und Formen\n- Wesen werden über den gespeicherten Nature-Index korrekt lokalisiert dargestellt.\n- Items zeigen das offizielle PokeAPI-Item-Sprite plus weiterhin den Itemnamen.\n- Für Mega- und regionale Formen wird zunächst ein passender Form-Sprite geladen, mit Fallback auf den Basis-Sprite.\n
