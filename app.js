@@ -1,5 +1,5 @@
 
-// Pokémon Champions Companion v8.9 — team links and password management (publishable key only).
+// Pokémon Champions Companion v8.10 — team preview and password reset hint (publishable key only).
 let pccSupabase = null;
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
@@ -123,7 +123,7 @@ function pccInitSupabaseAuth(){
     const redirectTo=window.location.origin+window.location.pathname;
     const {error}=await pccSupabase.auth.resetPasswordForEmail(email,{redirectTo});
     if(error){pccAuthStatus('Passwort-Zurücksetzen fehlgeschlagen: '+error.message);return;}
-    pccAuthStatus('Falls ein Konto zu dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen des Passworts.');
+    pccAuthStatus('Falls ein Konto zu dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen des Passworts. Bitte prüfe auch deinen Spam- bzw. Junk-Ordner, falls die E-Mail nicht im Posteingang erscheint.');
   });
   document.getElementById('authSignIn')?.addEventListener('click',async()=>{
     const email=emailInput?.value.trim(),password=passwordInput?.value;
@@ -687,15 +687,11 @@ async function teamBuilderLoadFromLink(){
   try{
     const token=teamBuilderTokenFromInput($('teamLinkInput')?.value);
     const snapshot=teamBuilderDecodeShareToken(token);
-    if(button)button.disabled=true;if(status)status.textContent=uiLang==='en'?'Loading team …':'Team wird geladen …';
-    await teamBuilderApplySnapshot(snapshot);
-    teamBuilderCurrentId=null;teamBuilderCloudCurrentId=null;
-    teamBuilderCurrentName=String(snapshot.name||'Geteiltes Team');
-    teamBuilderMarkRecent('local','shared-'+Date.now(),teamBuilderCurrentName,snapshot);
-    if($('teamBuilderName'))$('teamBuilderName').value=teamBuilderCurrentName;
-    renderRecentTeams();teamBuilderCloseLinkDialog();
-    teamBuilderSetStatus(uiLang==='en'?'Shared team loaded. Save it locally or to your account to keep your own copy.':'Geteiltes Team geladen. Speichere es lokal oder in deinem Konto, um eine eigene Kopie zu behalten.');
-    document.querySelector('.nav[data-page=builder]')?.click();
+    if(button)button.disabled=true;
+    if(status)status.textContent=uiLang==='en'?'Opening team preview …':'Teamvorschau wird geöffnet …';
+    teamBuilderCloseLinkDialog();
+    // Match the normal shared-link flow: show the compact preview first and import only on confirmation.
+    teamBuilderShowSharePreview(snapshot);
   }catch(e){
     console.error('Team-Link laden:',e);
     if(status)status.textContent=(uiLang==='en'?'Could not load team: ':'Team konnte nicht geladen werden: ')+(e.message||'Ungültiger Link');
