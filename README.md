@@ -1,13 +1,25 @@
-# Pokémon Champions Companion
+# Pokémon Champions Companion — v8.0
 
-## Letzte 3 größere Änderungen
-- **v7.10.4:** Supabase-Anmeldung vorbereitet (Registrierung, Anmeldung und Abmeldung mit Publishable Key); Team-Speicherung bleibt bis zur Prüfung des Datenbankschemas lokal.
-- **v7.10.4:** Zielbereich-Dropdown an die türkisblauen Eingabefelder angepasst; Text und Hintergrund sind wieder kontrastreich.
-- **v7.10.3:** Zielbereich-Auswahl abhängig von Attacke und Feldstatus ergänzt, inklusive Mehrziel-Schadensberechnung.
-- **v7.10.2:** Feld „Aufgeladen?“ für Dynamo und Ladevorgang; bei „Ja“ wird der Schaden von Elektroattacken verdoppelt.
+## Neu in Version 8.0
+- Persönliche Teams können über Supabase im Konto gespeichert, geladen und gelöscht werden.
+- Die bisherigen lokalen Teams, JSON-Importe und JSON-Exporte bleiben verfügbar.
+- Kontoteams sind durch Row Level Security (RLS) auf den jeweiligen Besitzer beschränkt.
+- Versionssprung auf 8.0, damit die Versionsnummer übersichtlich bleibt.
 
+## Einmalige Supabase-Einrichtung
+1. Öffne dein Supabase-Projekt und gehe zu **SQL Editor**.
+2. Öffne `SUPABASE_TEAMS_SETUP.sql` aus diesem ZIP und kopiere den vollständigen Inhalt in eine neue SQL-Abfrage.
+3. Führe das SQL aus. Es erstellt die Tabelle `public.saved_teams`, aktiviert RLS und richtet die Richtlinien ein.
+4. Veröffentliche/hoste anschließend die App-Dateien wie gewohnt neu.
+5. Melde dich in der App mit einem Testkonto an. Öffne den Team-Builder, erstelle ein Team und klicke auf **Im Konto speichern**. Danach kannst du mit **Konto-Teams laden** prüfen, ob es erscheint.
 
-## v7.10.6
-- Konto-Löschung mit POST-Aufruf der Supabase-Edge-Function `delete-account` robuster angebunden.
-- Verständlichere Fehlermeldungen bei fehlender Anmeldung oder nicht erreichbarer Funktion.
-- Nach erfolgreicher Löschung wird die lokale Sitzung entfernt.
+## Speicherung
+- **Lokal speichern** speichert nur in diesem Browser/Gerät.
+- **Im Konto speichern** speichert in Supabase und ist nach Anmeldung auf anderen Geräten abrufbar.
+- Konto-Teams werden getrennt von lokalen Teams angezeigt.
+- Beim Löschen eines Auth-Benutzers werden dessen Konto-Teams aufgrund des Fremdschlüssels `ON DELETE CASCADE` automatisch gelöscht.
+
+## Sicherheitshinweise
+- Die App verwendet nur den öffentlichen/publishable Supabase-Schlüssel. Es werden keine Service-Role-Schlüssel im Frontend benötigt oder enthalten.
+- Die RLS-Regeln prüfen `auth.uid() = user_id` für Lesen, Einfügen, Bearbeiten und Löschen.
+- Die SQL-Einrichtung muss im Supabase-Projekt einmal ausgeführt werden, bevor die Cloud-Teams funktionieren.

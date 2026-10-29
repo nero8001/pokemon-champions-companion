@@ -1,5 +1,5 @@
 
-// Supabase authentication and account menu (publishable key only).
+// Pokémon Champions Companion v8.0 — account auth and cloud team storage (publishable key only).
 let pccSupabase = null;
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
@@ -16,6 +16,7 @@ async function pccRefreshAuth(){
   const {data,error}=await pccSupabase.auth.getSession(); const session=data?.session;
   const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const del=document.getElementById('accountMenuDelete');
   if(entry)entry.textContent=session?'Mein Konto':'Anmelden/Registrieren';
+  const cloudSave=document.getElementById('teamBuilderCloudSave'),cloudRefresh=document.getElementById('teamBuilderCloudRefresh');if(cloudSave)cloudSave.disabled=!session;if(cloudRefresh)cloudRefresh.disabled=!session;
   if(logout)logout.hidden=!session;if(del)del.hidden=!session;
   if(error)pccAuthStatus('Sitzungsstatus konnte nicht geladen werden: '+error.message);
   else if(session)pccAuthStatus('Angemeldet als '+(session.user.email||'Nutzer')+'.');
@@ -477,10 +478,12 @@ let teamBuilderInitialized=false;
 let teamBuilderEventsBound=false;
 let teamBuilderCurrentId=null;
 let teamBuilderCurrentName='';
+let teamBuilderCloudCurrentId=null;
+let teamBuilderCloudEventsBound=false;
 const TEAM_BUILDER_STORAGE_KEY='pokemon-champions-companion-saved-teams-v1';
 
 function teamBuilderBlankSlot(){return {pokemon:null,base:null,formOptions:[],moves:[],moveValues:['','','',''],nature:0,item:'',ability:'',ev:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0},loading:false}}
-function teamBuilderResetState(){for(let i=0;i<6;i++)Object.assign(teamBuilderState[i],teamBuilderBlankSlot());teamBuilderCurrentId=null;teamBuilderCurrentName='';}
+function teamBuilderResetState(){for(let i=0;i<6;i++)Object.assign(teamBuilderState[i],teamBuilderBlankSlot());teamBuilderCurrentId=null;teamBuilderCurrentName='';teamBuilderCloudCurrentId=null;}
 function teamBuilderLoadSavedList(){try{const raw=localStorage.getItem(TEAM_BUILDER_STORAGE_KEY);const data=raw?JSON.parse(raw):[];return Array.isArray(data)?data.filter(x=>x&&typeof x==='object'&&x.id&&Array.isArray(x.slots)):[]}catch(e){console.warn('Team Builder storage:',e);return []}}
 function teamBuilderWriteSavedList(list){try{localStorage.setItem(TEAM_BUILDER_STORAGE_KEY,JSON.stringify(list));return true}catch(e){console.warn('Team Builder storage write:',e);return false}}
 function teamBuilderSnapshot(name){return {format:'pokemon-champions-companion-team',version:1,name:String(name||'Mein Team').trim()||'Mein Team',savedAt:new Date().toISOString(),slots:teamBuilderState.map(st=>({
@@ -504,6 +507,103 @@ function teamBuilderLoad(id){const entry=teamBuilderLoadSavedList().find(x=>x.id
 function teamBuilderImport(){const input=document.createElement('input');input.type='file';input.accept='application/json,.json';input.onchange=()=>{const file=input.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(String(reader.result||''));teamBuilderApplySnapshot(data).then(()=>{const name=teamBuilderCurrentName||'Importiertes Team';const list=teamBuilderLoadSavedList();const id='team-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);const entry={...teamBuilderSnapshot(name),id,updatedAt:new Date().toISOString()};list.unshift(entry);teamBuilderWriteSavedList(list);teamBuilderCurrentId=id;renderTeamBuilderSaved();if($('teamBuilderSaveStatus'))$('teamBuilderSaveStatus').textContent=uiLang==='en'?'Imported and saved locally.':'Importiert und lokal gespeichert.'}).catch(()=>alert(uiLang==='en'?'This team file is not compatible.':'Diese Teamdatei ist nicht kompatibel.'))}catch(e){alert(uiLang==='en'?'Invalid JSON team file.':'Ungültige JSON-Teamdatei.')}};reader.readAsText(file)};input.click()}
 function renderTeamBuilderSaved(){const root=$('teamBuilderSavedTeams');if(!root)return;const list=teamBuilderLoadSavedList().sort((a,b)=>String(b.updatedAt||b.savedAt||'').localeCompare(String(a.updatedAt||a.savedAt||'')));if(!list.length){root.innerHTML=`<p class="team-builder-empty-list">${escapeHtml(uiLang==='en'?'No saved teams yet.':'Noch keine gespeicherten Teams.')}</p>`;return}root.innerHTML=list.map(team=>{const mons=(team.slots||[]).map(s=>s?.pokemonId).filter(Boolean).slice(0,6);const names=(team.slots||[]).map(s=>s?.formLabel||'').filter(Boolean).slice(0,6);return `<article class="team-builder-saved-card ${team.id===teamBuilderCurrentId?'active':''}"><div class="team-builder-saved-head"><div><b>${escapeHtml(team.name||'Mein Team')}</b><small>${mons.length} / 6 Pokémon</small></div><span>${team.updatedAt?new Date(team.updatedAt).toLocaleDateString(uiLang==='en'?'en-GB':'de-DE'):''}</span></div><div class="team-builder-saved-preview">${mons.map((id,j)=>`<div title="${escapeHtml(names[j]||'')}"><img src="${sprite(id)}" alt=""><span>${escapeHtml(names[j]||title(mons[j]))}</span></div>`).join('')}</div><div class="team-builder-saved-actions"><button type="button" class="secondary" data-team-action="load" data-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Load':'Laden')}</button><button type="button" class="secondary" data-team-action="rename" data-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Rename':'Umbenennen')}</button><button type="button" class="secondary" data-team-action="export" data-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Export':'Exportieren')}</button><button type="button" class="danger" data-team-action="delete" data-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Delete':'Löschen')}</button></div></article>`}).join('')}
 function bindTeamBuilderSaved(){const root=$('teamBuilderSavedTeams');if(!root||root.dataset.bound)return;root.addEventListener('click',e=>{const btn=e.target.closest('[data-team-action]');if(!btn)return;const id=btn.dataset.teamId;const action=btn.dataset.teamAction;if(action==='load')teamBuilderLoad(id);if(action==='rename')teamBuilderRename(id);if(action==='export')teamBuilderExport(id);if(action==='delete')teamBuilderDelete(id)});root.dataset.bound='1'}
+
+
+async function teamBuilderCloudClient(){
+  if(!pccSupabase)throw new Error(uiLang==='en'?'Supabase is not initialized.':'Supabase ist noch nicht bereit.');
+  const {data,error}=await pccSupabase.auth.getSession();
+  if(error)throw error;
+  if(!data?.session?.user?.id)throw new Error(uiLang==='en'?'Please sign in to save teams to your account.':'Bitte melde dich an, um Teams in deinem Konto zu speichern.');
+  return {client:pccSupabase,user:data.session.user};
+}
+function teamBuilderCloudMessage(message){const el=$('teamBuilderCloudStatus');if(el)el.textContent=message;}
+function teamBuilderCloudFriendlyError(error){
+  const msg=String(error?.message||'');
+  if(/saved_teams|schema cache|does not exist|could not find the table/i.test(msg))return uiLang==='en'?'The saved_teams table is not set up yet. Run the SQL from SUPABASE_TEAMS_SETUP.sql in Supabase first.':'Die Tabelle „saved_teams“ ist noch nicht eingerichtet. Bitte führe zuerst die SQL-Datei SUPABASE_TEAMS_SETUP.sql in Supabase aus.';
+  if(/row-level security|permission denied|violates row-level/i.test(msg))return uiLang==='en'?'Supabase blocked access. Please check the RLS policies from the setup SQL.':'Supabase hat den Zugriff blockiert. Bitte prüfe die RLS-Regeln aus der Setup-SQL-Datei.';
+  return msg|| (uiLang==='en'?'An unexpected error occurred.':'Ein unerwarteter Fehler ist aufgetreten.');
+}
+async function teamBuilderCloudSave(){
+  try{
+    const {client,user}=await teamBuilderCloudClient();
+    const name=String($('teamBuilderName')?.value||teamBuilderCurrentName||'Mein Team').trim()||'Mein Team';
+    const snapshot=teamBuilderSnapshot(name);
+    const payload={user_id:user.id,name,team_data:snapshot,updated_at:new Date().toISOString()};
+    if(teamBuilderCloudCurrentId){
+      const {data,error}=await client.from('saved_teams').update(payload).eq('id',teamBuilderCloudCurrentId).eq('user_id',user.id).select('id').maybeSingle();
+      if(error)throw error;
+      if(!data?.id)teamBuilderCloudCurrentId=null;
+    }
+    if(!teamBuilderCloudCurrentId){
+      const {data,error}=await client.from('saved_teams').insert(payload).select('id').single();
+      if(error)throw error;
+      teamBuilderCloudCurrentId=data.id;
+    }
+    teamBuilderCurrentName=name;
+    teamBuilderCloudMessage(uiLang==='en'?'Team saved to your account.':'Team wurde in deinem Konto gespeichert.');
+    await teamBuilderCloudRefresh();
+  }catch(e){console.error('Cloud team save:',e);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
+}
+async function teamBuilderCloudRefresh(){
+  try{
+    const {client,user}=await teamBuilderCloudClient();
+    teamBuilderCloudMessage(uiLang==='en'?'Loading your account teams…':'Deine Konto-Teams werden geladen …');
+    const {data,error}=await client.from('saved_teams').select('id,name,team_data,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false});
+    if(error)throw error;
+    renderTeamBuilderCloudList(Array.isArray(data)?data:[]);
+    teamBuilderCloudMessage((data?.length||0)===0?(uiLang==='en'?'No teams saved to your account yet.':'Du hast noch keine Teams im Konto gespeichert.'):(uiLang==='en'?`${data.length} account team(s) loaded.`:`${data.length} Konto-Team(s) geladen.`));
+  }catch(e){console.error('Cloud team list:',e);renderTeamBuilderCloudList([]);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
+}
+function renderTeamBuilderCloudList(list){
+  const root=$('teamBuilderCloudTeams');if(!root)return;
+  if(!list.length){root.innerHTML=`<p class="team-builder-empty-list">${escapeHtml(uiLang==='en'?'No account teams to display.':'Keine Konto-Teams zum Anzeigen.')}</p>`;return;}
+  root.innerHTML=list.map(team=>{
+    const snapshot=team.team_data||{};
+    const slots=Array.isArray(snapshot.slots)?snapshot.slots:[];
+    const mons=slots.filter(s=>s?.pokemonId).slice(0,6);
+    return `<article class="team-builder-saved-card ${team.id===teamBuilderCloudCurrentId?'active':''}"><div class="team-builder-saved-head"><div><b>${escapeHtml(team.name||snapshot.name||'Mein Team')}</b><small>${mons.length} / 6 Pokémon · Konto</small></div><span>${team.updated_at?new Date(team.updated_at).toLocaleDateString(uiLang==='en'?'en-GB':'de-DE'):''}</span></div><div class="team-builder-saved-preview">${mons.map(s=>`<div title="${escapeHtml(s.formLabel||'')}"><img src="${sprite(s.pokemonId)}" alt=""><span>${escapeHtml(s.formLabel||title(s.pokemonId))}</span></div>`).join('')}</div><div class="team-builder-saved-actions"><button type="button" class="secondary" data-cloud-team-action="load" data-cloud-team-id="${escapeHtml(team.id)}">Laden</button><button type="button" class="danger" data-cloud-team-action="delete" data-cloud-team-id="${escapeHtml(team.id)}">Löschen</button></div></article>`;
+  }).join('');
+}
+async function teamBuilderCloudLoad(id){
+  try{
+    const {client,user}=await teamBuilderCloudClient();
+    const {data,error}=await client.from('saved_teams').select('id,name,team_data').eq('id',id).eq('user_id',user.id).single();
+    if(error)throw error;
+    const snapshot=data.team_data;
+    if(!snapshot||snapshot.format!=='pokemon-champions-companion-team'||!Array.isArray(snapshot.slots))throw new Error('Dieses Team hat ein ungültiges Datenformat.');
+    await teamBuilderApplySnapshot({...snapshot,name:data.name||snapshot.name});
+    teamBuilderCloudCurrentId=data.id;
+    teamBuilderCurrentId=null;
+    if($('teamBuilderName'))$('teamBuilderName').value=data.name||snapshot.name||'Mein Team';
+    teamBuilderCloudMessage(uiLang==='en'?'Team loaded. Save changes with “Save to account”.':'Team geladen. Änderungen kannst du mit „Im Konto speichern“ sichern.');
+    await teamBuilderCloudRefresh();
+    document.querySelector('#builder')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){console.error('Cloud team load:',e);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
+}
+async function teamBuilderCloudDelete(id){
+  const ok=confirm(uiLang==='en'?'Permanently delete this account team?':'Dieses Konto-Team dauerhaft löschen?');
+  if(!ok)return;
+  try{
+    const {client,user}=await teamBuilderCloudClient();
+    const {error}=await client.from('saved_teams').delete().eq('id',id).eq('user_id',user.id);
+    if(error)throw error;
+    if(teamBuilderCloudCurrentId===id)teamBuilderCloudCurrentId=null;
+    teamBuilderCloudMessage(uiLang==='en'?'Account team deleted.':'Konto-Team wurde gelöscht.');
+    await teamBuilderCloudRefresh();
+  }catch(e){console.error('Cloud team delete:',e);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
+}
+function bindTeamBuilderCloud(){
+  $('teamBuilderCloudSave')?.addEventListener('click',teamBuilderCloudSave);
+  $('teamBuilderCloudRefresh')?.addEventListener('click',teamBuilderCloudRefresh);
+  const root=$('teamBuilderCloudTeams');if(!root||teamBuilderCloudEventsBound)return;
+  root.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-cloud-team-action]');if(!btn)return;
+    const id=btn.dataset.cloudTeamId;
+    if(btn.dataset.cloudTeamAction==='load')teamBuilderCloudLoad(id);
+    if(btn.dataset.cloudTeamAction==='delete')teamBuilderCloudDelete(id);
+  });
+  teamBuilderCloudEventsBound=true;
+}
 
 function csvFields(line){const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}
 async function loadCSV(lang,kind,file,languageId){const c=new AbortController(),tm=setTimeout(()=>c.abort(),12000);let r;try{r=await fetch(LOCAL+file,{cache:'force-cache',signal:c.signal})}finally{clearTimeout(tm)}if(!r.ok)throw Error(r.status);const t=await r.text(),lines=t.split(/\r?\n/);for(let i=1;i<lines.length;i++){if(!lines[i])continue;const row=csvFields(lines[i]);if(row.length>=3&&row[1]===String(languageId))localized[lang][kind][row[0]]=row[2]}}
@@ -2819,7 +2919,7 @@ function bindTeamBuilder(){
     }
   }
 }
-function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();bindTeamBuilderSaved();$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
+function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();bindTeamBuilderSaved();bindTeamBuilderCloud();$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
 
 async function init(){nav();$('metaSource')?.addEventListener('change',renderMeta);$('metaView')?.addEventListener('change',renderMeta);$('metaMoreStats')?.addEventListener('click',()=>{metaStatsExpanded=!metaStatsExpanded;renderMeta()});$('metaMoreBest')?.addEventListener('click',()=>{metaBestExpanded=!metaBestExpanded;renderMeta()});$('metaShowAllTeams')?.addEventListener('click',()=>{metaConcreteExpanded=!metaConcreteExpanded;renderMeta()});$('randomizeButton')?.addEventListener('click',randomizeTeam);$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(dexInitialList());$('search').focus()};$('dexTypeFilter')?.addEventListener('change',e=>changeDexType(e.target.value));$('dexFilter')?.addEventListener('change',e=>{dexFilter=e.target.value==='champions'?'champions':'all';showMCOnly=false;showAllPokemon=false;$('showMCPokemon').textContent=t('showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList())});$('showAllPokemon').onclick=()=>{showAllPokemon=!showAllPokemon;showMCOnly=false;$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');if($('showMCPokemon'))$('showMCPokemon').textContent=t('showMC');$('suggestions').innerHTML='';if($('search').value.trim())$('search').value='';render(dexInitialList());};
   $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBack').onclick=()=>{if(currentEvolutionSpecies)openEvolutionModal(currentEvolutionSpecies)};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});

@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v7.10.6</title>
-<link rel="stylesheet" href="style.css?v=7.10.4">
+<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.0</title>
+<link rel="stylesheet" href="style.css?v=8.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style id="v14-calculator">
@@ -59,7 +59,7 @@
 </style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 7.10.3</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -77,7 +77,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 7.10.3</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 8.0</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -205,7 +205,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 7.10.3</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -219,7 +219,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 7.10.3</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 8.0</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -229,18 +229,25 @@
       <label><span data-i18n="teamBuilderNameLabel">Teamname</span><input id="teamBuilderName" type="text" maxlength="60" placeholder="Mein Team" autocomplete="off"></label>
       <div class="team-builder-save-actions">
         <button id="teamBuilderNew" class="secondary" type="button" data-i18n="teamBuilderNew">Neues Team</button>
-        <button id="teamBuilderSave" class="primary" type="button" data-i18n="teamBuilderSave">Speichern</button>
+        <button id="teamBuilderSave" class="primary" type="button" data-i18n="teamBuilderSave">Lokal speichern</button>
+        <button id="teamBuilderCloudSave" class="primary" type="button">Im Konto speichern</button>
+        <button id="teamBuilderCloudRefresh" class="secondary" type="button">Konto-Teams laden</button>
         <button id="teamBuilderImport" class="secondary" type="button" data-i18n="teamBuilderImport">Importieren</button>
         <button id="teamBuilderExportCurrent" class="secondary" type="button" data-i18n="teamBuilderExport">Exportieren</button>
       </div>
       <div id="teamBuilderSaveStatus" class="team-builder-save-status"></div>
-      <p class="team-builder-form-note" data-i18n="teamBuilderLocalNote">Gespeicherte Teams liegen nur in deinem Browser bzw. in der App auf diesem Gerät. Andere Nutzer sehen sie nicht.</p>
+      <p class="team-builder-form-note">„Lokal speichern“ speichert nur auf diesem Gerät. „Im Konto speichern“ synchronisiert das Team über Supabase, damit du es auf anderen Geräten laden kannst.</p>
     </div>
   </div>
   <div id="teamBuilderSlots" class="team-builder-slots"></div>
   <div class="card team-builder-saved-wrap">
-    <div class="team-builder-saved-head-main"><div><h2 data-i18n="teamBuilderSavedTitle">Meine Teams</h2><p class="team-builder-hint" data-i18n="teamBuilderSavedHint">Hier findest du deine lokal gespeicherten Teams. JSON-Dateien kannst du später wieder importieren.</p></div></div>
+    <div class="team-builder-saved-head-main"><div><h2>Meine lokal gespeicherten Teams</h2><p class="team-builder-hint">Diese Teams liegen nur in diesem Browser bzw. auf diesem Gerät.</p></div></div>
     <div id="teamBuilderSavedTeams" class="team-builder-saved-list"></div>
+  </div>
+  <div class="card team-builder-saved-wrap">
+    <div class="team-builder-saved-head-main"><div><h2>Meine Konto-Teams</h2><p class="team-builder-hint">Diese Teams werden in deinem angemeldeten Supabase-Konto gespeichert und sind auf anderen Geräten verfügbar.</p></div></div>
+    <div id="teamBuilderCloudStatus" class="team-builder-save-status" role="status"></div>
+    <div id="teamBuilderCloudTeams" class="team-builder-saved-list"></div>
   </div>
 </section>
 <section id="meta" class="page">
@@ -267,5 +274,5 @@
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><button id="infoBack" class="info-back" type="button" hidden aria-label="Zurück zu den Entwicklungen" title="Zurück zu den Entwicklungen">←</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
 <script>window.PCC_SUPABASE_URL="https://sgaejcrfxaxzutkkceio.supabase.co";window.PCC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_VwDgGoolKrDfPIaSqu72jg_Kfi949Lp";</script>
-<script src="app.js?v=7.10.4"></script>
+<script src="app.js?v=8.0"></script>
 </body></html>
