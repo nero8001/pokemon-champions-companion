@@ -1,6 +1,11 @@
-# Pokémon Champions Companion v8.2
+# Pokémon Champions Companion v8.3
 
-## Neu in v8.2
+## Neu in v8.3
+- Beim lokalen Speichern und beim Speichern im Konto erscheint eine Bestätigung mit dem Teamnamen.
+- Die Bestätigung verwendet jeweils den vorhandenen Statusbereich und ersetzt die vorherige Meldung, statt Meldungen zu stapeln.
+- Die Erfolgsmeldung beim Speichern im Konto bleibt nach dem Aktualisieren der Teamliste sichtbar.
+
+## Bereits in v8.2
 - Die obere Navigation bleibt sichtbar, auch wenn Team-Builder-Pokémon oder leere Slots ausgeklappt sind.
 - In **Meine Teams** können Account-Teams jetzt über **Umbenennen** direkt in Supabase umbenannt werden; Name und Teamdaten bleiben synchron.
 
