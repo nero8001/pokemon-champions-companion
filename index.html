@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.1</title>
+<meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.9</title>
 <link rel="stylesheet" href="style.css?v=8.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -27,7 +27,7 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuChangePassword" type="button" class="secondary" hidden>Passwort ändern</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
 <section id="accountPanel" class="account-page card" style="display:none;margin:16px auto;max-width:700px;padding:22px" aria-labelledby="accountPageTitle">
   <button id="accountBack" type="button" class="secondary">← Zur Startseite</button>
@@ -36,9 +36,9 @@
   <form id="authForm">
     <label>E-Mail<input id="authEmail" type="email" autocomplete="email" required style="width:100%" placeholder="name@example.com"></label>
     <label>Passwort<input id="authPassword" type="password" autocomplete="current-password" required minlength="8" style="width:100%" placeholder="Mindestens 8 Zeichen"></label>
-    <div class="auth-actions"><button id="authSignIn" type="button" class="secondary">Anmelden</button><button id="authSignUp" type="button" class="secondary">Registrieren</button></div>
+    <div class="auth-actions"><button id="authSignIn" type="button" class="secondary">Anmelden</button><button id="authSignUp" type="button" class="secondary">Registrieren</button><button id="authPasswordReset" type="button" class="secondary">Passwort zurücksetzen</button></div>
   </form>
-  <small>Dein Passwort wird nicht in dieser App gespeichert. Deine Teams bleiben vorerst lokal gespeichert, bis die Cloud-Synchronisierung eingerichtet ist.</small>
+  <small>Dein Passwort wird sicher von Supabase verwaltet. Mit deinem Konto kannst du Teams zwischen Geräten synchronisieren.</small>
 </section>
 <div id="deleteAccountDialog" class="delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="deleteAccountTitle">
   <div class="delete-dialog-backdrop" data-delete-cancel></div>
@@ -51,15 +51,36 @@
     <div class="auth-actions"><button id="deleteAccountCancel" type="button" class="secondary">Abbrechen</button><button id="deleteAccountConfirmButton" type="button" class="danger-button" disabled>Konto endgültig löschen</button></div>
   </section>
 </div>
+<div id="changePasswordDialog" class="delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="changePasswordTitle">
+  <div class="delete-dialog-backdrop" data-password-cancel></div>
+  <section class="delete-dialog-card">
+    <h2 id="changePasswordTitle">Passwort ändern</h2>
+    <p>Wähle ein neues Passwort mit mindestens 8 Zeichen.</p>
+    <label for="newAccountPassword">Neues Passwort</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Mindestens 8 Zeichen">
+    <label for="confirmAccountPassword">Neues Passwort wiederholen</label><input id="confirmAccountPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Passwort bestätigen">
+    <p id="changePasswordStatus" role="status" aria-live="polite"></p>
+    <div class="auth-actions"><button id="changePasswordCancel" type="button" class="secondary">Abbrechen</button><button id="changePasswordSubmit" type="button" class="primary">Passwort speichern</button></div>
+  </section>
+</div>
+<div id="teamLinkDialog" class="delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="teamLinkTitle">
+  <div class="delete-dialog-backdrop" data-team-link-cancel></div>
+  <section class="delete-dialog-card team-link-dialog-card">
+    <h2 id="teamLinkTitle">Team-Link laden</h2>
+    <p>Füge einen geteilten Team-Link ein. Das geladene Team ersetzt die aktuelle Team-Builder-Auswahl.</p>
+    <label for="teamLinkInput">Team-Link</label><textarea id="teamLinkInput" rows="4" autocomplete="off" placeholder="https://…/#share-team=…"></textarea>
+    <p id="teamLinkStatus" role="status" aria-live="polite"></p>
+    <div class="auth-actions"><button id="teamLinkCancel" type="button" class="secondary">Abbrechen</button><button id="teamLinkLoad" type="button" class="primary">Laden</button></div>
+  </section>
+</div>
 <div id="authToast" class="auth-toast" role="status" aria-live="polite" hidden></div>
 <style>.top-tools{display:flex;align-items:center;gap:8px}.lang-label{font-size:13px;color:#aeb7d3;margin:0}.top-tools select{height:42px;border-radius:10px;border:1px solid #34405e;background:#080e1b;color:#fff;padding:0 10px}@media(max-width:700px){header{flex-wrap:wrap;gap:10px}.top-tools{order:3;width:100%;justify-content:flex-end}.lang-label{font-size:12px}}</style>
 <style>
-.danger-button{background:#8f2634!important;color:#fff!important;border:1px solid #c94c5b!important}.delete-dialog[hidden],.auth-toast[hidden]{display:none!important}.delete-dialog{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:20px}.delete-dialog-backdrop{position:absolute;inset:0;background:#000b}.delete-dialog-card{position:relative;width:min(100%,480px);padding:24px;border:1px solid #8f2634;border-radius:16px;background:#10182b;color:#f4f6ff;box-shadow:0 18px 60px #0009}.delete-dialog-card label{display:block;margin:12px 0 4px}.delete-dialog-card input{box-sizing:border-box;width:100%;padding:12px;border-radius:9px;background:#080e1b;color:white;border:1px solid #465477}.auth-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;max-width:calc(100% - 32px);padding:13px 18px;border-radius:12px;background:#174c3b;color:#fff;border:1px solid #46bd91;box-shadow:0 8px 30px #0008}.account-entry{white-space:nowrap}.account-dropdown{position:absolute;right:0;top:calc(100% + 8px);z-index:1000;min-width:150px;padding:8px;background:#10182b;border:1px solid #34405e;border-radius:12px;box-shadow:0 8px 28px #0008}.account-dropdown[hidden]{display:none}.menu-wrap{position:relative}.account-page label{display:block;margin:14px 0;color:#cbd3e8}.account-page input{box-sizing:border-box;margin-top:6px;padding:12px;border-radius:9px;border:1px solid #465477;background:#080e1b;color:#fff}.auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.account-page small{display:block;margin-top:12px;opacity:.8}.account-page[style*="display: none"]{display:none!important}
+.danger-button{background:#8f2634!important;color:#fff!important;border:1px solid #c94c5b!important}.delete-dialog[hidden],.auth-toast[hidden]{display:none!important}.delete-dialog{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:20px}.delete-dialog-backdrop{position:absolute;inset:0;background:#000b}.delete-dialog-card{position:relative;width:min(100%,480px);padding:24px;border:1px solid #8f2634;border-radius:16px;background:#10182b;color:#f4f6ff;box-shadow:0 18px 60px #0009}.delete-dialog-card label{display:block;margin:12px 0 4px}.delete-dialog-card input,.delete-dialog-card textarea{box-sizing:border-box;width:100%;padding:12px;border-radius:9px;background:#080e1b;color:white;border:1px solid #465477;font:inherit}.team-link-dialog-card{border-color:rgba(91,205,210,.5)}.team-link-dialog-card textarea{resize:vertical;min-height:100px;overflow-wrap:anywhere}.auth-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;max-width:calc(100% - 32px);padding:13px 18px;border-radius:12px;background:#174c3b;color:#fff;border:1px solid #46bd91;box-shadow:0 8px 30px #0008}.account-entry{white-space:nowrap}.account-dropdown{position:absolute;right:0;top:calc(100% + 8px);z-index:1000;min-width:150px;padding:8px;background:#10182b;border:1px solid #34405e;border-radius:12px;box-shadow:0 8px 28px #0008}.account-dropdown[hidden]{display:none}.menu-wrap{position:relative}.account-page label{display:block;margin:14px 0;color:#cbd3e8}.account-page input{box-sizing:border-box;margin-top:6px;padding:12px;border-radius:9px;border:1px solid #465477;background:#080e1b;color:#fff}.auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.account-page small{display:block;margin-top:12px;opacity:.8}.account-page[style*="display: none"]{display:none!important}
 @media(max-width:700px){.account-entry{font-size:12px;padding:9px 10px}.menu-wrap{display:flex;gap:7px;align-items:center}}
 </style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 8.2</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 8.9</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -77,7 +98,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 8.2</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 8.9</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -205,7 +226,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 8.2</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 8.9</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -219,7 +240,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 8.2</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 8.9</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -233,6 +254,7 @@
         <button id="teamBuilderCloudSave" class="primary" type="button">Im Konto speichern</button>
         <button id="teamBuilderCloudRefresh" class="secondary" type="button">Konto-Teams laden</button>
         <button id="teamBuilderImport" class="secondary" type="button" data-i18n="teamBuilderImport">Importieren</button>
+        <button id="teamBuilderLoadLink" class="secondary" type="button">Team-Link</button>
         <button id="teamBuilderExportCurrent" class="secondary" type="button" data-i18n="teamBuilderExport">Exportieren</button>
       </div>
       <div id="teamBuilderSaveStatus" class="team-builder-save-status"></div>

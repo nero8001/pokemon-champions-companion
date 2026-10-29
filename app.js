@@ -1,5 +1,5 @@
 
-// Pokémon Champions Companion v8.1 — account auth and cloud team storage (publishable key only).
+// Pokémon Champions Companion v8.9 — team links and password management (publishable key only).
 let pccSupabase = null;
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
@@ -14,12 +14,12 @@ function pccShowAccountPage(show=true){
 async function pccRefreshAuth(){
   if(!pccSupabase)return;
   const {data,error}=await pccSupabase.auth.getSession(); const session=data?.session;
-  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const del=document.getElementById('accountMenuDelete');
+  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const changePassword=document.getElementById('accountMenuChangePassword'); const del=document.getElementById('accountMenuDelete');
   if(entry)entry.textContent=session?'Mein Konto':'Anmelden/Registrieren';
   const cloudSave=document.getElementById('teamBuilderCloudSave'),cloudRefresh=document.getElementById('teamBuilderCloudRefresh');if(cloudSave)cloudSave.disabled=!session;if(cloudRefresh)cloudRefresh.disabled=!session;
   const source=document.getElementById('myTeamsSource');if(source){if(session){source.disabled=false;if(!source.dataset.userDefaulted){source.value='account';source.dataset.userDefaulted='1';}}else{source.value='local';source.disabled=true;source.dataset.userDefaulted='';}}
   const recentSource=document.getElementById('recentTeamsSource');if(recentSource){recentSource.querySelector('option[value=account]')?.toggleAttribute('disabled',!session);if(!session)recentSource.value='local';}
-  if(logout)logout.hidden=!session;if(del)del.hidden=!session;
+  if(logout)logout.hidden=!session;if(changePassword)changePassword.hidden=!session;if(del)del.hidden=!session;
   if(error)pccAuthStatus('Sitzungsstatus konnte nicht geladen werden: '+error.message);
   else if(session)pccAuthStatus('Angemeldet als '+(session.user.email||'Nutzer')+'.');
   else pccAuthStatus('Melde dich an oder erstelle ein Konto.');
@@ -39,6 +39,27 @@ function pccInitSupabaseAuth(){
   const deleteDialog=document.getElementById('deleteAccountDialog'),deleteInput=document.getElementById('deleteAccountConfirm'),deleteButton=document.getElementById('deleteAccountConfirmButton'),deleteStatus=document.getElementById('deleteAccountStatus');
   const closeDelete=()=>{if(deleteDialog)deleteDialog.hidden=true;if(deleteInput)deleteInput.value='';if(deleteButton)deleteButton.disabled=true;if(deleteStatus)deleteStatus.textContent='';};
   document.getElementById('accountMenuDelete')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;deleteDialog.hidden=false;deleteInput.value='';deleteButton.disabled=true;deleteInput.focus();});
+  const changePasswordDialog=document.getElementById('changePasswordDialog');
+  const newPasswordInput=document.getElementById('newAccountPassword');
+  const confirmPasswordInput=document.getElementById('confirmAccountPassword');
+  const changePasswordStatus=document.getElementById('changePasswordStatus');
+  const changePasswordSubmit=document.getElementById('changePasswordSubmit');
+  const closeChangePassword=()=>{if(changePasswordDialog)changePasswordDialog.hidden=true;if(newPasswordInput)newPasswordInput.value='';if(confirmPasswordInput)confirmPasswordInput.value='';if(changePasswordStatus)changePasswordStatus.textContent='';if(changePasswordSubmit)changePasswordSubmit.disabled=false;};
+  document.getElementById('accountMenuChangePassword')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changePasswordDialog.hidden=false;newPasswordInput.value='';confirmPasswordInput.value='';changePasswordStatus.textContent='';newPasswordInput.focus();});
+  document.getElementById('changePasswordCancel')?.addEventListener('click',closeChangePassword);
+  changePasswordDialog?.querySelector('[data-password-cancel]')?.addEventListener('click',closeChangePassword);
+  changePasswordSubmit?.addEventListener('click',async()=>{
+    const password=newPasswordInput?.value||'',confirmation=confirmPasswordInput?.value||'';
+    if(password.length<8){changePasswordStatus.textContent='Das neue Passwort muss mindestens 8 Zeichen lang sein.';newPasswordInput?.focus();return;}
+    if(password!==confirmation){changePasswordStatus.textContent='Die Passwörter stimmen nicht überein.';confirmPasswordInput?.focus();return;}
+    changePasswordSubmit.disabled=true;changePasswordStatus.textContent='Passwort wird geändert …';
+    try{
+      const {data,error}=await pccSupabase.auth.updateUser({password});
+      if(error)throw error;
+      closeChangePassword();pccToast('Dein Passwort wurde geändert.');
+      if(data?.user?.email)pccAuthStatus('Angemeldet als '+data.user.email+'.');
+    }catch(e){changePasswordStatus.textContent='Passwort konnte nicht geändert werden: '+(e.message||'Unbekannter Fehler');changePasswordSubmit.disabled=false;}
+  });
   document.getElementById('deleteAccountCancel')?.addEventListener('click',closeDelete);
   deleteDialog?.querySelector('[data-delete-cancel]')?.addEventListener('click',closeDelete);
   deleteInput?.addEventListener('input',()=>{deleteButton.disabled=deleteInput.value!=='Löschen';});
@@ -95,6 +116,15 @@ function pccInitSupabaseAuth(){
     if(data.session){pccAuthStatus('Konto erstellt. Du wirst zur Startseite weitergeleitet.');await pccRefreshAuth();setTimeout(()=>pccShowAccountPage(false),700);}
     else pccAuthStatus('Registrierung gestartet. Prüfe dein E-Mail-Postfach. Der Bestätigungslink sollte zur Companion-Web-App zurückführen.');
   });
+  document.getElementById('authPasswordReset')?.addEventListener('click',async()=>{
+    const email=emailInput?.value.trim();
+    if(!email){pccAuthStatus('Bitte gib zuerst deine E-Mail-Adresse ein.');emailInput?.focus();return;}
+    pccAuthStatus('Anfrage zum Zurücksetzen wird gesendet …');
+    const redirectTo=window.location.origin+window.location.pathname;
+    const {error}=await pccSupabase.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error){pccAuthStatus('Passwort-Zurücksetzen fehlgeschlagen: '+error.message);return;}
+    pccAuthStatus('Falls ein Konto zu dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen des Passworts.');
+  });
   document.getElementById('authSignIn')?.addEventListener('click',async()=>{
     const email=emailInput?.value.trim(),password=passwordInput?.value;
     if(!email||!password){pccAuthStatus('Bitte E-Mail und Passwort eingeben.');return;}
@@ -105,6 +135,7 @@ function pccInitSupabaseAuth(){
   const confirmationInUrl=window.location.hash.includes('access_token')||new URLSearchParams(window.location.search).has('code');
   pccSupabase.auth.onAuthStateChange((event)=>{
     pccRefreshAuth().catch(console.error);
+    if(event==='PASSWORD_RECOVERY'){const dialog=document.getElementById('changePasswordDialog');if(dialog){dialog.hidden=false;const status=document.getElementById('changePasswordStatus');if(status)status.textContent='Lege jetzt dein neues Passwort fest.';document.getElementById('newAccountPassword')?.focus();}}
     if(event==='SIGNED_IN'&&confirmationInUrl){history.replaceState(null,'',window.location.pathname+window.location.search);pccShowAccountPage(false);pccToast('Bestätigung erfolgreich');}
   });
   if(confirmationInUrl){setTimeout(async()=>{const {data}=await pccSupabase.auth.getSession();if(data?.session){history.replaceState(null,'',window.location.pathname+window.location.search);pccShowAccountPage(false);pccToast('Bestätigung erfolgreich');}},900);}
@@ -637,6 +668,38 @@ function teamBuilderShowSharePreview(snapshot){
       alert(uiLang==='en'?'Could not load this team.':'Das Team konnte nicht geladen werden.');
     }
   });
+}
+function teamBuilderOpenLinkDialog(){
+  const dialog=$('teamLinkDialog'),input=$('teamLinkInput'),status=$('teamLinkStatus');
+  if(!dialog||!input)return;
+  input.value='';if(status)status.textContent='';dialog.hidden=false;input.focus();
+}
+function teamBuilderCloseLinkDialog(){const dialog=$('teamLinkDialog');if(dialog)dialog.hidden=true;if($('teamLinkStatus'))$('teamLinkStatus').textContent='';}
+function teamBuilderTokenFromInput(value){
+  const raw=String(value||'').trim();if(!raw)throw new Error('Bitte füge einen Team-Link ein.');
+  const match=raw.match(/#share-team=([^\s&]+)/i);
+  const token=match?match[1].trim():raw;
+  if(!/^[A-Za-z0-9_-]+$/.test(token))throw new Error('Das sieht nicht wie ein gültiger Team-Link aus.');
+  return token;
+}
+async function teamBuilderLoadFromLink(){
+  const status=$('teamLinkStatus'),button=$('teamLinkLoad');
+  try{
+    const token=teamBuilderTokenFromInput($('teamLinkInput')?.value);
+    const snapshot=teamBuilderDecodeShareToken(token);
+    if(button)button.disabled=true;if(status)status.textContent=uiLang==='en'?'Loading team …':'Team wird geladen …';
+    await teamBuilderApplySnapshot(snapshot);
+    teamBuilderCurrentId=null;teamBuilderCloudCurrentId=null;
+    teamBuilderCurrentName=String(snapshot.name||'Geteiltes Team');
+    teamBuilderMarkRecent('local','shared-'+Date.now(),teamBuilderCurrentName,snapshot);
+    if($('teamBuilderName'))$('teamBuilderName').value=teamBuilderCurrentName;
+    renderRecentTeams();teamBuilderCloseLinkDialog();
+    teamBuilderSetStatus(uiLang==='en'?'Shared team loaded. Save it locally or to your account to keep your own copy.':'Geteiltes Team geladen. Speichere es lokal oder in deinem Konto, um eine eigene Kopie zu behalten.');
+    document.querySelector('.nav[data-page=builder]')?.click();
+  }catch(e){
+    console.error('Team-Link laden:',e);
+    if(status)status.textContent=(uiLang==='en'?'Could not load team: ':'Team konnte nicht geladen werden: ')+(e.message||'Ungültiger Link');
+  }finally{if(button)button.disabled=false;}
 }
 async function teamBuilderHandleSharedLink(){
   const match=location.hash.match(/^#share-team=(.+)$/);
@@ -3121,7 +3184,7 @@ function bindTeamBuilder(){
     }
   }
 }
-function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();renderRecentTeams();bindTeamBuilderSaved();bindTeamBuilderCloud();$('recentTeamsSource')?.addEventListener('change',renderRecentTeams);$('recentTeamsList')?.addEventListener('click',e=>{const b=e.target.closest('[data-recent-source]');if(!b)return;if(b.dataset.recentSource==='local')teamBuilderLoad(b.dataset.recentId);else teamBuilderCloudLoad(b.dataset.recentId)});$('myTeamsSource')?.addEventListener('change',refreshMyTeamsPage);$('myTeamsRefresh')?.addEventListener('click',refreshMyTeamsPage);$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());$('teamBuilderShareCurrent')?.addEventListener('click',()=>teamBuilderShare(teamBuilderSnapshot(String($('teamBuilderName')?.value||teamBuilderCurrentName||'Mein Team'))));if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
+function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();renderRecentTeams();bindTeamBuilderSaved();bindTeamBuilderCloud();$('recentTeamsSource')?.addEventListener('change',renderRecentTeams);$('recentTeamsList')?.addEventListener('click',e=>{const b=e.target.closest('[data-recent-source]');if(!b)return;if(b.dataset.recentSource==='local')teamBuilderLoad(b.dataset.recentId);else teamBuilderCloudLoad(b.dataset.recentId)});$('myTeamsSource')?.addEventListener('change',refreshMyTeamsPage);$('myTeamsRefresh')?.addEventListener('click',refreshMyTeamsPage);$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderLoadLink')?.addEventListener('click',teamBuilderOpenLinkDialog);$('teamLinkLoad')?.addEventListener('click',teamBuilderLoadFromLink);$('teamLinkCancel')?.addEventListener('click',teamBuilderCloseLinkDialog);$('teamLinkDialog')?.querySelector('[data-team-link-cancel]')?.addEventListener('click',teamBuilderCloseLinkDialog);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());$('teamBuilderShareCurrent')?.addEventListener('click',()=>teamBuilderShare(teamBuilderSnapshot(String($('teamBuilderName')?.value||teamBuilderCurrentName||'Mein Team'))));if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
 
 async function init(){nav();$('metaSource')?.addEventListener('change',renderMeta);$('metaView')?.addEventListener('change',renderMeta);$('metaMoreStats')?.addEventListener('click',()=>{metaStatsExpanded=!metaStatsExpanded;renderMeta()});$('metaMoreBest')?.addEventListener('click',()=>{metaBestExpanded=!metaBestExpanded;renderMeta()});$('metaShowAllTeams')?.addEventListener('click',()=>{metaConcreteExpanded=!metaConcreteExpanded;renderMeta()});$('randomizeButton')?.addEventListener('click',randomizeTeam);$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(dexInitialList());$('search').focus()};$('dexTypeFilter')?.addEventListener('change',e=>changeDexType(e.target.value));$('dexFilter')?.addEventListener('change',e=>{dexFilter=e.target.value==='champions'?'champions':'all';showMCOnly=false;showAllPokemon=false;$('showMCPokemon').textContent=t('showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList())});$('showAllPokemon').onclick=()=>{showAllPokemon=!showAllPokemon;showMCOnly=false;$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');if($('showMCPokemon'))$('showMCPokemon').textContent=t('showMC');$('suggestions').innerHTML='';if($('search').value.trim())$('search').value='';render(dexInitialList());};
   $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBack').onclick=()=>{if(currentEvolutionSpecies)openEvolutionModal(currentEvolutionSpecies)};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
