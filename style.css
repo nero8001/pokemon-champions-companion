@@ -316,3 +316,10 @@
 #myTeamsAccountPanel[hidden],#myTeamsLocalPanel[hidden]{display:none!important}
 .recent-teams-wrap{margin-top:16px}
 @media(max-width:650px){.team-builder-save-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.team-source-label{width:100%;justify-content:space-between}.team-source-label select{flex:1}}
+
+
+/* v8.2 – Keep the navigation above expanded Team-Builder slots */
+header{z-index:20000}
+.team-builder-slot[open]{z-index:1}
+.team-builder-slot[open].team-builder-active-search{z-index:10}
+.team-builder-suggestions,.team-builder-move-suggestions,.team-builder-item-suggestions{z-index:15}

@@ -570,7 +570,7 @@ function renderTeamBuilderCloudList(list){
     const snapshot=team.team_data||{};
     const slots=Array.isArray(snapshot.slots)?snapshot.slots:[];
     const mons=slots.filter(s=>s?.pokemonId).slice(0,6);
-    return `<article class="team-builder-saved-card ${team.id===teamBuilderCloudCurrentId?'active':''}"><div class="team-builder-saved-head"><div><b>${escapeHtml(team.name||snapshot.name||'Mein Team')}</b><small>${mons.length} / 6 Pokémon · Konto</small></div><span>${team.updated_at?new Date(team.updated_at).toLocaleDateString(uiLang==='en'?'en-GB':'de-DE'):''}</span></div><div class="team-builder-saved-preview">${mons.map(s=>`<div title="${escapeHtml(s.formLabel||'')}"><img src="${sprite(s.pokemonId)}" alt=""><span>${escapeHtml(s.formLabel||title(s.pokemonId))}</span></div>`).join('')}</div><div class="team-builder-saved-actions"><button type="button" class="secondary" data-cloud-team-action="load" data-cloud-team-id="${escapeHtml(team.id)}">Laden</button><button type="button" class="danger" data-cloud-team-action="delete" data-cloud-team-id="${escapeHtml(team.id)}">Löschen</button></div></article>`;
+    return `<article class="team-builder-saved-card ${team.id===teamBuilderCloudCurrentId?'active':''}"><div class="team-builder-saved-head"><div><b>${escapeHtml(team.name||snapshot.name||'Mein Team')}</b><small>${mons.length} / 6 Pokémon · Konto</small></div><span>${team.updated_at?new Date(team.updated_at).toLocaleDateString(uiLang==='en'?'en-GB':'de-DE'):''}</span></div><div class="team-builder-saved-preview">${mons.map(s=>`<div title="${escapeHtml(s.formLabel||'')}"><img src="${sprite(s.pokemonId)}" alt=""><span>${escapeHtml(s.formLabel||title(s.pokemonId))}</span></div>`).join('')}</div><div class="team-builder-saved-actions"><button type="button" class="secondary" data-cloud-team-action="load" data-cloud-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Load':'Laden')}</button><button type="button" class="secondary" data-cloud-team-action="rename" data-cloud-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Rename':'Umbenennen')}</button><button type="button" class="danger" data-cloud-team-action="delete" data-cloud-team-id="${escapeHtml(team.id)}">${escapeHtml(uiLang==='en'?'Delete':'Löschen')}</button></div></article>`;
   }).join('');
 }
 async function teamBuilderCloudLoad(id){
@@ -590,6 +590,31 @@ async function teamBuilderCloudLoad(id){
     document.querySelector('.nav[data-page=builder]')?.click();
   }catch(e){console.error('Cloud team load:',e);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
 }
+async function teamBuilderCloudRename(id){
+  try{
+    const {client,user}=await teamBuilderCloudClient();
+    const {data,error}=await client.from('saved_teams').select('id,name,team_data').eq('id',id).eq('user_id',user.id).single();
+    if(error)throw error;
+    const current=String(data.name||data.team_data?.name||'Mein Team');
+    const entered=prompt(uiLang==='en'?'New team name:':'Neuer Teamname:',current);
+    if(entered===null)return;
+    const name=String(entered).trim();
+    if(!name){teamBuilderCloudMessage(uiLang==='en'?'The team name cannot be empty.':'Der Teamname darf nicht leer sein.');return;}
+    const snapshot={...(data.team_data||{}),name};
+    const {error:updateError}=await client.from('saved_teams').update({name,team_data:snapshot,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',user.id);
+    if(updateError)throw updateError;
+    const recents=teamBuilderRecentLoad().map(x=>x.source==='account'&&String(x.id)===String(id)?{...x,name,snapshot:{...x.snapshot,name}}:x);
+    try{localStorage.setItem(TEAM_RECENT_KEY,JSON.stringify(recents))}catch(e){}
+    if(String(teamBuilderCloudCurrentId)===String(id)){
+      teamBuilderCurrentName=name;
+      if($('teamBuilderName'))$('teamBuilderName').value=name;
+    }
+    renderRecentTeams();
+    teamBuilderCloudMessage(uiLang==='en'?'Team renamed.':'Team wurde umbenannt.');
+    await teamBuilderCloudRefresh();
+  }catch(e){console.error('Cloud team rename:',e);teamBuilderCloudMessage(teamBuilderCloudFriendlyError(e));}
+}
+
 async function teamBuilderCloudDelete(id){
   const ok=confirm(uiLang==='en'?'Permanently delete this account team?':'Dieses Konto-Team dauerhaft löschen?');
   if(!ok)return;
@@ -610,6 +635,7 @@ function bindTeamBuilderCloud(){
     const btn=e.target.closest('[data-cloud-team-action]');if(!btn)return;
     const id=btn.dataset.cloudTeamId;
     if(btn.dataset.cloudTeamAction==='load')teamBuilderCloudLoad(id);
+    if(btn.dataset.cloudTeamAction==='rename')teamBuilderCloudRename(id);
     if(btn.dataset.cloudTeamAction==='delete')teamBuilderCloudDelete(id);
   });
   teamBuilderCloudEventsBound=true;
