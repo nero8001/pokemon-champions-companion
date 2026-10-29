@@ -28,3 +28,9 @@
 - Teams können aus dem Team-Builder sowie aus lokalen und Account-Teamkarten über einen Link geteilt werden.
 - Der Link enthält die Teamkonfiguration direkt im URL-Fragment; keine zusätzliche Supabase-Tabelle oder SQL-Änderung nötig.
 - Beim Öffnen kann das Team in den Team-Builder geladen und anschließend lokal oder im Konto als eigene Kopie gespeichert werden.
+
+
+## Version 8.6 – Kompakte Team-Vorschau
+- Geteilte Team-Links öffnen eine kompakte Vorschauseite mit sechs Pokémon-Slots, Form, Item, Fähigkeit, Wesen und Attacken.
+- Nutzer können das Team erst nach Auswahl von „Team übernehmen“ in den Team-Builder laden.
+- Beim Erstellen eines Links erscheint eine kurze Bestätigung „Link in der Zwischenablage gespeichert“.
