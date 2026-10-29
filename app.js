@@ -528,7 +528,12 @@ function teamBuilderDecodeShareToken(token){
 }
 async function teamBuilderShare(snapshot){
   try{
-    const data={...snapshot,sharedAt:new Date().toISOString()};
+    const data={...snapshot,sharedAt:new Date().toISOString(),slots:(snapshot.slots||[]).map(s=>{
+      if(!s)return s;
+      const item=calcItems.find(x=>String(x.id)===String(s.item));
+      return {...s,itemName:item?(dataName('item',item.id,item.raw)||item.name||title(item.raw)):s.itemName,
+        itemSlug:item?normalizeItemName(item.raw):s.itemSlug};
+    })};
     const token=teamBuilderShareToken(data);
     const url=location.href.split('#')[0]+'#share-team='+token;
     if(url.length>12000){
@@ -564,11 +569,11 @@ function teamBuilderShowSharePreview(snapshot){
     const nature=natureData[Number.isInteger(natureIndex)&&natureIndex>=0&&natureIndex<natureData.length?natureIndex:20];
     const natureText=nature? natureLabel(nature):'';
     const selectedItem=(calcItems||[]).find(x=>String(x.id)===String(s.item));
-    const itemText=selectedItem?(dataName('item',selectedItem.id,selectedItem.raw)||selectedItem.name||selectedItem.raw):(!s.item?(uiLang==='en'?'No item':'Kein Item'):(String(s.item)));
-    const itemSlug=selectedItem?normalizeItemName(selectedItem.raw):'';
+    const itemText=selectedItem?(dataName('item',selectedItem.id,selectedItem.raw)||selectedItem.name||selectedItem.raw):(s.itemName||(!s.item?(uiLang==='en'?'No item':'Kein Item'):(String(s.item))));
+    const itemSlug=(selectedItem?normalizeItemName(selectedItem.raw):String(s.itemSlug||''));
     const itemIcon=itemSlug?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${encodeURIComponent(itemSlug)}.png`:'';
-    const formSlug=form?(/mega/i.test(formLabel)?'mega':/alola|alolan/i.test(formLabel)?'alola':/galar|galarian/i.test(formLabel)?'galar':/hisui|hisuian/i.test(formLabel)?'hisui':/paldea|paldean/i.test(formLabel)?'paldea':null):null;
-    const formSprite=formSlug?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.pokemonId}-${formSlug}.png`:null;
+    // A formId may point to a distinct PokeAPI Pokémon-form ID. Try its artwork first, then fall back safely.
+    const formSprite=form&&s.formId&&String(s.formId)!==String(s.pokemonId)?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${encodeURIComponent(s.formId)}.png`:null;
     const spriteUrl=formSprite||sprite(s.pokemonId);
     const fallbackSprite=escapeHtml(sprite(s.pokemonId));
     return `<article class="pcc-share-mon">
@@ -576,7 +581,7 @@ function teamBuilderShowSharePreview(snapshot){
       <img class="pcc-share-sprite" src="${escapeHtml(spriteUrl)}" alt="${escapeHtml(monName)}" loading="lazy" ${formSprite?`onerror="this.onerror=null;this.src='${fallbackSprite}'"`:''}>
       <div class="pcc-share-mon-name" title="${escapeHtml(monName)}">${escapeHtml(monName)}</div>
       ${form?`<div class="pcc-share-form">✨ ${escapeHtml(form)}</div>`:''}
-      <div class="pcc-share-item" title="${escapeHtml(itemText)}">${itemIcon?`<img class="pcc-share-item-icon" src="${escapeHtml(itemIcon)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<span aria-hidden="true">🎒</span>`}<span>${escapeHtml(itemText)}</span></div>
+      <div class="pcc-share-item" data-item-id="${escapeHtml(s.item||'')}" data-item-slug="${escapeHtml(itemSlug)}" title="${escapeHtml(itemText)}">${itemIcon?`<img class="pcc-share-item-icon" src="${escapeHtml(itemIcon)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<span aria-hidden="true">🎒</span>`}<span class="pcc-share-item-name">${escapeHtml(itemText)}</span></div>
       <div class="pcc-share-meta">${s.ability?escapeHtml(s.ability):''}${natureText?`${s.ability?' · ':''}${escapeHtml(natureText)}`:''}</div>
       ${moves.length?`<div class="pcc-share-moves">${moves.map(m=>`<span>${escapeHtml(m)}</span>`).join('')}</div>`:''}
     </article>`;
@@ -590,6 +595,25 @@ function teamBuilderShowSharePreview(snapshot){
     <div class="pcc-share-footer"><span>${uiLang==='en'?'Anyone with this link can view and import this team.':'Jeder mit diesem Link kann das Team ansehen und übernehmen.'}</span><div><button type="button" class="secondary pcc-share-cancel">${uiLang==='en'?'Close':'Schließen'}</button><button type="button" class="primary pcc-share-import">${uiLang==='en'?'Use this team':'Team übernehmen'}</button></div></div>
   </section>`;
   document.body.appendChild(overlay);
+  // Older links may contain only the numeric PokeAPI item ID. Resolve its canonical name and icon.
+  overlay.querySelectorAll('.pcc-share-item[data-item-id]').forEach(async row=>{
+    const id=String(row.dataset.itemId||'');
+    if(!id||!/^\\d+$/.test(id)||row.querySelector('.pcc-share-item-name')?.textContent!==id)return;
+    try{
+      const itemData=await json(`${API}/item/${encodeURIComponent(id)}`);
+      const slug=normalizeItemName(itemData?.name||'');
+      const localizedName=dataName('item',Number(id),title(itemData?.name||id))||title(itemData?.name||id);
+      const nameEl=row.querySelector('.pcc-share-item-name');
+      if(nameEl)nameEl.textContent=localizedName;
+      row.title=localizedName;
+      if(slug){
+        let icon=row.querySelector('.pcc-share-item-icon');
+        if(!icon){icon=document.createElement('img');icon.className='pcc-share-item-icon';icon.alt='';row.prepend(icon);}
+        icon.src=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${encodeURIComponent(slug)}.png`;
+        icon.onerror=()=>{icon.style.display='none';};
+      }
+    }catch(err){console.warn('Could not resolve shared item:',id,err);}
+  });
   const close=()=>{overlay.remove();history.replaceState(null,'',location.href.split('#')[0]);};
   overlay.querySelector('.pcc-share-close').addEventListener('click',close);
   overlay.querySelector('.pcc-share-cancel').addEventListener('click',close);

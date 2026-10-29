@@ -35,3 +35,8 @@
 - Nutzer können das Team erst nach Auswahl von „Team übernehmen“ in den Team-Builder laden.
 - Beim Erstellen eines Links erscheint eine kurze Bestätigung „Link in der Zwischenablage gespeichert“.
 \n\n## Version 8.7 – Vorschau: Wesen, Itemgrafiken und Formen\n- Wesen werden über den gespeicherten Nature-Index korrekt lokalisiert dargestellt.\n- Items zeigen das offizielle PokeAPI-Item-Sprite plus weiterhin den Itemnamen.\n- Für Mega- und regionale Formen wird zunächst ein passender Form-Sprite geladen, mit Fallback auf den Basis-Sprite.\n
+
+## Version 8.8 – Itemnamen und Form-Sprites
+- Geteilte Teamdaten enthalten jetzt, wenn verfügbar, den ausgeschriebenen Itemnamen und den Item-Slug.
+- Ältere Links versuchen, Itemnamen anhand der Item-ID nachzuladen.
+- Bei alternativen Formen wird zuerst der separate Form-ID-Art-Sprite versucht; bei Fehler wird auf den Basis-Sprite zurückgegriffen.

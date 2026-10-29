@@ -356,3 +356,6 @@ header{z-index:20000}
 /* v8.7: item icons in shared-team preview */
 .pcc-share-item-icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px;image-rendering:auto}
 .pcc-share-item{min-width:0}
+
+.pcc-share-item-icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px;image-rendering:auto}
+.pcc-share-sprite{object-fit:contain}
