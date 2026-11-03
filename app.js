@@ -57,14 +57,17 @@ function pccInitSupabaseAuth(){
     if(password!==confirmation){changePasswordStatus.textContent='Die neuen Passwörter stimmen nicht überein.';confirmPasswordInput?.focus();return;}
     changePasswordSubmit.disabled=true;changePasswordStatus.textContent='Aktuelles Passwort wird geprüft …';
     try{
-      const {data:{user},error:userError}=await pccSupabase.auth.getUser();
-      if(userError)throw userError;
-      if(!user?.email)throw new Error('Zu deinem Konto wurde keine E-Mail-Adresse gefunden. Bitte melde dich erneut an.');
-      const {error:reauthError}=await pccSupabase.auth.signInWithPassword({email:user.email,password:currentPassword});
-      if(reauthError)throw new Error('Das aktuelle Passwort ist nicht korrekt. Bitte überprüfe deine Eingabe.');
       changePasswordStatus.textContent='Passwort wird geändert …';
-      const {data,error}=await pccSupabase.auth.updateUser({password});
-      if(error)throw error;
+      const {data,error}=await pccSupabase.auth.updateUser({password,current_password:currentPassword});
+      if(error){
+        const message=String(error.message||'');
+        if(/current password|required|mismatch|incorrect password|invalid credentials/i.test(message)){
+          throw new Error(/mismatch|incorrect password|invalid credentials/i.test(message)
+            ? 'Das aktuelle Passwort ist nicht korrekt. Bitte überprüfe deine Eingabe.'
+            : 'Supabase hat das aktuelle Passwort nicht erhalten. Bitte lade die Seite neu und versuche es erneut.');
+        }
+        throw error;
+      }
       closeChangePassword();pccToast('Dein Passwort wurde geändert.');
       if(data?.user?.email)pccAuthStatus('Angemeldet als '+data.user.email+'.');
       await pccRefreshAuth();
@@ -72,23 +75,29 @@ function pccInitSupabaseAuth(){
   });
 
   const changeEmailDialog=document.getElementById('changeEmailDialog');
+  const currentEmailInput=document.getElementById('currentAccountEmail');
   const newEmailInput=document.getElementById('newAccountEmail');
   const confirmEmailInput=document.getElementById('confirmAccountEmail');
   const changeEmailStatus=document.getElementById('changeEmailStatus');
   const changeEmailSubmit=document.getElementById('changeEmailSubmit');
-  const closeChangeEmail=()=>{if(changeEmailDialog)changeEmailDialog.hidden=true;if(newEmailInput)newEmailInput.value='';if(confirmEmailInput)confirmEmailInput.value='';if(changeEmailStatus)changeEmailStatus.textContent='';if(changeEmailSubmit)changeEmailSubmit.disabled=false;};
-  document.getElementById('accountMenuChangeEmail')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changeEmailDialog.hidden=false;newEmailInput.value='';confirmEmailInput.value='';changeEmailStatus.textContent='';newEmailInput.focus();});
+  const closeChangeEmail=()=>{if(changeEmailDialog)changeEmailDialog.hidden=true;if(currentEmailInput)currentEmailInput.value='';if(newEmailInput)newEmailInput.value='';if(confirmEmailInput)confirmEmailInput.value='';if(changeEmailStatus)changeEmailStatus.textContent='';if(changeEmailSubmit)changeEmailSubmit.disabled=false;};
+  document.getElementById('accountMenuChangeEmail')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changeEmailDialog.hidden=false;currentEmailInput.value='';newEmailInput.value='';confirmEmailInput.value='';changeEmailStatus.textContent='';currentEmailInput.focus();});
   document.getElementById('changeEmailCancel')?.addEventListener('click',closeChangeEmail);
   changeEmailDialog?.querySelector('[data-email-cancel]')?.addEventListener('click',closeChangeEmail);
   changeEmailSubmit?.addEventListener('click',async()=>{
-    const email=newEmailInput?.value.trim()||'',confirmation=confirmEmailInput?.value.trim()||'';
+    const currentEmail=currentEmailInput?.value.trim()||'',email=newEmailInput?.value.trim()||'',confirmation=confirmEmailInput?.value.trim()||'';
+    if(!currentEmail){changeEmailStatus.textContent='Bitte gib deine aktuelle E-Mail-Adresse ein.';currentEmailInput?.focus();return;}
     if(!email){changeEmailStatus.textContent='Bitte gib deine neue E-Mail-Adresse ein.';newEmailInput?.focus();return;}
-    if(email.toLowerCase()!==confirmation.toLowerCase()){changeEmailStatus.textContent='Die E-Mail-Adressen stimmen nicht überein.';confirmEmailInput?.focus();return;}
-    changeEmailSubmit.disabled=true;changeEmailStatus.textContent='E-Mail-Adresse wird geändert …';
+    if(email.toLowerCase()!==confirmation.toLowerCase()){changeEmailStatus.textContent='Die neuen E-Mail-Adressen stimmen nicht überein.';confirmEmailInput?.focus();return;}
+    changeEmailSubmit.disabled=true;changeEmailStatus.textContent='Aktuelle E-Mail-Adresse wird geprüft …';
     try{
       const {data:currentUserData,error:currentUserError}=await pccSupabase.auth.getUser();
       if(currentUserError)throw currentUserError;
-      if(email.toLowerCase()===(currentUserData?.user?.email||'').toLowerCase())throw new Error('Diese E-Mail-Adresse ist bereits mit deinem Konto verknüpft.');
+      const actualEmail=currentUserData?.user?.email||'';
+      if(!actualEmail)throw new Error('Zu deinem Konto wurde keine E-Mail-Adresse gefunden. Bitte melde dich erneut an.');
+      if(currentEmail.toLowerCase()!==actualEmail.toLowerCase())throw new Error('Die aktuelle E-Mail-Adresse stimmt nicht mit deinem Konto überein.');
+      if(email.toLowerCase()===actualEmail.toLowerCase())throw new Error('Diese E-Mail-Adresse ist bereits mit deinem Konto verknüpft.');
+      changeEmailStatus.textContent='E-Mail-Adresse wird geändert …';
       const {data,error}=await pccSupabase.auth.updateUser({email},{emailRedirectTo:PCC_AUTH_REDIRECT_URL});
       if(error)throw error;
       closeChangeEmail();

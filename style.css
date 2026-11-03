@@ -359,3 +359,16 @@ header{z-index:20000}
 
 .pcc-share-item-icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px;image-rendering:auto}
 .pcc-share-sprite{object-fit:contain}
+
+/* Auth UI polish: keep the E-Mail change action compact inside the account menu. */
+#accountMenuChangeEmail{
+  box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  padding:8px 9px;
+  font-size:12px;
+  line-height:1.2;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-align:center;
+}

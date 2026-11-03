@@ -67,7 +67,8 @@
   <div class="delete-dialog-backdrop" data-email-cancel></div>
   <section class="delete-dialog-card">
     <h2 id="changeEmailTitle">E-Mail-Adresse ändern</h2>
-    <p>Gib deine neue E-Mail-Adresse ein und bestätige sie. Supabase sendet anschließend die erforderlichen Bestätigungs-E-Mails.</p>
+    <p>Bestätige deine bisherige E-Mail-Adresse und gib anschließend die neue Adresse zweimal ein. Supabase sendet danach die erforderlichen Bestätigungs-E-Mails.</p>
+    <label for="currentAccountEmail">Aktuelle E-Mail-Adresse</label><input id="currentAccountEmail" type="email" autocomplete="email" required placeholder="Bisherige E-Mail-Adresse">
     <label for="newAccountEmail">Neue E-Mail-Adresse</label><input id="newAccountEmail" type="email" autocomplete="email" required placeholder="name@example.com">
     <label for="confirmAccountEmail">Neue E-Mail-Adresse wiederholen</label><input id="confirmAccountEmail" type="email" autocomplete="email" required placeholder="name@example.com">
     <p id="changeEmailStatus" role="status" aria-live="polite"></p>
