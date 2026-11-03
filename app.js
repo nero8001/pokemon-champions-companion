@@ -1,6 +1,7 @@
 
 // Pokémon Champions Companion v8.10 — team preview and password reset hint (publishable key only).
 let pccSupabase = null;
+const PCC_AUTH_REDIRECT_URL = 'https://pokemon-champions-companion.com';
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
 function pccShowAccountPage(show=true){
@@ -110,7 +111,7 @@ function pccInitSupabaseAuth(){
     if(!email||!password){pccAuthStatus('Bitte E-Mail und Passwort eingeben.');return;}
     if(password.length<8){pccAuthStatus('Das Passwort muss mindestens 8 Zeichen lang sein.');return;}
     pccAuthStatus('Konto wird erstellt …');
-    const redirectTo=window.location.origin+window.location.pathname;
+    const redirectTo=PCC_AUTH_REDIRECT_URL;
     const {data,error}=await pccSupabase.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
     if(error){pccAuthStatus('Registrierung fehlgeschlagen: '+error.message);return;}
     if(data.session){pccAuthStatus('Konto erstellt. Du wirst zur Startseite weitergeleitet.');await pccRefreshAuth();setTimeout(()=>pccShowAccountPage(false),700);}
@@ -120,7 +121,7 @@ function pccInitSupabaseAuth(){
     const email=emailInput?.value.trim();
     if(!email){pccAuthStatus('Bitte gib zuerst deine E-Mail-Adresse ein.');emailInput?.focus();return;}
     pccAuthStatus('Anfrage zum Zurücksetzen wird gesendet …');
-    const redirectTo=window.location.origin+window.location.pathname;
+    const redirectTo=PCC_AUTH_REDIRECT_URL;
     const {error}=await pccSupabase.auth.resetPasswordForEmail(email,{redirectTo});
     if(error){pccAuthStatus('Passwort-Zurücksetzen fehlgeschlagen: '+error.message);return;}
     pccAuthStatus('Falls ein Konto zu dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen des Passworts. Bitte prüfe auch deinen Spam- bzw. Junk-Ordner, falls die E-Mail nicht im Posteingang erscheint.');
