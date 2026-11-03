@@ -27,7 +27,7 @@
 <header>
   <div class="brand">⚡ <b>Champions<br>Companion</b></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuChangePassword" type="button" class="secondary" hidden>Passwort ändern</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuChangePassword" type="button" class="secondary" hidden>Passwort ändern</button><button id="accountMenuChangeEmail" type="button" class="secondary" hidden>E-Mail-Adresse ändern</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
 </header>
 <section id="accountPanel" class="account-page card" style="display:none;margin:16px auto;max-width:700px;padding:22px" aria-labelledby="accountPageTitle">
   <button id="accountBack" type="button" class="secondary">← Zur Startseite</button>
@@ -55,11 +55,23 @@
   <div class="delete-dialog-backdrop" data-password-cancel></div>
   <section class="delete-dialog-card">
     <h2 id="changePasswordTitle">Passwort ändern</h2>
-    <p>Wähle ein neues Passwort mit mindestens 8 Zeichen.</p>
+    <p>Bestätige deine Identität mit deinem aktuellen Passwort und wähle anschließend ein neues Passwort mit mindestens 8 Zeichen.</p>
+    <label for="currentAccountPassword">Aktuelles Passwort</label><input id="currentAccountPassword" type="password" autocomplete="current-password" placeholder="Aktuelles Passwort">
     <label for="newAccountPassword">Neues Passwort</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Mindestens 8 Zeichen">
     <label for="confirmAccountPassword">Neues Passwort wiederholen</label><input id="confirmAccountPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Passwort bestätigen">
     <p id="changePasswordStatus" role="status" aria-live="polite"></p>
     <div class="auth-actions"><button id="changePasswordCancel" type="button" class="secondary">Abbrechen</button><button id="changePasswordSubmit" type="button" class="primary">Passwort speichern</button></div>
+  </section>
+</div>
+<div id="changeEmailDialog" class="delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="changeEmailTitle">
+  <div class="delete-dialog-backdrop" data-email-cancel></div>
+  <section class="delete-dialog-card">
+    <h2 id="changeEmailTitle">E-Mail-Adresse ändern</h2>
+    <p>Gib deine neue E-Mail-Adresse ein und bestätige sie. Supabase sendet anschließend die erforderlichen Bestätigungs-E-Mails.</p>
+    <label for="newAccountEmail">Neue E-Mail-Adresse</label><input id="newAccountEmail" type="email" autocomplete="email" required placeholder="name@example.com">
+    <label for="confirmAccountEmail">Neue E-Mail-Adresse wiederholen</label><input id="confirmAccountEmail" type="email" autocomplete="email" required placeholder="name@example.com">
+    <p id="changeEmailStatus" role="status" aria-live="polite"></p>
+    <div class="auth-actions"><button id="changeEmailCancel" type="button" class="secondary">Abbrechen</button><button id="changeEmailSubmit" type="button" class="primary">Änderung bestätigen</button></div>
   </section>
 </div>
 <div id="teamLinkDialog" class="delete-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="teamLinkTitle">

@@ -15,12 +15,12 @@ function pccShowAccountPage(show=true){
 async function pccRefreshAuth(){
   if(!pccSupabase)return;
   const {data,error}=await pccSupabase.auth.getSession(); const session=data?.session;
-  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const changePassword=document.getElementById('accountMenuChangePassword'); const del=document.getElementById('accountMenuDelete');
+  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const changePassword=document.getElementById('accountMenuChangePassword'); const changeEmail=document.getElementById('accountMenuChangeEmail'); const del=document.getElementById('accountMenuDelete');
   if(entry)entry.textContent=session?'Mein Konto':'Anmelden/Registrieren';
   const cloudSave=document.getElementById('teamBuilderCloudSave'),cloudRefresh=document.getElementById('teamBuilderCloudRefresh');if(cloudSave)cloudSave.disabled=!session;if(cloudRefresh)cloudRefresh.disabled=!session;
   const source=document.getElementById('myTeamsSource');if(source){if(session){source.disabled=false;if(!source.dataset.userDefaulted){source.value='account';source.dataset.userDefaulted='1';}}else{source.value='local';source.disabled=true;source.dataset.userDefaulted='';}}
   const recentSource=document.getElementById('recentTeamsSource');if(recentSource){recentSource.querySelector('option[value=account]')?.toggleAttribute('disabled',!session);if(!session)recentSource.value='local';}
-  if(logout)logout.hidden=!session;if(changePassword)changePassword.hidden=!session;if(del)del.hidden=!session;
+  if(logout)logout.hidden=!session;if(changePassword)changePassword.hidden=!session;if(changeEmail)changeEmail.hidden=!session;if(del)del.hidden=!session;
   if(error)pccAuthStatus('Sitzungsstatus konnte nicht geladen werden: '+error.message);
   else if(session)pccAuthStatus('Angemeldet als '+(session.user.email||'Nutzer')+'.');
   else pccAuthStatus('Melde dich an oder erstelle ein Konto.');
@@ -41,25 +41,61 @@ function pccInitSupabaseAuth(){
   const closeDelete=()=>{if(deleteDialog)deleteDialog.hidden=true;if(deleteInput)deleteInput.value='';if(deleteButton)deleteButton.disabled=true;if(deleteStatus)deleteStatus.textContent='';};
   document.getElementById('accountMenuDelete')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;deleteDialog.hidden=false;deleteInput.value='';deleteButton.disabled=true;deleteInput.focus();});
   const changePasswordDialog=document.getElementById('changePasswordDialog');
+  const currentPasswordInput=document.getElementById('currentAccountPassword');
   const newPasswordInput=document.getElementById('newAccountPassword');
   const confirmPasswordInput=document.getElementById('confirmAccountPassword');
   const changePasswordStatus=document.getElementById('changePasswordStatus');
   const changePasswordSubmit=document.getElementById('changePasswordSubmit');
-  const closeChangePassword=()=>{if(changePasswordDialog)changePasswordDialog.hidden=true;if(newPasswordInput)newPasswordInput.value='';if(confirmPasswordInput)confirmPasswordInput.value='';if(changePasswordStatus)changePasswordStatus.textContent='';if(changePasswordSubmit)changePasswordSubmit.disabled=false;};
-  document.getElementById('accountMenuChangePassword')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changePasswordDialog.hidden=false;newPasswordInput.value='';confirmPasswordInput.value='';changePasswordStatus.textContent='';newPasswordInput.focus();});
+  const closeChangePassword=()=>{if(changePasswordDialog)changePasswordDialog.hidden=true;if(currentPasswordInput)currentPasswordInput.value='';if(newPasswordInput)newPasswordInput.value='';if(confirmPasswordInput)confirmPasswordInput.value='';if(changePasswordStatus)changePasswordStatus.textContent='';if(changePasswordSubmit)changePasswordSubmit.disabled=false;};
+  document.getElementById('accountMenuChangePassword')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changePasswordDialog.hidden=false;currentPasswordInput.value='';newPasswordInput.value='';confirmPasswordInput.value='';changePasswordStatus.textContent='';currentPasswordInput.focus();});
   document.getElementById('changePasswordCancel')?.addEventListener('click',closeChangePassword);
   changePasswordDialog?.querySelector('[data-password-cancel]')?.addEventListener('click',closeChangePassword);
   changePasswordSubmit?.addEventListener('click',async()=>{
-    const password=newPasswordInput?.value||'',confirmation=confirmPasswordInput?.value||'';
+    const currentPassword=currentPasswordInput?.value||'',password=newPasswordInput?.value||'',confirmation=confirmPasswordInput?.value||'';
+    if(!currentPassword){changePasswordStatus.textContent='Bitte gib dein aktuelles Passwort ein.';currentPasswordInput?.focus();return;}
     if(password.length<8){changePasswordStatus.textContent='Das neue Passwort muss mindestens 8 Zeichen lang sein.';newPasswordInput?.focus();return;}
-    if(password!==confirmation){changePasswordStatus.textContent='Die Passwörter stimmen nicht überein.';confirmPasswordInput?.focus();return;}
-    changePasswordSubmit.disabled=true;changePasswordStatus.textContent='Passwort wird geändert …';
+    if(password!==confirmation){changePasswordStatus.textContent='Die neuen Passwörter stimmen nicht überein.';confirmPasswordInput?.focus();return;}
+    changePasswordSubmit.disabled=true;changePasswordStatus.textContent='Aktuelles Passwort wird geprüft …';
     try{
+      const {data:{user},error:userError}=await pccSupabase.auth.getUser();
+      if(userError)throw userError;
+      if(!user?.email)throw new Error('Zu deinem Konto wurde keine E-Mail-Adresse gefunden. Bitte melde dich erneut an.');
+      const {error:reauthError}=await pccSupabase.auth.signInWithPassword({email:user.email,password:currentPassword});
+      if(reauthError)throw new Error('Das aktuelle Passwort ist nicht korrekt. Bitte überprüfe deine Eingabe.');
+      changePasswordStatus.textContent='Passwort wird geändert …';
       const {data,error}=await pccSupabase.auth.updateUser({password});
       if(error)throw error;
       closeChangePassword();pccToast('Dein Passwort wurde geändert.');
       if(data?.user?.email)pccAuthStatus('Angemeldet als '+data.user.email+'.');
+      await pccRefreshAuth();
     }catch(e){changePasswordStatus.textContent='Passwort konnte nicht geändert werden: '+(e.message||'Unbekannter Fehler');changePasswordSubmit.disabled=false;}
+  });
+
+  const changeEmailDialog=document.getElementById('changeEmailDialog');
+  const newEmailInput=document.getElementById('newAccountEmail');
+  const confirmEmailInput=document.getElementById('confirmAccountEmail');
+  const changeEmailStatus=document.getElementById('changeEmailStatus');
+  const changeEmailSubmit=document.getElementById('changeEmailSubmit');
+  const closeChangeEmail=()=>{if(changeEmailDialog)changeEmailDialog.hidden=true;if(newEmailInput)newEmailInput.value='';if(confirmEmailInput)confirmEmailInput.value='';if(changeEmailStatus)changeEmailStatus.textContent='';if(changeEmailSubmit)changeEmailSubmit.disabled=false;};
+  document.getElementById('accountMenuChangeEmail')?.addEventListener('click',()=>{document.getElementById('accountDropdown').hidden=true;changeEmailDialog.hidden=false;newEmailInput.value='';confirmEmailInput.value='';changeEmailStatus.textContent='';newEmailInput.focus();});
+  document.getElementById('changeEmailCancel')?.addEventListener('click',closeChangeEmail);
+  changeEmailDialog?.querySelector('[data-email-cancel]')?.addEventListener('click',closeChangeEmail);
+  changeEmailSubmit?.addEventListener('click',async()=>{
+    const email=newEmailInput?.value.trim()||'',confirmation=confirmEmailInput?.value.trim()||'';
+    if(!email){changeEmailStatus.textContent='Bitte gib deine neue E-Mail-Adresse ein.';newEmailInput?.focus();return;}
+    if(email.toLowerCase()!==confirmation.toLowerCase()){changeEmailStatus.textContent='Die E-Mail-Adressen stimmen nicht überein.';confirmEmailInput?.focus();return;}
+    changeEmailSubmit.disabled=true;changeEmailStatus.textContent='E-Mail-Adresse wird geändert …';
+    try{
+      const {data:currentUserData,error:currentUserError}=await pccSupabase.auth.getUser();
+      if(currentUserError)throw currentUserError;
+      if(email.toLowerCase()===(currentUserData?.user?.email||'').toLowerCase())throw new Error('Diese E-Mail-Adresse ist bereits mit deinem Konto verknüpft.');
+      const {data,error}=await pccSupabase.auth.updateUser({email},{emailRedirectTo:PCC_AUTH_REDIRECT_URL});
+      if(error)throw error;
+      closeChangeEmail();
+      pccToast('Änderung angefordert. Bitte bestätige die E-Mail-Adresse über die zugesandten Bestätigungslinks.');
+      pccAuthStatus('Die Änderung deiner E-Mail-Adresse wurde angefordert. Prüfe dein bisheriges und dein neues Postfach auf Bestätigungs-E-Mails.');
+      if(data?.user?.email)pccAuthStatus('Bestätigungs-E-Mails wurden angefordert. Deine bisherige Adresse bleibt aktiv, bis die Änderung bestätigt wurde.');
+    }catch(e){changeEmailStatus.textContent='E-Mail-Adresse konnte nicht geändert werden: '+(e.message||'Unbekannter Fehler');changeEmailSubmit.disabled=false;}
   });
   document.getElementById('deleteAccountCancel')?.addEventListener('click',closeDelete);
   deleteDialog?.querySelector('[data-delete-cancel]')?.addEventListener('click',closeDelete);
