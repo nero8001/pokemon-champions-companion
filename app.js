@@ -1,7 +1,8 @@
 
-// Pokémon Champions Companion v8.10 — team preview and password reset hint (publishable key only).
+// Pokémon Champions Companion v8.11 — login field cleanup and optional remembered email (publishable key only).
 let pccSupabase = null;
 const PCC_AUTH_REDIRECT_URL = 'https://pokemon-champions-companion.com';
+const PCC_REMEMBER_EMAIL_KEY = 'pcc_remember_login_email_v1';
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
 function pccShowAccountPage(show=true){
@@ -31,6 +32,14 @@ function pccInitSupabaseAuth(){
   if(!window.supabase?.createClient){if(status)status.textContent='Supabase-Bibliothek konnte nicht geladen werden. Prüfe die Internetverbindung.';return;}
   try{pccSupabase=window.supabase.createClient(window.PCC_SUPABASE_URL,window.PCC_SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){pccAuthStatus('Supabase konnte nicht initialisiert werden: '+e.message);return;}
   const emailInput=document.getElementById('authEmail'),passwordInput=document.getElementById('authPassword');
+  const rememberEmailInput=document.getElementById('rememberAuthEmail');
+  try{
+    const savedEmail=localStorage.getItem(PCC_REMEMBER_EMAIL_KEY);
+    if(savedEmail){emailInput.value=savedEmail;if(rememberEmailInput)rememberEmailInput.checked=true;}
+  }catch(e){console.warn('Gespeicherte Login-E-Mail konnte nicht geladen werden.',e);}
+  rememberEmailInput?.addEventListener('change',()=>{
+    if(!rememberEmailInput.checked){try{localStorage.removeItem(PCC_REMEMBER_EMAIL_KEY);}catch(e){console.warn('Gespeicherte Login-E-Mail konnte nicht entfernt werden.',e);}}
+  });
   document.getElementById('accountEntry')?.addEventListener('click',async()=>{
     const {data}=await pccSupabase.auth.getSession();
     if(data?.session){const dd=document.getElementById('accountDropdown');if(dd)dd.hidden=!dd.hidden;}
@@ -68,7 +77,7 @@ function pccInitSupabaseAuth(){
         }
         throw error;
       }
-      closeChangePassword();pccToast('Dein Passwort wurde geändert.');
+      closeChangePassword();pccToast('Passwort erfolgreich aktualisiert.');
       if(data?.user?.email)pccAuthStatus('Angemeldet als '+data.user.email+'.');
       await pccRefreshAuth();
     }catch(e){changePasswordStatus.textContent='Passwort konnte nicht geändert werden: '+(e.message||'Unbekannter Fehler');changePasswordSubmit.disabled=false;}
@@ -176,6 +185,15 @@ function pccInitSupabaseAuth(){
     if(!email||!password){pccAuthStatus('Bitte E-Mail und Passwort eingeben.');return;}
     pccAuthStatus('Anmeldung läuft …');const {error}=await pccSupabase.auth.signInWithPassword({email,password});
     if(error){pccAuthStatus('Anmeldung fehlgeschlagen: '+error.message);return;}
+    // Never retain the password. Keep the email only when the user explicitly opts in.
+    if(passwordInput)passwordInput.value='';
+    if(rememberEmailInput?.checked){
+      try{localStorage.setItem(PCC_REMEMBER_EMAIL_KEY,email);}catch(e){console.warn('Login-E-Mail konnte nicht gespeichert werden.',e);}
+      if(emailInput)emailInput.value=email;
+    }else{
+      try{localStorage.removeItem(PCC_REMEMBER_EMAIL_KEY);}catch(e){console.warn('Gespeicherte Login-E-Mail konnte nicht entfernt werden.',e);}
+      if(emailInput)emailInput.value='';
+    }
     await pccRefreshAuth();pccShowAccountPage(false);
   });
   const confirmationInUrl=window.location.hash.includes('access_token')||new URLSearchParams(window.location.search).has('code');
