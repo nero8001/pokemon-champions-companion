@@ -1,5 +1,5 @@
 
-// Pokémon Champions Companion v8.11 — login field cleanup and optional remembered email (publishable key only).
+// Pokémon Champions Companion v8.12 — account email display, unofficial label and Last Respects stacks (publishable key only).
 let pccSupabase = null;
 const PCC_AUTH_REDIRECT_URL = 'https://pokemon-champions-companion.com';
 const PCC_REMEMBER_EMAIL_KEY = 'pcc_remember_login_email_v1';
@@ -16,7 +16,7 @@ function pccShowAccountPage(show=true){
 async function pccRefreshAuth(){
   if(!pccSupabase)return;
   const {data,error}=await pccSupabase.auth.getSession(); const session=data?.session;
-  const entry=document.getElementById('accountEntry'); const logout=document.getElementById('accountMenuLogout'); const changePassword=document.getElementById('accountMenuChangePassword'); const changeEmail=document.getElementById('accountMenuChangeEmail'); const del=document.getElementById('accountMenuDelete');
+  const entry=document.getElementById('accountEntry'); const accountEmail=document.getElementById('accountDropdownEmail'); if(accountEmail)accountEmail.textContent=session?.user?.email||''; const logout=document.getElementById('accountMenuLogout'); const changePassword=document.getElementById('accountMenuChangePassword'); const changeEmail=document.getElementById('accountMenuChangeEmail'); const del=document.getElementById('accountMenuDelete');
   if(entry)entry.textContent=session?'Mein Konto':'Anmelden/Registrieren';
   const cloudSave=document.getElementById('teamBuilderCloudSave'),cloudRefresh=document.getElementById('teamBuilderCloudRefresh');if(cloudSave)cloudSave.disabled=!session;if(cloudRefresh)cloudRefresh.disabled=!session;
   const source=document.getElementById('myTeamsSource');if(source){if(session){source.disabled=false;if(!source.dataset.userDefaulted){source.value='account';source.dataset.userDefaulted='1';}}else{source.value='local';source.disabled=true;source.dataset.userDefaulted='';}}
@@ -2327,8 +2327,19 @@ function updateRageFistStacksVisibility(moveName){
  const attackerName=String(calcState.attacker?.name||'').toLowerCase().replace(/[^a-z]/g,'');
  const formName=String(calcState.attacker?._formName||'').toLowerCase().replace(/[^a-z]/g,'');
  const isAnnihilape=attackerName==='annihilape'||attackerName==='epitaff'||formName.includes('annihilape')||formName.includes('epitaff');
- const isRageFist=normalizeMoveName(moveName)==='rage fist';
- wrap.hidden=!(isAnnihilape&&isRageFist);
+ const normalized=normalizeMoveName(moveName);
+ const isRageFist=normalized==='rage fist'&&isAnnihilape;
+ const isLastRespects=normalized==='last respects';
+ wrap.hidden=!(isRageFist||isLastRespects);
+ const select=$('rageFistStacks'),label=$('rageFistStacksLabel'),help=$('rageFistStacksHelp');
+ if(select){
+  const previous=Number(select.value)||0;
+  select.innerHTML=isLastRespects?'<option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>':'<option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>';
+  select.value=String(Math.min(isLastRespects?5:6,previous));
+  select.setAttribute('aria-label',isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks');
+ }
+ if(label)label.textContent=isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks';
+ if(help)help.textContent=isLastRespects?'+50 Basisstärke pro besiegtem Teammitglied, maximal 300.':' +50 Basisstärke pro Stack, maximal 350.';
 }
 function hasChargeMoveSelected(){
  return (calcMoveInputIds||[]).some(id=>{
@@ -2858,19 +2869,23 @@ async function calculateDamage(){
   const abilityMove=moveAbilityTypeAndPower(m,a,d);
   const abilityDef=abilityDefenseMultiplier({...m,type:{name:abilityMove.type}},d);
   const fw=fieldWeatherPowerMultiplier({...m,type:{name:abilityMove.type}},a,d);
-   const isRageFist=normalizeMoveName(m.name)==='rage fist';
+   const normalizedMoveName=normalizeMoveName(m.name);
+   const isRageFist=normalizedMoveName==='rage fist';
+   const isLastRespects=normalizedMoveName==='last respects';
    const attackerName=String(a?.name||'').toLowerCase().replace(/[^a-z]/g,'');
    const attackerForm=String(a?._formName||'').toLowerCase().replace(/[^a-z]/g,'');
    const isEpitaff=attackerName==='annihilape'||attackerName==='epitaff'||attackerForm.includes('annihilape')||attackerForm.includes('epitaff');
-   const rageFistStacks=Math.max(0,Math.min(6,Number($('rageFistStacks')?.value)||0));
-   const basePower=isRageFist&&isEpitaff?Math.min(350,50+50*rageFistStacks):Number(m.power);
+   const stackLimit=isLastRespects?5:6;
+   const moveStacks=Math.max(0,Math.min(stackLimit,Number($('rageFistStacks')?.value)||0));
+   const usesStacks=(isLastRespects||(isRageFist&&isEpitaff));
+   const basePower=usesStacks?Math.min(isLastRespects?300:350,50+50*moveStacks):Number(m.power);
   let power=Math.floor(basePower*abilityMove.powerMult*fw.mult);
    const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
   const isElectricMove=String(abilityMove.type||m.type?.name||'').toLowerCase()==='electric';
   const chargedEligible=hasDynamoAbility()||hasChargeMoveSelected();
   const chargedYes=$('chargedState')?.value==='yes';
   if(isElectricMove&&chargedEligible&&chargedYes){power*=2;notes.push('Aufgeladen: Elektroattacke ×2');}
-   if(isRageFist&&basePower!==Number(m.power))notes.push(`Zornesfaust: ${rageFistStacks} Stacks · Basisstärke ${basePower}`);
+   if(usesStacks&&basePower!==Number(m.power))notes.push(`${isLastRespects?'Letzte Ehre':'Zornesfaust'}: ${moveStacks} Stacks · Basisstärke ${basePower}`);
   if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase()))notes.push('Verbrennung: Angriff ×0,5');
   if(getStage('atk',attackStat)!==0)notes.push(`Angriffs-Stufe: ${getStage('atk',attackStat)>0?'+':''}${getStage('atk',attackStat)}`);
   if(getStage('def',defenseStat)!==0)notes.push(`Verteidigungs-Stufe: ${getStage('def',defenseStat)>0?'+':''}${getStage('def',defenseStat)}`);

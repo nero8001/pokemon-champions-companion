@@ -372,3 +372,6 @@ header{z-index:20000}
   overflow-wrap:anywhere;
   text-align:center;
 }
+
+/* v8.12: unofficial brand subtitle and signed-in account identity */
+.brand-title{display:flex;flex-direction:column;gap:3px}.brand-title small{font-size:10px;letter-spacing:.7px;color:#9aa7c7;font-weight:600}.account-dropdown-email{padding:8px 10px 10px;margin:0 0 6px;border-bottom:1px solid #34405e;color:#cbd3e8;font-size:12px;overflow-wrap:anywhere;max-width:260px}.account-dropdown-email:empty{display:none}
