@@ -3345,3 +3345,25 @@ async function init(){nav();$('metaSource')?.addEventListener('change',renderMet
  loadAllItems().then(()=>{fillOptions();setupItemSearchV14('atk');setupItemSearchV14('def');if($('builder'))renderTeamBuilder()}).catch(e=>console.warn('Items:',e));
 }
 init();
+
+
+// v8.20 – Position detail dialogs below the actual sticky header height.
+(function pccSyncInfoModalHeaderOffset(){
+  const update=()=>{
+    const header=document.querySelector('header');
+    if(!header)return;
+    const height=Math.ceil(header.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--pcc-header-bottom',height+'px');
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update,{once:true});
+  else update();
+  window.addEventListener('resize',update,{passive:true});
+  if(typeof ResizeObserver!=='undefined'){
+    const observe=()=>{
+      const header=document.querySelector('header');
+      if(header)new ResizeObserver(update).observe(header);
+    };
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe,{once:true});
+    else observe();
+  }
+})();
