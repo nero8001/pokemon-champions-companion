@@ -3347,7 +3347,7 @@ async function init(){nav();$('metaSource')?.addEventListener('change',renderMet
 init();
 
 
-// v8.20 – Position detail dialogs below the actual sticky header height.
+// v8.21 – Add clear spacing below the sticky header for detail dialogs.
 (function pccSyncInfoModalHeaderOffset(){
   const update=()=>{
     const header=document.querySelector('header');

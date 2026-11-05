@@ -379,7 +379,7 @@ header{z-index:20000}
 
 /* v8.20 – Keep detail/evolution dialogs fully below the sticky navigation */
 #infoModal{
-  top:var(--pcc-header-bottom,70px);
+  top:calc(var(--pcc-header-bottom,70px) + 18px);
   right:0;
   bottom:8px;
   left:0;
