@@ -3347,7 +3347,7 @@ async function init(){nav();$('metaSource')?.addEventListener('change',renderMet
 init();
 
 
-// v8.23 – Measure the header's actual viewport bottom for the modal gap.
+// v8.24 – Measure the header bottom; the visible dialog receives its own vertical offset.
 (function pccSyncInfoModalHeaderOffset(){
   const update=()=>{
     const header=document.querySelector('header');

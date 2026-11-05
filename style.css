@@ -377,31 +377,32 @@ header{z-index:20000}
 .brand-title{display:flex;flex-direction:column;gap:3px}.brand-title small{font-size:10px;letter-spacing:.7px;color:#9aa7c7;font-weight:600}.account-dropdown-email{padding:8px 10px 10px;margin:0 0 6px;border-bottom:1px solid #34405e;color:#cbd3e8;font-size:12px;overflow-wrap:anywhere;max-width:260px}.account-dropdown-email:empty{display:none}
 
 
-/* v8.23 – Move the detail modal itself below the sticky header with a guaranteed visual gap. */
+
+/* v8.25 – Place the information dialog above the entire navigation layer. */
+#infoModal[hidden]{display:none!important}
 #infoModal{
-  top:var(--pcc-header-bottom, 76px);
-  right:0;
-  bottom:12px;
-  left:0;
-  z-index:20001;
-  padding:0 12px 12px;
-  overflow:hidden;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:30000 !important;
   display:grid;
-  align-items:start;
-  justify-items:center;
+  place-items:center;
+  padding:16px;
+  overflow:hidden;
 }
 #infoModal .backdrop{
-  position:fixed;
+  position:absolute;
   inset:0;
+  background:#000b;
 }
 #infoModal .info-modal{
-  box-sizing:border-box;
-  width:min(720px, 100%);
-  max-height:calc(100% - 24px);
-  min-height:0;
-  margin:24px auto 0;
-  overflow:auto;
-  overscroll-behavior:contain;
   position:relative;
   z-index:1;
+  box-sizing:border-box;
+  width:min(720px,100%);
+  max-height:90vh;
+  min-height:0;
+  margin:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  transform:none !important;
 }
