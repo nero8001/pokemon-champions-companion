@@ -1,4 +1,7 @@
-# Pokémon Champions Companion v8.17
+# Pokémon Champions Companion v8.18
+
+## Neu in v8.18 – Letzte Ehre und Zornesfaust lokalisiert
+- Stacks-Auswahl und Erklärungstexte werden jetzt passend zur gewählten Sprache angezeigt.
 
 ## Neu in v8.17 – Englische Lokalisierung überarbeitet
 - Ein Sprachwechsel speichert die Auswahl und lädt die gesamte Seite neu, damit auch dynamisch erzeugte Inhalte konsistent übersetzt werden.

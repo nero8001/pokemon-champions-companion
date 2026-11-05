@@ -1040,7 +1040,7 @@ function applyCalculatorLanguage(){
  document.querySelectorAll('.calc-move-choice-label span').forEach((el,i)=>el.textContent=(en?'Move ':'Attacke ')+(i+1));
  document.querySelectorAll('.calc-move-choice').forEach((el,i)=>el.setAttribute('aria-label',(en?'Select move ':'Attacke ')+(i+1)+(en?' for calculation':' für die Kalkulation auswählen')));
  const moveInfo=$('moveInfo');if(moveInfo&&!moveInfo.dataset.hasMove)moveInfo.textContent=en?'Select a move for the calculation.':'Wähle eine Attacke für die Kalkulation.';
- text('#rageFistStacksLabel',en?'Stacks':'Zornesfaust Stacks');
+ text('#rageFistStacksLabel',en?'Rage Fist Stacks':'Zornesfaust Stacks');
  const rageHelp=$('#rageFistStacksHelp');if(rageHelp)rageHelp.textContent=en?'+50 base power per stack, up to 350.':'+50 Basisstärke pro Stack, maximal 350.';
  const chargedLabel=$('#chargedStateWrap label>span');if(chargedLabel)chargedLabel.textContent=en?'Charged?':'Aufgeladen?';
  const chargedHelp=$('#chargedStateWrap small');if(chargedHelp)chargedHelp.textContent=en?'Doubles the damage of the next Electric-type move.':'Verdoppelt den Schaden der nächsten Elektroattacke.';
@@ -2407,10 +2407,10 @@ function updateRageFistStacksVisibility(moveName){
   const previous=Number(select.value)||0;
   select.innerHTML=isLastRespects?'<option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>':'<option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>';
   select.value=String(Math.min(isLastRespects?5:6,previous));
-  select.setAttribute('aria-label',isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks');
+  select.setAttribute('aria-label',uiLang==='en'?(isLastRespects?'Last Respects Stacks':'Rage Fist Stacks'):(isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks'));
  }
- if(label)label.textContent=isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks';
- if(help)help.textContent=isLastRespects?'+50 Basisstärke pro besiegtem Teammitglied, maximal 300.':' +50 Basisstärke pro Stack, maximal 350.';
+ if(label)label.textContent=uiLang==='en'?(isLastRespects?'Last Respects Stacks':'Rage Fist Stacks'):(isLastRespects?'Letzte Ehre Stacks':'Zornesfaust Stacks');
+ if(help)help.textContent=uiLang==='en'?(isLastRespects?'+50 base power per fainted party member, up to 300.':'+50 base power per stack, up to 350.'):(isLastRespects?'+50 Basisstärke pro besiegtem Teammitglied, maximal 300.':'+50 Basisstärke pro Stack, maximal 350.');
 }
 function hasChargeMoveSelected(){
  return (calcMoveInputIds||[]).some(id=>{
