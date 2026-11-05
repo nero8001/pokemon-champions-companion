@@ -3347,13 +3347,13 @@ async function init(){nav();$('metaSource')?.addEventListener('change',renderMet
 init();
 
 
-// v8.21 – Add clear spacing below the sticky header for detail dialogs.
+// v8.22 – Measure the header's actual viewport bottom, not just its height.
 (function pccSyncInfoModalHeaderOffset(){
   const update=()=>{
     const header=document.querySelector('header');
     if(!header)return;
-    const height=Math.ceil(header.getBoundingClientRect().height);
-    document.documentElement.style.setProperty('--pcc-header-bottom',height+'px');
+    const headerBottom=Math.ceil(header.getBoundingClientRect().bottom);
+    document.documentElement.style.setProperty('--pcc-header-bottom',headerBottom+'px');
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update,{once:true});
   else update();

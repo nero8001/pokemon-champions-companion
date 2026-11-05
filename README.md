@@ -1,8 +1,8 @@
-# Pokémon Champions Companion v8.21
+# Pokémon Champions Companion v8.22
 
-## Neu in v8.21 – Modal-Abstand
-- Entwicklungs- und Detailfenster beginnen jetzt mit zusätzlichem Abstand unterhalb der Kopfzeile, damit auch der obere Fensterrand und der Schließen-Button optisch frei liegen.
-- Der Abstand wird zur dynamisch ermittelten Kopfzeilenhöhe addiert; der eigene Scrollbereich bleibt erhalten.
+## Neu in v8.22 – Modal-Positionierung
+- Entwicklungs- und Detailfenster beginnen jetzt zuverlässig unterhalb der tatsächlichen Unterkante der Kopfzeile, mit zusätzlichem Abstand.
+- Das Fenster bleibt vollständig im verfügbaren Bildschirmbereich und besitzt einen eigenen Scrollbereich.
 
 ## Neu in v8.20 – Modal-Darstellung
 - Entwicklungs- und Detailfenster werden unterhalb der festen Kopfzeile angezeigt und überlappen diese nicht mehr.

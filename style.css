@@ -377,21 +377,25 @@ header{z-index:20000}
 .brand-title{display:flex;flex-direction:column;gap:3px}.brand-title small{font-size:10px;letter-spacing:.7px;color:#9aa7c7;font-weight:600}.account-dropdown-email{padding:8px 10px 10px;margin:0 0 6px;border-bottom:1px solid #34405e;color:#cbd3e8;font-size:12px;overflow-wrap:anywhere;max-width:260px}.account-dropdown-email:empty{display:none}
 
 
-/* v8.20 – Keep detail/evolution dialogs fully below the sticky navigation */
+/* v8.22 – Position detail/evolution dialogs safely below the full sticky header. */
 #infoModal{
-  top:calc(var(--pcc-header-bottom,70px) + 18px);
+  top:calc(var(--pcc-header-bottom, 76px) + 20px);
   right:0;
-  bottom:8px;
+  bottom:12px;
   left:0;
   z-index:20001;
-  padding:10px;
+  padding:0 12px 12px;
   overflow:hidden;
-  align-items:center;
+  display:grid;
+  align-items:start;
+  justify-items:center;
 }
 #infoModal .info-modal{
   box-sizing:border-box;
+  width:min(720px, 100%);
   max-height:100%;
   min-height:0;
+  margin:0 auto;
   overflow:auto;
   overscroll-behavior:contain;
 }
