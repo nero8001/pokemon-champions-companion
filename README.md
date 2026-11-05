@@ -1,12 +1,13 @@
-# Pokémon Champions Companion v8.15
+# Pokémon Champions Companion v8.16
 
-## Neu in v8.15 – KP-Leiste korrigiert
-- Die Darstellung entspricht wieder der vertrauten Anordnung aus v8.12: Grün zeigt links die nach dem maximalen Schaden sicher verbleibenden KP.
-- Direkt rechts davon zeigt Rot die zusätzliche mögliche Schadensspanne.
-- Der dunkle Rest rechts steht für KP, die mindestens abgezogen werden. Bei möglichem One-Hit-KO wird die Leiste vollständig rot.
+## Neu in v8.16 – Englische Lokalisierung überarbeitet
+- Ein Sprachwechsel speichert die Auswahl und lädt die gesamte Seite neu, damit auch dynamisch erzeugte Inhalte konsistent übersetzt werden.
+- Team-Builder: Konto-Speichern und Hinweistext sind auf Deutsch und Englisch verfügbar; der nicht mehr benötigte Button „Konto-Teams laden“ wurde entfernt.
+- Mein-Konto-Menü und zugehörige Konto-Dialoge wurden übersetzt.
+- Pokémon-Namen im Meta-Tab verwenden bei englischer Sprache die englischen Pokédex-Namen; verbliebene Meta-Beschriftungen wurden lokalisiert.
+
+## Bereits in v8.15 – KP-Leiste korrigiert
+- Grün zeigt links die nach dem maximalen Schaden sicher verbleibenden KP. Rot zeigt die zusätzliche mögliche Schadensspanne. Der dunkle Rest steht für KP, die mindestens abgezogen werden.
 
 ## Bereits in v8.14 – Schadensspanne visualisiert
 - Die KP-Leiste wurde um eine rote Anzeige für die mögliche Schadensspanne ergänzt.
-
-## Bereits in v8.13 – Klarere Attackenauswahl
-- Pokémon-Sprites wurden aus den Attacken-Vorschlägen im Battle Calculator entfernt, damit keine falschen Lernhinweise entstehen.
