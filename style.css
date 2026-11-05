@@ -376,23 +376,24 @@ header{z-index:20000}
 /* v8.12: unofficial brand subtitle and signed-in account identity */
 .brand-title{display:flex;flex-direction:column;gap:3px}.brand-title small{font-size:10px;letter-spacing:.7px;color:#9aa7c7;font-weight:600}.account-dropdown-email{padding:8px 10px 10px;margin:0 0 6px;border-bottom:1px solid #34405e;color:#cbd3e8;font-size:12px;overflow-wrap:anywhere;max-width:260px}.account-dropdown-email:empty{display:none}
 
-
-
-/* v8.25 – Place the information dialog above the entire navigation layer. */
+/* v8.26 – Force the information dialog above the sticky header/navigation. */
+header{z-index:1000 !important}
 #infoModal[hidden]{display:none!important}
 #infoModal{
   position:fixed !important;
   inset:0 !important;
-  z-index:30000 !important;
+  z-index:2147483647 !important;
   display:grid;
   place-items:center;
   padding:16px;
   overflow:hidden;
+  isolation:isolate;
 }
 #infoModal .backdrop{
   position:absolute;
   inset:0;
-  background:#000b;
+  z-index:0;
+  background:rgba(0,0,0,.72);
 }
 #infoModal .info-modal{
   position:relative;

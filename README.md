@@ -13,11 +13,12 @@
 - Das „Mein Konto“-/„My Account“-Dropdown schließt sich automatisch bei einem Klick außerhalb des Menüs.
 
 
+
+## v8.26
+- Fixed information-dialog layering above the sticky navigation and added CSS cache-busting so browsers load the updated modal styles.
+
 ## v8.25
 - Information dialogs now render above the sticky navigation/status bar as a full-screen modal layer, keeping the dialog centered and fully accessible.
 
 ## v8.24
 - Corrected the actual information dialog position with a direct 24px vertical translation; reduced its maximum height to preserve the viewport boundary.
-
-## v8.23
-- Detail/evolution modal now has a guaranteed 24px gap below the sticky header; modal height is reduced accordingly to stay within the viewport.
