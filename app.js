@@ -7,19 +7,20 @@ const PCC_REMEMBER_EMAIL_KEY = 'pcc_remember_login_email_v1';
 function pccShowInfoModal(){
   const modal=document.getElementById('infoModal');
   if(!modal)return;
-  // Move the dialog to body as a top-level overlay portal, avoiding any ancestor stacking context.
-  if(modal.parentElement!==document.body)document.body.appendChild(modal);
-  const header=document.querySelector('body > header');
-  if(header)header.style.setProperty('z-index','1','important');
   modal.hidden=false;
-  modal.style.setProperty('position','fixed','important');
-  modal.style.setProperty('inset','0','important');
-  modal.style.setProperty('z-index','2147483647','important');
-  modal.style.setProperty('display','grid','important');
-  modal.style.setProperty('place-items','center','important');
-  modal.style.setProperty('padding','16px','important');
-  modal.style.setProperty('overflow','hidden','important');
-  modal.style.setProperty('isolation','isolate','important');
+  // The Popover API promotes the overlay to the browser's top layer,
+  // above sticky/fixed headers regardless of z-index or stacking contexts.
+  if(!modal.matches(':popover-open')){
+    try{modal.showPopover()}catch(error){console.error('Could not open information overlay:',error);}
+  }
+}
+function pccHideInfoModal(){
+  const modal=document.getElementById('infoModal');
+  if(!modal)return;
+  if(modal.matches(':popover-open')){
+    try{modal.hidePopover()}catch(error){console.error('Could not close information overlay:',error);}
+  }
+  modal.hidden=true;
 }
 
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
@@ -1698,7 +1699,7 @@ async function openEvolutionModal(species){
   }));
   $('infoBody').innerHTML=`<p class="evolution-intro">${uiLang==='en'?'Evolution family and the standard requirement shown first. “More info” lists available game/version-specific conditions.':'Alle Entwicklungsstufen dieser Entwicklungslinie. Zuerst steht die Standard-Voraussetzung; „Mehr Infos“ zeigt die verfügbaren editions- und spielabhängigen Bedingungen.'}</p><div class="evolution-list">${cards.join('')}</div>`;
   $('infoBody').querySelectorAll('.evo-more-info').forEach(btn=>btn.onclick=()=>{const row=normalized[Number(btn.dataset.evoRow)];openEvolutionRequirements(btn.dataset.evoLabel,row?.incoming||[])});
-  $('infoBody').querySelectorAll('.evo-poke-info').forEach(btn=>btn.onclick=()=>{const id=Number(btn.dataset.evoId);$('infoModal').hidden=true;$('modal').hidden=true;document.body.style.overflow='';open(id)});
+  $('infoBody').querySelectorAll('.evo-poke-info').forEach(btn=>btn.onclick=()=>{const id=Number(btn.dataset.evoId);pccHideInfoModal();$('modal').hidden=true;document.body.style.overflow='';open(id)});
  }catch(e){console.error('Evolution data:',e);$('infoBody').innerHTML=`<p>${uiLang==='en'?'Evolution data could not be loaded.':'Entwicklungsdaten konnten nicht geladen werden.'}</p>`}
 }
 function render(list){$('grid').innerHTML=list.map((p,i)=>{const first=i<6;return `<article class="poke"><button data-id="${p.id}"><div class="pic"><img src="${sprite(p.id)}" alt="${deP(p.id)||title(p.name)}" loading="${first?'eager':'lazy'}" decoding="async" ${first?'fetchpriority="high"':''}></div><div class="no">#${String(p.id).padStart(4,'0')}</div><div class="name">${deP(p.id)||title(p.name)}</div></button></article>`}).join('');document.querySelectorAll('.poke button').forEach(b=>b.onclick=()=>open(+b.dataset.id))}
@@ -3359,7 +3360,7 @@ function bindTeamBuilder(){
 function setupTeamBuilder(){if(teamBuilderInitialized)return;teamBuilderInitialized=true;renderTeamBuilder();renderRecentTeams();bindTeamBuilderSaved();bindTeamBuilderCloud();$('recentTeamsSource')?.addEventListener('change',renderRecentTeams);$('recentTeamsList')?.addEventListener('click',e=>{const b=e.target.closest('[data-recent-source]');if(!b)return;if(b.dataset.recentSource==='local')teamBuilderLoad(b.dataset.recentId);else teamBuilderCloudLoad(b.dataset.recentId)});$('myTeamsSource')?.addEventListener('change',refreshMyTeamsPage);$('myTeamsRefresh')?.addEventListener('click',refreshMyTeamsPage);$('teamBuilderNew')?.addEventListener('click',teamBuilderNew);$('teamBuilderSave')?.addEventListener('click',teamBuilderSaveCurrent);$('teamBuilderImport')?.addEventListener('click',teamBuilderImport);$('teamBuilderLoadLink')?.addEventListener('click',teamBuilderOpenLinkDialog);$('teamLinkLoad')?.addEventListener('click',teamBuilderLoadFromLink);$('teamLinkCancel')?.addEventListener('click',teamBuilderCloseLinkDialog);$('teamLinkDialog')?.querySelector('[data-team-link-cancel]')?.addEventListener('click',teamBuilderCloseLinkDialog);$('teamBuilderExportCurrent')?.addEventListener('click',()=>teamBuilderExport());$('teamBuilderShareCurrent')?.addEventListener('click',()=>teamBuilderShare(teamBuilderSnapshot(String($('teamBuilderName')?.value||teamBuilderCurrentName||'Mein Team'))));if($('teamBuilderName'))$('teamBuilderName').addEventListener('input',e=>{teamBuilderCurrentName=e.target.value});}
 
 async function init(){nav();$('metaSource')?.addEventListener('change',renderMeta);$('metaView')?.addEventListener('change',renderMeta);$('metaMoreStats')?.addEventListener('click',()=>{metaStatsExpanded=!metaStatsExpanded;renderMeta()});$('metaMoreBest')?.addEventListener('click',()=>{metaBestExpanded=!metaBestExpanded;renderMeta()});$('metaShowAllTeams')?.addEventListener('click',()=>{metaConcreteExpanded=!metaConcreteExpanded;renderMeta()});$('randomizeButton')?.addEventListener('click',randomizeTeam);$('search').oninput=search;$('clear').onclick=()=>{$('search').value='';$('suggestions').innerHTML='';render(dexInitialList());$('search').focus()};$('dexTypeFilter')?.addEventListener('change',e=>changeDexType(e.target.value));$('dexFilter')?.addEventListener('change',e=>{dexFilter=e.target.value==='champions'?'champions':'all';showMCOnly=false;showAllPokemon=false;$('showMCPokemon').textContent=t('showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList())});$('showAllPokemon').onclick=()=>{showAllPokemon=!showAllPokemon;showMCOnly=false;$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');if($('showMCPokemon'))$('showMCPokemon').textContent=t('showMC');$('suggestions').innerHTML='';if($('search').value.trim())$('search').value='';render(dexInitialList());};
-  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBackdrop').onclick=()=>{$('infoModal').hidden=true;$('infoBack').hidden=true};$('infoBack').onclick=()=>{if(currentEvolutionSpecies)openEvolutionModal(currentEvolutionSpecies)};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
+  $('showMCPokemon')?.addEventListener('click',()=>{showMCOnly=!showMCOnly;showAllPokemon=false;$('showMCPokemon').textContent=t(showMCOnly?'showAllDex':'showMC');$('showAllPokemon').textContent=t('showAll');$('suggestions').innerHTML='';$('search').value='';render(dexInitialList());});$('close').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('backdrop').onclick=()=>{$('modal').hidden=true;document.body.style.overflow=''};$('infoClose').onclick=()=>{pccHideInfoModal();$('infoBack').hidden=true};$('infoBackdrop').onclick=()=>{pccHideInfoModal();$('infoBack').hidden=true};$('infoBack').onclick=()=>{if(currentEvolutionSpecies)openEvolutionModal(currentEvolutionSpecies)};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('infoModal').hidden){$('infoModal').hidden=true}else{$('modal').hidden=true;document.body.style.overflow=''}}});
  const pokemonListPromise=json(`${API}/pokemon?limit=1025`);const languagePromise=loadLanguages();try{const d=await pokemonListPromise;mons=d.results.map((p,i)=>({name:p.name,id:i+1}));$('status').textContent=uiLang==='en'?`${mons.length} Pokémon loaded`:`${mons.length} Pokémon geladen`;render(dexInitialList());setupCalculator();setupTeamBuilder();applyLanguage();teamBuilderHandleSharedLink();$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value));languagePromise.then(()=>{championsMoveLabelCache.de.clear();championsMoveLabelCache.en.clear();if(mons.length)render(dexInitialList());applyLanguage();if($('builder'))renderTeamBuilder();$('showAllPokemon').textContent=t(showAllPokemon?'showLess':'showAll');}).catch(e=>console.warn('Languages:',e));}catch(e){console.error(e);$('status').textContent=t('loadError');setupCalculator();applyLanguage();$('languageSelect')?.addEventListener('change',e=>setLanguage(e.target.value))}
  loadAllItems().then(()=>{fillOptions();setupItemSearchV14('atk');setupItemSearchV14('def');if($('builder'))renderTeamBuilder()}).catch(e=>console.warn('Items:',e));
 }

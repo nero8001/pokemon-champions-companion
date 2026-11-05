@@ -15,11 +15,12 @@
 
 
 
+
+## v8.28
+- Information dialog now uses the browser Popover API top layer, which renders above sticky/fixed navigation regardless of z-index stacking contexts.
+
 ## v8.27
 - Information modal is now opened through a body-level overlay portal with inline top-layer positioning, avoiding inherited stacking contexts from page containers.
 
 ## v8.26
 - Fixed information-dialog layering above the sticky navigation and added CSS cache-busting so browsers load the updated modal styles.
-
-## v8.25
-- Information dialogs now render above the sticky navigation/status bar as a full-screen modal layer, keeping the dialog centered and fully accessible.
