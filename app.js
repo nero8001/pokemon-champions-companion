@@ -3,6 +3,25 @@
 let pccSupabase = null;
 const PCC_AUTH_REDIRECT_URL = 'https://pokemon-champions-companion.com';
 const PCC_REMEMBER_EMAIL_KEY = 'pcc_remember_login_email_v1';
+
+function pccShowInfoModal(){
+  const modal=document.getElementById('infoModal');
+  if(!modal)return;
+  // Move the dialog to body as a top-level overlay portal, avoiding any ancestor stacking context.
+  if(modal.parentElement!==document.body)document.body.appendChild(modal);
+  const header=document.querySelector('body > header');
+  if(header)header.style.setProperty('z-index','1','important');
+  modal.hidden=false;
+  modal.style.setProperty('position','fixed','important');
+  modal.style.setProperty('inset','0','important');
+  modal.style.setProperty('z-index','2147483647','important');
+  modal.style.setProperty('display','grid','important');
+  modal.style.setProperty('place-items','center','important');
+  modal.style.setProperty('padding','16px','important');
+  modal.style.setProperty('overflow','hidden','important');
+  modal.style.setProperty('isolation','isolate','important');
+}
+
 function pccAuthStatus(message){const el=document.getElementById('accountStatus');if(el)el.textContent=message;}
 function pccToast(message){const el=document.getElementById('authToast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(window.pccToastTimer);window.pccToastTimer=setTimeout(()=>el.hidden=true,5000);}
 function pccShowAccountPage(show=true){
@@ -1488,7 +1507,7 @@ async function loadLivePokemonProfile(name){
 async function openMetaPokemonProfile(name,teamContext=''){
   $('infoTitle').textContent=metaPokemonLabel(name);
   $('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${teamContext||'Pokémon Champions Battle Data · aktuelle Doubles-Daten'}</p><p class="meta-profile-note">${uiLang==='en'?'Loading current nature and spread data …':'Aktuelle Wesen- und Split-Daten werden geladen …'}</p></div>`;
-  $('infoModal').hidden=false;
+  pccShowInfoModal();
   try{
     const p=await loadLivePokemonProfile(name);
     const section=(title,arr)=>arr.length?`<div class="meta-profile-stat-section"><h3>${title}</h3>${arr.map(x=>`<div class="meta-profile-stat-row"><span>${x.name}</span><b>${x.pct>0?x.pct.toFixed(1)+'%':'—'}</b></div>`).join('')}</div>`:'';
@@ -1506,7 +1525,7 @@ function metaTeamPokemon(name,clickable=false,context=''){
 }
 function metaProfilePokemon(p){return `<button type="button" class="meta-profile-poke meta-profile-poke-button" data-meta-pokemon="${String(p.name).replace(/"/g,'&quot;')}" data-meta-context="${String(p.item||'').replace(/"/g,'&quot;')}"><div class="meta-profile-poke-head"><b>${metaPokemonLabel(p.name)}</b><span>${p.item||'—'}</span></div><div class="meta-profile-meta"><span><strong>${uiLang==='en'?'Ability':'Fähigkeit'}:</strong> ${p.ability||'—'}</span><span><strong>${uiLang==='en'?'Nature / EVs':'Wesen / EVs'}:</strong> ${p.nature||'—'}${p.evs?` · ${p.evs}`:''}</span></div><div class="meta-profile-moves">${(p.moves||[]).map(m=>`<span>${m}</span>`).join('')}</div></button>`}
 function bindMetaPokemonButtons(root=document){root.querySelectorAll('.meta-profile-poke-button,.meta-team-poke-button,.meta-pokemon-row-button').forEach(btn=>btn.onclick=()=>openMetaPokemonProfile(btn.dataset.metaPokemon,btn.dataset.metaContext||''))}
-function openMetaTeamProfile(index){const team=META_CONCRETE_TEAMS[index];if(!team)return;$('infoTitle').textContent=`${team.player} · ${team.record}`;$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${team.event||''}</p><div class="meta-profile-grid">${team.pokemon.map(metaProfilePokemon).join('')}</div><p class="meta-profile-note">${META_TEAM_PROFILE_NOTE}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/pokemon-champions-tournament-teams/" target="_blank" rel="noopener">Pokémon Champions Battle Data – Tournament Teams</a></div>`;$('infoModal').hidden=false;bindMetaPokemonButtons($('infoBody'))}
+function openMetaTeamProfile(index){const team=META_CONCRETE_TEAMS[index];if(!team)return;$('infoTitle').textContent=`${team.player} · ${team.record}`;$('infoBody').innerHTML=`<div class="meta-profile"><p class="meta-profile-event">${team.event||''}</p><div class="meta-profile-grid">${team.pokemon.map(metaProfilePokemon).join('')}</div><p class="meta-profile-note">${META_TEAM_PROFILE_NOTE}</p><a class="secondary meta-profile-source" href="https://championsbattledata.com/pokemon-champions-tournament-teams/" target="_blank" rel="noopener">Pokémon Champions Battle Data – Tournament Teams</a></div>`;pccShowInfoModal();bindMetaPokemonButtons($('infoBody'))}
 function metaRankingPreview(index){const arr=META_RANKING_PREVIEWS[index%META_RANKING_PREVIEWS.length]||[];return arr.map(metaTeamPokemon).join('')}
 
 async function renderMeta(){
@@ -1657,12 +1676,12 @@ function openEvolutionRequirements(name,details){
   return evolutionGenerationNumber(av?.generation)-evolutionGenerationNumber(bv?.generation)||String(av?.game||'').localeCompare(String(bv?.game||''));
  });
  $('infoBody').innerHTML=`<div class="evo-requirements">${list.length?list.map(d=>`<article class="evo-requirement-card">${evolutionDetailRows(d)}<div class="muted">${uiLang==='en'?'Trigger':'Auslöser'}: ${evoTitle(d.trigger?.name||'—')}</div>${d.min_level!=null?`<div>${uiLang==='en'?'Minimum level':'Mindestlevel'}: ${d.min_level}</div>`:''}${d.item?`<div>${uiLang==='en'?'Item':'Item'}: ${evoTitle(d.item.name)}</div>`:''}${d.held_item?`<div>${uiLang==='en'?'Held item':'Getragenes Item'}: ${evoTitle(d.held_item.name)}</div>`:''}${d.location?`<div>${uiLang==='en'?'Location':'Ort'}: ${evoTitle(d.location.name)}</div>`:''}${d.known_move?`<div>${uiLang==='en'?'Known move':'Bekannte Attacke'}: ${evoTitle(d.known_move.name)}</div>`:''}${d.known_move_type?`<div>${uiLang==='en'?'Move type':'Attackentyp'}: ${evoTitle(d.known_move_type.name)}</div>`:''}${d.min_happiness!=null?`<div>${uiLang==='en'?'Minimum friendship':'Mindestfreundschaft'}: ${d.min_happiness}</div>`:''}${d.time_of_day?`<div>${uiLang==='en'?'Time of day':'Tageszeit'}: ${d.time_of_day}</div>`:''}</article>`).join(''):`<p>${uiLang==='en'?'The available evolution API does not provide a complete per-game history for this evolution. The general conditions above are the documented data; older game-specific changes may need a separate source.':'Die verfügbare Entwicklungs-API liefert keine vollständige Historie je Spiel/Generation. Angezeigt werden die dort dokumentierten allgemeinen Bedingungen; ältere spielabhängige Änderungen benötigen eine separate Quelle.'}</p>`}</div>`;
- $('infoModal').hidden=false;
+ pccShowInfoModal();
 }
 async function openEvolutionModal(species){
  currentEvolutionSpecies=species;
  $('infoBack').hidden=true;
- $('infoTitle').textContent=uiLang==='en'?'Evolution line':'Entwicklungen';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Loading evolution data …':'Entwicklungsdaten werden geladen …'}</p>`;$('infoModal').hidden=false;
+ $('infoTitle').textContent=uiLang==='en'?'Evolution line':'Entwicklungen';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Loading evolution data …':'Entwicklungsdaten werden geladen …'}</p>`;pccShowInfoModal();
  try{
   const chain=await getEvolutionChain(species);const rows=flattenEvolutionChain(chain);const currentId=String(species.id);
   const normalized=rows.map(row=>({...row,id:String(rid(row.species.url)||'')}));
@@ -1814,7 +1833,7 @@ async function getAbilityInfo(id,name,customDescription){
 }
 function showEffectInfo(key){
   const data=ABILITY_EFFECTS[key]?.[uiLang]||ABILITY_EFFECTS[key]?.de;if(!data)return;
-  $('infoTitle').textContent=data.title;$('infoBody').innerHTML=`<div class="effect-info"><p><strong>${uiLang==='en'?'Duration':'Dauer'}:</strong> ${data.duration}</p><p>${data.effect}</p><p class="muted">${data.note}</p></div>`;$('infoModal').hidden=false;
+  $('infoTitle').textContent=data.title;$('infoBody').innerHTML=`<div class="effect-info"><p><strong>${uiLang==='en'?'Duration':'Dauer'}:</strong> ${data.duration}</p><p>${data.effect}</p><p class="muted">${data.note}</p></div>`;pccShowInfoModal();
 }
 const abilityLearnersCache=new Map();
 const ABILITY_LEARNERS_CSV='https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/';
@@ -1882,7 +1901,7 @@ function abilityLearnerHtml(learners){
   return `<div class=\"ability-learners-list\">${learners.map(x=>`<div class=\"ability-learner\"><img src=\"${sprite(x.dex)}\" alt=\"\"><div><span>${escapeHtml(abilityLearnerLabel(x))}</span>${x.hidden?`<small>${uiLang==='en'?'Hidden Ability':'Versteckte Fähigkeit'}</small>`:''}</div></div>`).join('')}</div>`;
 }
 async function showAbilityInfo(id,name,customDescription){
-  $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';$('infoModal').hidden=false;
+  $('infoTitle').textContent=uiLang==='en'?'Ability information':'Fähigkeits-Information';$('infoBody').innerHTML='<p>Daten werden geladen …</p>';pccShowInfoModal();
   const info=await getAbilityInfo(id,name,customDescription);$('infoTitle').textContent=info.name||name||'';
   const description=info.description||info.short|| (uiLang==='en'?'No description available.':'Keine Beschreibung verfügbar.');
   $('infoBody').innerHTML=`<p>${abilityEffectLinks(description)}</p><div class="ability-info-block"><button type="button" id="showAbilityLearners" class="secondary ability-learners-button">${uiLang==='en'?'Pokémon that can have this ability':'Pokémon erlernbar'}</button><div id="abilityLearners" class="ability-learners" hidden></div></div>`;
@@ -2092,7 +2111,7 @@ function championsLearnerHtml(learners){
   return `<div class="champions-learners-list">${learners.map(x=>`<div class="champions-learner"><img src="${sprite(x.dexNumber)}" alt=""><span>${escapeHtml(championsLearnerLabel(x))}</span>${x.form!=='Base'?`<small>${escapeHtml(uiLang==='en'?x.form:'Form')}</small>`:''}</div>`).join('')}</div>`;
 }
 async function showMoveInfo(raw){
-  const champMove=typeof raw==='string'?{name:raw}:raw;const name=championsMoveLabel(champMove);$('infoTitle').textContent=name||champMove.name||'';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Move data are loading …':'Attackendaten werden geladen …'}</p>`;$('infoModal').hidden=false;
+  const champMove=typeof raw==='string'?{name:raw}:raw;const name=championsMoveLabel(champMove);$('infoTitle').textContent=name||champMove.name||'';$('infoBody').innerHTML=`<p>${uiLang==='en'?'Move data are loading …':'Attackendaten werden geladen …'}</p>`;pccShowInfoModal();
   const info=await getMoveInfo(champMove);const m=info.champMove||{};const a=info.api||{};const accuracy=m.accuracy??a.accuracy;const power=m.power??a.power;const category=m.category||({physical:'Physical',special:'Special',status:'Status'}[a.damage_class?.name])||'—';const type=m.type||a.type?.name||'—';const target=m.target||a.target?.name||'';const flags=moveInfoFlags(info.flags);const amount=info.amounts;
   const labels=uiLang==='en'?{type:'Type',power:'Power',accuracy:'Accuracy',category:'Category',target:'Target',pp:'PP',priority:'Priority',traits:'Move traits',effect:'Effect',healing:'Healing',drain:'Life steal'}:{type:'Typ',power:'Stärke',accuracy:'Genauigkeit',category:'Kategorie',target:'Ziel',pp:'AP',priority:'Priorität',traits:'Eigenschaften',effect:'Effekt',healing:'Heilung',drain:'Lebensentzug'};
   const acc=accuracy===null||accuracy===true? (uiLang==='en'?'does not check accuracy':'prüft Genauigkeit nicht'):(accuracy==null?'—':`${accuracy}%`);

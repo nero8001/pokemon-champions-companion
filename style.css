@@ -407,3 +407,18 @@ header{z-index:1000 !important}
   overscroll-behavior:contain;
   transform:none !important;
 }
+
+/* v8.27 – Portal-based information dialog; JS places the overlay directly under body. */
+#infoModal[hidden]{display:none!important}
+#infoModal .backdrop{position:absolute;inset:0;z-index:0;background:rgba(0,0,0,.72)}
+#infoModal .info-modal{
+  position:relative;
+  z-index:1;
+  box-sizing:border-box;
+  width:min(720px,100%);
+  max-height:90vh;
+  min-height:0;
+  margin:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+}

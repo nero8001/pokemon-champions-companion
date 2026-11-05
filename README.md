@@ -14,11 +14,12 @@
 
 
 
+
+## v8.27
+- Information modal is now opened through a body-level overlay portal with inline top-layer positioning, avoiding inherited stacking contexts from page containers.
+
 ## v8.26
 - Fixed information-dialog layering above the sticky navigation and added CSS cache-busting so browsers load the updated modal styles.
 
 ## v8.25
 - Information dialogs now render above the sticky navigation/status bar as a full-screen modal layer, keeping the dialog centered and fully accessible.
-
-## v8.24
-- Corrected the actual information dialog position with a direct 24px vertical translation; reduced its maximum height to preserve the viewport boundary.
