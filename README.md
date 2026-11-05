@@ -1,16 +1,12 @@
-# Pokémon Champions Companion v8.13
+# Pokémon Champions Companion v8.15
 
-## Neu in v8.13 – Klarere Attackenauswahl und Schadensanzeige
+## Neu in v8.15 – KP-Leiste korrigiert
+- Die Darstellung entspricht wieder der vertrauten Anordnung aus v8.12: Grün zeigt links die nach dem maximalen Schaden sicher verbleibenden KP.
+- Direkt rechts davon zeigt Rot die zusätzliche mögliche Schadensspanne.
+- Der dunkle Rest rechts steht für KP, die mindestens abgezogen werden. Bei möglichem One-Hit-KO wird die Leiste vollständig rot.
+
+## Bereits in v8.14 – Schadensspanne visualisiert
+- Die KP-Leiste wurde um eine rote Anzeige für die mögliche Schadensspanne ergänzt.
+
+## Bereits in v8.13 – Klarere Attackenauswahl
 - Pokémon-Sprites wurden aus den Attacken-Vorschlägen im Battle Calculator entfernt, damit keine falschen Lernhinweise entstehen.
-- Die KP-Leiste zeigt jetzt den garantierten Mindestschaden grün und die zusätzliche mögliche Schadensspanne rot bis zum Maximalschaden.
-- Wenn ein One-Hit-KO möglich ist, wird die Leiste vollständig rot dargestellt und mit „K.o. möglich“ gekennzeichnet.
-
-## Bereits in v8.12 – Kontoanzeige, Hinweis und Letzte Ehre
-- Unter **Mein Konto** wird die E-Mail-Adresse des angemeldeten Kontos angezeigt.
-- Unter dem App-Namen steht jetzt **(Inofficial)** als Hinweis, dass es sich nicht um eine offizielle App von The Pokémon Company handelt.
-- **Letzte Ehre** besitzt im Battle Calculator eine Stacks-Auswahl von 0 bis 5. Pro Stack steigt die Basisstärke um 50 (maximal 300).
-
-## Bereits in v8.11 – Login-Komfort und Passwortbestätigung
-- Nach einer erfolgreichen Passwortänderung erscheint eine kurze Bestätigung.
-- Nach erfolgreicher Anmeldung wird das Passwort immer aus dem Feld gelöscht.
-- Mit **E-Mail speichern** kann die E-Mail-Adresse für den nächsten Login lokal im Browser gemerkt werden. Ohne aktivierte Checkbox werden E-Mail und Passwort nach dem Login geleert.

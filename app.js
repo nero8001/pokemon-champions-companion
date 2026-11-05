@@ -1,5 +1,5 @@
 
-// Pokémon Champions Companion v8.13 — cleaner move search and damage-range HP bar (publishable key only).
+// Pokémon Champions Companion v8.15 — corrected damage-range HP bar (publishable key only).
 let pccSupabase = null;
 const PCC_AUTH_REDIRECT_URL = 'https://pokemon-champions-companion.com';
 const PCC_REMEMBER_EMAIL_KEY = 'pcc_remember_login_email_v1';
@@ -2946,7 +2946,7 @@ async function calculateDamage(){
   $('damageResult').innerHTML=`<div class="damage-box">
    <div class="damage-number">${min}–${max} KP</div>
    <div class="damage-percent">${minPct.toFixed(1).replace('.',',')}–${maxPct.toFixed(1).replace('.',',')} % Schaden · Ø ${avg.toFixed(1).replace('.',',')} KP</div>
-   <div class="hpbar-wrap"><div class="hpbar" aria-label="Schadensspanne: ${minPct.toFixed(1)} bis ${maxPct.toFixed(1)} Prozent">${max>=hp?`<div class="hpbar-range hpbar-range-ohko" style="width:100%"></div>`:`<div class="hpbar-range-track"><div class="hpbar-fill" style="width:${Math.min(100,minPct)}%"></div><div class="hpbar-range" style="left:${Math.min(100,minPct)}%;width:${Math.max(0,Math.min(100,maxPct)-Math.min(100,minPct))}%"></div></div>`}</div><div class="hpbar-label">${Math.max(0,hp-max)}–${Math.max(0,hp-min)} KP verbleibend${max>=hp?' · K.o. möglich':''}</div></div>
+   <div class="hpbar-wrap"><div class="hpbar" aria-label="Schadensspanne: ${minPct.toFixed(1)} bis ${maxPct.toFixed(1)} Prozent">${max>=hp?`<div class="hpbar-range hpbar-range-ohko" style="width:100%" title="K.o. möglich"></div>`:`<div class="hpbar-fill" style="width:${Math.max(0,Math.min(100,100-maxPct))}%" title="Sicher verbleibende KP"></div><div class="hpbar-range" style="left:${Math.max(0,Math.min(100,100-maxPct))}%;width:${Math.max(0,Math.min(100,maxPct-minPct))}%" title="Mögliche zusätzliche Schadensspanne"></div>`}</div><div class="hpbar-label">${Math.max(0,hp-max)}–${Math.max(0,hp-min)} KP verbleibend${max>=hp?' · K.o. möglich':''}</div></div>
    <div class="damage-muted">${label}${hitCount>1?` · ${hitCount} ${t('hits')}`:''} · ${TARGET_AREA_LABELS[selectedTargetArea()][uiLang==='en'?'en':'de']} · 16 ${uiLang==='en'?'damage rolls per hit':'Schadenswürfe pro Treffer'} (85–100 %) · ${physical?(uiLang==='en'?'physical':'physisch'):(uiLang==='en'?'special':'speziell')}${env?' · '+env:''}</div>
    ${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}
   </div>`;
