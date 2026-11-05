@@ -1,6 +1,6 @@
-# Pokémon Champions Companion v8.16
+# Pokémon Champions Companion v8.17
 
-## Neu in v8.16 – Englische Lokalisierung überarbeitet
+## Neu in v8.17 – Englische Lokalisierung überarbeitet
 - Ein Sprachwechsel speichert die Auswahl und lädt die gesamte Seite neu, damit auch dynamisch erzeugte Inhalte konsistent übersetzt werden.
 - Team-Builder: Konto-Speichern und Hinweistext sind auf Deutsch und Englisch verfügbar; der nicht mehr benötigte Button „Konto-Teams laden“ wurde entfernt.
 - Mein-Konto-Menü und zugehörige Konto-Dialoge wurden übersetzt.
