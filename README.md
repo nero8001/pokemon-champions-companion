@@ -11,3 +11,5 @@
 ## Neu in v8.19 – Bedienkomfort
 - Der „Tauschen“-/„Switch“-Button verwendet eine kompaktere Schrift und passt nun vollständig in seine Schaltfläche.
 - Das „Mein Konto“-/„My Account“-Dropdown schließt sich automatisch bei einem Klick außerhalb des Menüs.
+## v8.23
+- Detail/evolution modal now has a guaranteed 24px gap below the sticky header; modal height is reduced accordingly to stay within the viewport.

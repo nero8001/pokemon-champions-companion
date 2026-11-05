@@ -3347,7 +3347,7 @@ async function init(){nav();$('metaSource')?.addEventListener('change',renderMet
 init();
 
 
-// v8.22 – Measure the header's actual viewport bottom, not just its height.
+// v8.23 – Measure the header's actual viewport bottom for the modal gap.
 (function pccSyncInfoModalHeaderOffset(){
   const update=()=>{
     const header=document.querySelector('header');
