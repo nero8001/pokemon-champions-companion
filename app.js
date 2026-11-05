@@ -45,6 +45,13 @@ function pccInitSupabaseAuth(){
     if(data?.session){const dd=document.getElementById('accountDropdown');if(dd)dd.hidden=!dd.hidden;}
     else pccShowAccountPage(true);
   });
+  // Close the account dropdown when the user clicks anywhere outside it or its trigger.
+  document.addEventListener('click',event=>{
+    const dropdown=document.getElementById('accountDropdown');
+    const trigger=document.getElementById('accountEntry');
+    if(!dropdown||dropdown.hidden)return;
+    if(!dropdown.contains(event.target)&&!trigger?.contains(event.target))dropdown.hidden=true;
+  });
   document.getElementById('accountBack')?.addEventListener('click',()=>pccShowAccountPage(false));
   const deleteDialog=document.getElementById('deleteAccountDialog'),deleteInput=document.getElementById('deleteAccountConfirm'),deleteButton=document.getElementById('deleteAccountConfirmButton'),deleteStatus=document.getElementById('deleteAccountStatus');
   const closeDelete=()=>{if(deleteDialog)deleteDialog.hidden=true;if(deleteInput)deleteInput.value='';if(deleteButton)deleteButton.disabled=true;if(deleteStatus)deleteStatus.textContent='';};
