@@ -17,11 +17,12 @@
 
 
 
+
+## v8.30
+- Moved the Evolutions action from its own top row to a compact button beside the Shiny toggle in the Pokémon detail header, reducing unnecessary modal height.
+
 ## v8.29
 - Increased the information panel's maximum height to the viewport minus 24px, so the panel visibly overlaps the sticky navigation instead of starting just below it.
 
 ## v8.28
 - Information dialog now uses the browser Popover API top layer, which renders above sticky/fixed navigation regardless of z-index stacking contexts.
-
-## v8.27
-- Information modal is now opened through a body-level overlay portal with inline top-layer positioning, avoiding inherited stacking contexts from page containers.
