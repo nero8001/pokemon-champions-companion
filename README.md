@@ -18,13 +18,12 @@
 
 
 
+
+## v8.32
+- Simplified evolution information and included all direct evolution paths in More Info; cleaned up Meta team notes and removed manual Pikalytics/Suckerpunch sources in favor of the live Champions API only.
+
 ## v8.30
 - Moved the Evolutions action from its own top row to a compact button beside the Shiny toggle in the Pokémon detail header, reducing unnecessary modal height.
 
 ## v8.29
 - Increased the information panel's maximum height to the viewport minus 24px, so the panel visibly overlaps the sticky navigation instead of starting just below it.
-
-## v8.28
-- Information dialog now uses the browser Popover API top layer, which renders above sticky/fixed navigation regardless of z-index stacking contexts.
-## v8.31
-- Fixed the Pokémon detail modal stacking order: `#modal` now renders above the sticky header (`z-index: 30000` vs. `20000`).
