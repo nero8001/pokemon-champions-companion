@@ -16,11 +16,12 @@
 
 
 
+
+## v8.29
+- Increased the information panel's maximum height to the viewport minus 24px, so the panel visibly overlaps the sticky navigation instead of starting just below it.
+
 ## v8.28
 - Information dialog now uses the browser Popover API top layer, which renders above sticky/fixed navigation regardless of z-index stacking contexts.
 
 ## v8.27
 - Information modal is now opened through a body-level overlay portal with inline top-layer positioning, avoiding inherited stacking contexts from page containers.
-
-## v8.26
-- Fixed information-dialog layering above the sticky navigation and added CSS cache-busting so browsers load the updated modal styles.
