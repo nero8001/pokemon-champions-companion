@@ -26,3 +26,5 @@
 
 ## v8.28
 - Information dialog now uses the browser Popover API top layer, which renders above sticky/fixed navigation regardless of z-index stacking contexts.
+## v8.31
+- Fixed the Pokémon detail modal stacking order: `#modal` now renders above the sticky header (`z-index: 30000` vs. `20000`).
