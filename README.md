@@ -1,29 +1,15 @@
-# Pokémon Champions Companion v8.22
+# Pokémon Champions Companion – Web-App v9.0
 
-## Neu in v8.22 – Modal-Positionierung
-- Entwicklungs- und Detailfenster beginnen jetzt zuverlässig unterhalb der tatsächlichen Unterkante der Kopfzeile, mit zusätzlichem Abstand.
-- Das Fenster bleibt vollständig im verfügbaren Bildschirmbereich und besitzt einen eigenen Scrollbereich.
+## Release v9.0
 
-## Neu in v8.20 – Modal-Darstellung
-- Entwicklungs- und Detailfenster werden unterhalb der festen Kopfzeile angezeigt und überlappen diese nicht mehr.
-- Die Fensterhöhe passt sich dynamisch an die tatsächliche Kopfzeilenhöhe an; der Inhalt bleibt im eigenen Fenster scrollbar.
+- **v9.0:** Release version with the new Download page. Includes the Windows installer and Android APK (both v9.0). This download feature is Web-App-only and is not carried over to Android or Windows.
 
-## Neu in v8.19 – Bedienkomfort
-- Der „Tauschen“-/„Switch“-Button verwendet eine kompaktere Schrift und passt nun vollständig in seine Schaltfläche.
-- Das „Mein Konto“-/„My Account“-Dropdown schließt sich automatisch bei einem Klick außerhalb des Menüs.
+## Deployment
 
+Publish the complete contents of this folder through GitHub Pages. Keep the `downloads/` directory alongside `index.html`, `app.js`, and `style.css`.
 
+Download files:
+- `downloads/Pokemon_Champions_Companion_v9.0_Setup.exe`
+- `downloads/Pokemon_Champions_Companion_v9.0.apk`
 
-
-
-
-
-
-## v8.32
-- Simplified evolution information and included all direct evolution paths in More Info; cleaned up Meta team notes and removed manual Pikalytics/Suckerpunch sources in favor of the live Champions API only.
-
-## v8.30
-- Moved the Evolutions action from its own top row to a compact button beside the Shiny toggle in the Pokémon detail header, reducing unnecessary modal height.
-
-## v8.29
-- Increased the information panel's maximum height to the viewport minus 24px, so the panel visibly overlaps the sticky navigation instead of starting just below it.
+The Web-App is version 9.0. The downloadable desktop and Android applications are also version 9.0.

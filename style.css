@@ -444,3 +444,24 @@ header{z-index:20000}
 #modal{z-index:30000 !important}
 #modal .backdrop{z-index:0}
 #modal .modal{z-index:1}
+
+/* v8.33 – Web-App-only download page. */
+.download-card{max-width:760px;margin:0 auto;padding:24px}
+.download-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:18px}
+.download-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  min-width:220px;
+  min-height:48px;
+  margin:0;
+  padding:12px 20px;
+  text-align:center;
+  text-decoration:none;
+  cursor:pointer;
+}
+@media(max-width:560px){
+  .download-actions{flex-direction:column}
+  .download-link{width:100%;min-width:0}
+}

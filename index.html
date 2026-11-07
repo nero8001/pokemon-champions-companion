@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020"><title>Pokémon Champions Companion – v8.23</title>
-<link rel="stylesheet" href="style.css?v=8.32">
+<link rel="stylesheet" href="style.css?v=9.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style id="v14-calculator">
@@ -27,7 +27,7 @@
 <header>
   <div class="brand">⚡ <span class="brand-title"><b>Champions<br>Companion</b><small>(Inofficial)</small></span></div>
   <div class="top-tools"><label class="lang-label" for="languageSelect">Sprache / Language</label><select id="languageSelect" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><div id="accountDropdownEmail" class="account-dropdown-email" aria-live="polite"></div><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuChangePassword" type="button" class="secondary" hidden>Passwort ändern</button><button id="accountMenuChangeEmail" type="button" class="secondary" hidden>E-Mail-Adresse ändern</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button></nav></div>
+  <div class="menu-wrap"><button id="accountEntry" class="menu-toggle account-entry" type="button">Anmelden/Registrieren</button><div id="accountDropdown" class="account-dropdown" hidden><div id="accountDropdownEmail" class="account-dropdown-email" aria-live="polite"></div><button id="accountMenuLogout" type="button" class="secondary">Abmelden</button><button id="accountMenuChangePassword" type="button" class="secondary" hidden>Passwort ändern</button><button id="accountMenuChangeEmail" type="button" class="secondary" hidden>E-Mail-Adresse ändern</button><button id="accountMenuDelete" type="button" class="danger-button">Konto löschen</button></div><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">☰ <span data-i18n="menu">Menü</span></button><nav id="mainNav" class="main-nav"><button class="nav active" data-page="dex" data-i18n="pokedex">Pokédex</button><button class="nav" data-page="calc" data-i18n="calculator">Battle Calculator</button><button class="nav" data-page="randomizer" data-i18n="randomizer">Randomizer</button><button class="nav" data-page="builder" data-i18n="teamBuilder">Team-Builder</button><button class="nav" data-page="myteams">Meine Teams</button><button class="nav" data-page="meta" data-i18n="meta">Meta &amp; Teams</button><button class="nav" data-page="download" data-i18n="download">Download</button></nav></div>
 </header>
 <section id="accountPanel" class="account-page card" style="display:none;margin:16px auto;max-width:700px;padding:22px" aria-labelledby="accountPageTitle">
   <button id="accountBack" type="button" class="secondary">← Zur Startseite</button>
@@ -94,7 +94,7 @@
 </style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 8.32</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -112,7 +112,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 8.32</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 9.0</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -240,7 +240,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 8.32</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -254,7 +254,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 8.32</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -307,8 +307,25 @@
   </div>
 </section>
 
+
+<section id="download" class="page">
+  <div class="hero">
+    <div class="eyebrow">DOWNLOAD</div>
+    <h1 data-i18n="downloadTitle">Downloads</h1>
+    <p data-i18n="downloadDescription">Lade den Pokémon Champions Companion für Windows oder Android herunter.</p>
+  </div>
+  <div class="card download-card">
+    <h2 data-i18n="downloadChoose">Wähle deine Plattform</h2>
+    <p class="meta-muted" data-i18n="downloadVersionNote">Beide Apps werden in Version 9.0 bereitgestellt.</p>
+    <div class="download-actions">
+      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.0_Setup.exe" download data-i18n="downloadWindows">Download für Windows</a>
+      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.0.apk" download data-i18n="downloadAndroid">Download für Android</a>
+    </div>
+  </div>
+</section>
+
 </main>
 <div id="modal" hidden><div class="backdrop" id="backdrop"></div><article class="modal"><button id="close" class="close">×</button><div id="modalbody"></div></article></div><div id="infoModal" popover="manual" hidden><div class="backdrop" id="infoBackdrop"></div><article class="info-modal"><button id="infoClose" class="close">×</button><button id="infoBack" class="info-back" type="button" hidden aria-label="Zurück zu den Entwicklungen" title="Zurück zu den Entwicklungen">←</button><h2 id="infoTitle"></h2><div id="infoBody"></div></article></div>
 <script>window.PCC_SUPABASE_URL="https://sgaejcrfxaxzutkkceio.supabase.co";window.PCC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_VwDgGoolKrDfPIaSqu72jg_Kfi949Lp";</script>
-<script src="app.js?v=8.32"></script>
+<script src="app.js?v=9.0"></script>
 </body></html>
