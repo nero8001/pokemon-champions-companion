@@ -2971,7 +2971,7 @@ async function calculateDamage(){
   updateTargetArea(m,false);
   updateHpMoveControl(m,a);
   const dynamicMoveName=normalizeMoveName(m.name);
-  const dynamicPowerMoves=['water spout','eruption','body press','foul play','psyshock','psystrike','secret sword','heavy slam','heat crash','low kick','grass knot'];
+  const dynamicPowerMoves=['water spout','eruption','body press','foul play','psyshock','psystrike','secret sword','heavy slam','heat crash','low kick','grass knot','hard press'];
   if(!m.power&&!dynamicPowerMoves.includes(dynamicMoveName)){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
   const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def');
   const physical=m.damage_class?.name==='physical';
@@ -3020,6 +3020,12 @@ async function calculateDamage(){
      const currentHp=rawCurrent===''?maxHp:Math.max(0,Math.min(maxHp,Number(rawCurrent)||0));
      basePower=Math.max(1,Math.floor(150*currentHp/maxHp));
      notesHpMove=`${uiLang==='en'?'Current HP':'Aktuelle KP'}: ${currentHp}/${maxHp} · ${uiLang==='en'?'Base power':'Basisstärke'} ${basePower}`;
+   }
+   if(dynamicMoveName==='hard press'){
+     const rawTargetHpPct=String($('defenderRemainingHp')?.value??'100').trim();
+     const targetHpPct=Math.max(0,Math.min(100,rawTargetHpPct===''?100:(Number(rawTargetHpPct)||0)));
+     basePower=Math.max(1,Math.floor(targetHpPct));
+     notesHpMove=`${uiLang==='en'?'Target remaining HP':'Verbleibende KP des Ziels'}: ${targetHpPct}% · ${uiLang==='en'?'Base power':'Basisstärke'} ${basePower}`;
    }
    const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
    const weightKg=x=>Math.max(0,Number(x?.weight)||0)/10;
