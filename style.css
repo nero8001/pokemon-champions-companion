@@ -465,3 +465,5 @@ header{z-index:20000}
   .download-actions{flex-direction:column}
   .download-link{width:100%;min-width:0}
 }
+
+.hp-move-input{display:flex;align-items:center;gap:.55rem;max-width:220px}.hp-move-input input{width:110px}.hp-move-input b{min-width:2.5rem}.hp-move-input span{opacity:.65}

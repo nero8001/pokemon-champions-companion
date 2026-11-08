@@ -94,7 +94,7 @@
 </style>
 <main>
 <section id="dex" class="page active">
-  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
+  <div class="hero"><small>VERSION 9.2</small><h1 data-i18n="pokedex">Pokédex</h1><p data-i18n="dexHero">Deutsche Pokémon-Daten und Kampfvorbereitung.</p></div>
   <div class="card searchbox">
     <label for="search">Pokémon suchen</label>
     <div class="searchrow"><input id="search" type="search" autocomplete="off" placeholder="Name oder Pokédex-Nummer"><button id="clear" type="button">×</button></div>
@@ -112,7 +112,7 @@
   <div id="grid" class="grid"></div>
 </section>
 <section id="calc" class="page">
-<div class="hero"><small>VERSION 9.0</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
+<div class="hero"><small>VERSION 9.2</small><h1 data-i18n="calculator">Battle Calculator</h1><p data-i18n="calcHero">Level 50 · Statuswertpunkte · Wesen · Fähigkeiten · Status · Statuswertänderungen.</p></div>
 
 <div class="calc-duo-v14">
   <div class="card combatant-card-v14" id="attackerCard">
@@ -140,6 +140,7 @@
     </div>
     <div id="moveInfo" class="move-info">Wähle eine Attacke für die Kalkulation.</div>
     <div id="rageFistStacksWrap" class="rage-fist-stacks" hidden><label for="rageFistStacks"><span id="rageFistStacksLabel">Zornesfaust Stacks</span><select id="rageFistStacks" aria-label="Zornesfaust Stacks"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select><small id="rageFistStacksHelp">+50 Basisstärke pro Stack, maximal 350.</small></label></div>
+    <div id="hpMoveControl" class="rage-fist-stacks" hidden><label for="attackerCurrentHp"><span id="hpMoveLabel">Aktuelle KP des Angreifers</span><div class="hp-move-input"><input id="attackerCurrentHp" type="number" min="1" step="1" placeholder="Volle KP"><span>/</span><b id="attackerMaxHp">—</b></div><small id="hpMoveHelp">Leer lassen, um volle KP anzunehmen.</small></label></div>
     <div id="chargedStateWrap" class="rage-fist-stacks" hidden><label for="chargedState"><span>Aufgeladen?</span><select id="chargedState" aria-label="Aufgeladen?"><option value="no">Nein</option><option value="yes">Ja</option></select><small>Verdoppelt den Schaden der nächsten Elektroattacke.</small></label></div>
 
     <div class="twocol">
@@ -240,7 +241,7 @@
 </div>
 </section>
 <section id="randomizer" class="page">
-  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
+  <div class="hero"><small>VERSION 9.2</small><h1 data-i18n="randomizer">Randomizer</h1><p data-i18n="randomizerHero">Erstelle ein zufälliges Team aus den in Pokémon Champions verfügbaren Pokémon.</p></div>
   <div class="card randomizer-controls">
     <label for="randomizerMega" data-i18n="randomizerMegaLabel">Enthält Mega-Entwicklungen</label>
     <select id="randomizerMega">
@@ -254,7 +255,7 @@
   <div id="randomizerTeam" class="randomizer-team"></div>
 </section>
 <section id="builder" class="page">
-  <div class="hero"><small>VERSION 9.0</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
+  <div class="hero"><small>VERSION 9.2</small><h1 data-i18n="teamBuilder">Team-Builder</h1><p data-i18n="teamBuilderHero">Stelle dein 6er-Team mit Champions-Pokémon, Champions-Attacken, Items und 66 Statuswertpunkten zusammen.</p></div>
   <div class="card team-builder-toolbar">
     <div class="team-builder-toolbar-main">
       <div><strong data-i18n="teamBuilderHintTitle">Kompakter Team-Builder</strong><p class="team-builder-hint" data-i18n="teamBuilderHint">Klappe nur das Pokémon auf, das du gerade bearbeiten möchtest. Die übrigen Slots bleiben kompakt.</p></div>
@@ -318,8 +319,8 @@
     <h2 data-i18n="downloadChoose">Wähle deine Plattform</h2>
     <p class="meta-muted" data-i18n="downloadVersionNote">Beide Apps werden in Version 9.0 bereitgestellt.</p>
     <div class="download-actions">
-      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.0_Setup.exe" download data-i18n="downloadWindows">Download für Windows</a>
-      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.0.apk" download data-i18n="downloadAndroid">Download für Android</a>
+      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.2_Setup.exe" download data-i18n="downloadWindows">Download für Windows</a>
+      <a class="primary download-link" href="downloads/Pokemon_Champions_Companion_v9.2.apk" download data-i18n="downloadAndroid">Download für Android</a>
     </div>
   </div>
 </section>

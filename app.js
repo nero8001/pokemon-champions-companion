@@ -362,6 +362,12 @@ async function getChampionsMovesForPokemon(p,s){
   // Adding Espinodon's signature move must not make an otherwise empty
   // learnset look complete; otherwise the fallback below is skipped and the
   // Team Builder shows Großklingenstoß as the sole option.
+  // Epitaff (Annihilape) can select Zornesfaust in the Champions Team Builder
+  // even when the upstream Champions learnset snapshot omits this move.
+  if(dex===979 && !result.some(m=>normMoveName(m?.name)==='ragefist')){
+    const rage=moveMap.get('ragefist')||moveMap.get('rage fist');
+    result.push(rage?{...rage,inChampions:true}:{name:'Rage Fist',type:'Ghost',category:'Physical',power:50,accuracy:100,pp:10,inChampions:true});
+  }
   const hasLearnsetMoves=result.length>0;
   includeEspinodonSignatureMove();
   if(hasLearnsetMoves)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
@@ -2940,11 +2946,32 @@ async function calculateDamage(){
  try{
   const m=await json(`${API}/move/${mid}`);
   updateTargetArea(m,false);
-  if(!m.power){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
+  const hpMoveNames=['water spout','eruption'];
+  const hpMove=hpMoveNames.includes(normalizeMoveName(m.name));
+  const hpWrap=$('hpMoveControl');
+  if(hpWrap){
+    hpWrap.hidden=!hpMove;
+    if(hpMove){
+      const maxHp=calcLevel50Stats(a,'atk')[0];
+      $('attackerMaxHp').textContent=String(maxHp);
+      $('attackerCurrentHp').max=String(maxHp);
+      $('attackerCurrentHp').placeholder=String(maxHp);
+      $('hpMoveLabel').textContent=uiLang==='en'?'Attacker current HP':'Aktuelle KP des Angreifers';
+      $('hpMoveHelp').textContent=uiLang==='en'?'Leave blank to assume full HP.':'Leer lassen, um volle KP anzunehmen.';
+    }
+  }
+  const dynamicMoveName=normalizeMoveName(m.name);
+  const dynamicPowerMoves=['water spout','eruption','body press','foul play','psyshock','psystrike','secret sword','heavy slam','heat crash','low kick','grass knot'];
+  if(!m.power&&!dynamicPowerMoves.includes(dynamicMoveName)){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
   const av=calcLevel50Stats(a,'atk'),dv=calcLevel50Stats(d,'def');
   const physical=m.damage_class?.name==='physical';
-  const attackStat=physical?'atk':'spa', defenseStat=physical?'def':'spd';
-  const attackIndex=physical?1:3, defenseIndex=physical?2:4;
+  const bodyPress=dynamicMoveName==='body press';
+  const foulPlay=dynamicMoveName==='foul play';
+  const psyshockLike=['psyshock','psystrike','secret sword'].includes(dynamicMoveName);
+  const attackStat=bodyPress?'def':(foulPlay?'atk':(physical?'atk':'spa'));
+  const defenseStat=psyshockLike?'def':(physical?'def':'spd');
+  const attackIndex=bodyPress?2:(foulPlay?1:(physical?1:3));
+  const defenseIndex=psyshockLike?2:(physical?2:4);
   const atkItem=selectedItem('atk'),defItem=selectedItem('def');
   const criticalHit=!!$('criticalHit')?.checked;
   const atkStage=getStage('atk',attackStat),defStage=getStage('def',defenseStat);
@@ -2953,9 +2980,13 @@ async function calculateDamage(){
   const effectiveDefStage=criticalHit?Math.min(0,defStage):defStage;
   let attack=av[attackIndex]*stageMultiplier(effectiveAtkStage);
   let defense=dv[defenseIndex]*stageMultiplier(effectiveDefStage);
+  if(foulPlay){
+    const targetAtkStage=getStage('def','atk');
+    attack=dv[1]*stageMultiplier(criticalHit?Math.max(0,targetAtkStage):targetAtkStage);
+  }
   if(normalizeItemName(atkItem?.raw)==='light-ball'&&String(a.name||'').toLowerCase()==='pikachu') attack*=2;
   const attackerStatus=$('atkStatus')?.value||'Keine';
-  if(attackerStatus==='Verbrennung'&&physical&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase())){
+  if(attackerStatus==='Verbrennung'&&physical&&!foulPlay&&!['guts','marvel scale'].includes(String(selectedAbility('atk')?.name||'').toLowerCase())){
     attack=Math.floor(attack*.5);
   }
   defense=applyWeatherDefense(m,d,Math.floor(defense),physical);
@@ -2971,7 +3002,28 @@ async function calculateDamage(){
    const stackLimit=isLastRespects?5:6;
    const moveStacks=Math.max(0,Math.min(stackLimit,Number($('rageFistStacks')?.value)||0));
    const usesStacks=(isLastRespects||(isRageFist&&isEpitaff));
-   const basePower=usesStacks?Math.min(isLastRespects?300:350,50+50*moveStacks):Number(m.power);
+   let notesHpMove='';
+   let basePower=usesStacks?Math.min(isLastRespects?300:350,50+50*moveStacks):Number(m.power)||0;
+   if(dynamicMoveName==='water spout'||dynamicMoveName==='eruption'){
+     const maxHp=Math.max(1,av[0]);
+     const rawCurrent=String($('attackerCurrentHp')?.value??'').trim();
+     const currentHp=rawCurrent===''?maxHp:Math.max(0,Math.min(maxHp,Number(rawCurrent)||0));
+     basePower=Math.max(1,Math.floor(150*currentHp/maxHp));
+     notesHpMove=`${uiLang==='en'?'Current HP':'Aktuelle KP'}: ${currentHp}/${maxHp} · ${uiLang==='en'?'Base power':'Basisstärke'} ${basePower}`;
+   }
+   const weightKg=x=>Math.max(0,Number(x?.weight)||0)/10;
+   if(dynamicMoveName==='heavy slam'||dynamicMoveName==='heat crash'){
+     const ratio=weightKg(a)/Math.max(.001,weightKg(d));
+     basePower=ratio>=5?120:ratio>=4?100:ratio>=3?80:ratio>=2?60:40;
+   }else if(dynamicMoveName==='low kick'||dynamicMoveName==='grass knot'){
+     const targetWeight=weightKg(d);
+     basePower=targetWeight>=200?120:targetWeight>=100?100:targetWeight>=50?80:targetWeight>=25?60:targetWeight>=10?40:20;
+   }
+   if(bodyPress)notes.push(uiLang==='en'?'Body Press uses the user’s Defense':'Body Press nutzt die Verteidigung des Anwenders');
+   if(foulPlay)notes.push(uiLang==='en'?'Foul Play uses the target’s Attack':'Schmarotzer nutzt den Angriff des Ziels');
+   if(psyshockLike)notes.push(uiLang==='en'?'Uses Special Attack vs. Defense':'Nutzt Spezial-Angriff gegen Verteidigung');
+   if(['heavy slam','heat crash','low kick','grass knot'].includes(dynamicMoveName))notes.push(`${uiLang==='en'?'Weight-based base power':'Gewichtsabhängige Basisstärke'}: ${basePower}`);
+   if(typeof notesHpMove!=='undefined'&&notesHpMove)notes.push(notesHpMove);
   let power=Math.floor(basePower*abilityMove.powerMult*fw.mult);
    const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
   const isElectricMove=String(abilityMove.type||m.type?.name||'').toLowerCase()==='electric';
@@ -2998,7 +3050,9 @@ async function calculateDamage(){
   const selectedAtkType=$('atkTypeLoss')?.value||'';
   const aTypes=selectedAtkType?[selectedAtkType]:(a.types||[]).map(x=>x.type?.name).filter(Boolean);
   const forcedSTAB=hasStabChangingAbility()&&!!$('forceSTAB')?.checked;
-  const stab=(aTypes.includes(abilityMove.type)||forcedSTAB)?1.5:1;
+  const hasSTAB=(aTypes.includes(abilityMove.type)||forcedSTAB);
+  const attackerAbilityName=normalizeAbilityName(selectedAbility('atk')?.name||selectedAbility('atk')?.raw||'');
+  const stab=hasSTAB?(attackerAbilityName==='adaptability'||attackerAbilityName==='anpassung'?2:1.5):1;
   if(forcedSTAB)notes.push(uiLang==='en'?'STAB enabled for Protean/Libero':'STAB erzwungen (Wandlungskunst/Libero)');
   let criticalMult=1;
   if(criticalHit){
@@ -3032,7 +3086,7 @@ async function calculateDamage(){
   const avgPct=avg/hp*100;
   const label=deM(mid)||title(m.name);
   const env=[getSelectedField().label,getSelectedWeather().label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
-  if(stab!==1)notes.push('STAB: ×1,5');
+  if(stab!==1)notes.push(`STAB: ×${String(stab).replace('.',',')}${stab===2?' (Anpassung)':''}`);
   if(typeMult!==1)notes.push(`Typenwirkung: ×${typeMult}`);
   if(getSelectedWeather()===weatherEffects.sand&&!physical&&(effectiveDefender.types||[]).some(t=>t.type?.name==='rock'))notes.push('Sandsturm: +50% Sp. Verteidigung des Gestein-Pokémon');
   if(getSelectedWeather()===weatherEffects.snow&&physical&&(effectiveDefender.types||[]).some(t=>t.type?.name==='ice'))notes.push('Schnee: +50% Verteidigung des Eis-Pokémon');
@@ -3128,6 +3182,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
  document.querySelectorAll('.calc-move-choice').forEach((choice,i)=>choice.addEventListener('change',()=>{if(choice.checked)selectCalculatorMoveSlot(i,true);else choice.checked=true;}));
  calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{selectCalculatorMoveSlot(i,false);$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
  $('chargedState')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
+ $('attackerCurrentHp')?.addEventListener('input',()=>{if(calcState.selectedMove)calculateDamage()});
  $('targetArea')?.addEventListener('change',()=>{if(calcState.selectedMove)calculateDamage()});
  ['atkNature','atkItem','atkStatus','atkBoost','atkSpABoost','atkSpeedBoost'].forEach(id=>$(id).addEventListener('change',()=>updateCalcSide('atk')));
  $('atkAbility').addEventListener('change',()=>{const x=calcState.abilities.attacker.find(a=>String(a.id)===String($('atkAbility').value));calcState.selectedAbility.attacker=x||null;updateStabToggle();updateCalcSide('atk');updateChargedStateVisibility();if(calcState.selectedMove)calculateDamage()});
@@ -3258,7 +3313,7 @@ async function teamBuilderSelectPokemon(slot,item){
     const [p,s]=await Promise.all([json(`${API}/pokemon/${item.id}`),json(`${API}/pokemon-species/${item.id}`)]);
     p.speciesId=Number(item.id);p._formName=deP(item.id)||item.label||title(p.name);st.base=p;
     const forms=[{id:p.id,label:t('teamBuilderFormBase'),pokemon:p}];
-    for(const v of s.varieties||[]){const id=rid(v.pokemon.url);if(!id||String(id)===String(p.id))continue;const raw=String(v.pokemon.name||'').toLowerCase();if(!raw.includes('mega')&&!raw.includes('alola')&&!raw.includes('galar')&&!raw.includes('hisui')&&!raw.includes('paldea'))continue;try{const fp=await json(v.pokemon.url);fp.speciesId=Number(item.id);const flabel=formDisplayName(fp,item.id,s.name);fp._formName=flabel;forms.push({id:fp.id,label:flabel,pokemon:fp})}catch(e){}}
+    for(const v of s.varieties||[]){const id=rid(v.pokemon.url);if(!id||String(id)===String(p.id))continue;const raw=String(v.pokemon.name||'').toLowerCase();const isGenderForm=[876,902].includes(Number(item.id))&&(raw.endsWith('-female')||raw.endsWith('-male'));if(!raw.includes('mega')&&!raw.includes('alola')&&!raw.includes('galar')&&!raw.includes('hisui')&&!raw.includes('paldea')&&!isGenderForm)continue;try{const fp=await json(v.pokemon.url);fp.speciesId=Number(item.id);const flabel=formDisplayName(fp,item.id,s.name);fp._formName=flabel;forms.push({id:fp.id,label:flabel,pokemon:fp})}catch(e){}}
     for(const f of mcFormsForSpecies(item.id)){if(forms.some(x=>String(x.label).toLowerCase()===String(f.label).toLowerCase()))continue;const fp=syntheticMCForm(p,f);fp.speciesId=Number(item.id);fp._formName=f.label;forms.push({id:`mc-${item.id}-${f.key}`,label:f.label,pokemon:fp});}
     st.formOptions=forms;st.pokemon=p;st._formLabel=forms[0]?.label||p._formName||'';st.moveValues=['','','',''];
     st.moves=await getChampionsMovesForPokemon(p,s);const abilities=teamBuilderAbilityList(p);st.ability=abilities[0]?.key||'';
