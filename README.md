@@ -1,3 +1,10 @@
+# Pokémon Champions Companion – Web v9.2.3
+
+## Letzte Änderungen
+- KP-Eingabe für Fonträne und Eruption erscheint unmittelbar nach Auswahl der Attacke – ohne vorherige Schadensberechnung.
+- Maximale KP werden direkt angezeigt und bei einer Schadensberechnung weiterhin berücksichtigt.
+- Vorherige v9.2.x-Korrekturen bleiben erhalten.
+
 # Pokémon Champions Companion – Web v9.2.2
 
 ## Letzte Änderungen

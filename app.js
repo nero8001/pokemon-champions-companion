@@ -2374,7 +2374,7 @@ async function loadCalcMoves(){
  const p=calcState.attacker;
  updateRageFistStacksVisibility('');
  const input=$('moveSearch');
- calcState.moves=[];calcState.selectedMove=null;calcActiveMoveSlot=0;
+ calcState.moves=[];calcState.selectedMove=null;calcActiveMoveSlot=0;updateHpMoveControl(null);
  calcMoveInputIds.forEach((id,i)=>{const el=$(id),list=$(calcMoveSuggestionIds[i]);if(el){el.value='';el.disabled=true;el.placeholder=t('moveSearch')+' …'}if(list){list.innerHTML='';list.hidden=true}});
  document.querySelectorAll('.calc-move-slot').forEach(x=>x.classList.remove('is-selected'));document.querySelectorAll('.calc-move-choice').forEach((x,i)=>x.checked=i===0);calcActiveMoveSlot=0;
  $('moveInfo').textContent=p?`${t('moveSearch')} …`:(uiLang==='en'?'Choose an attacker, then a move.':'Wähle einen Angreifer und danach eine Attacke.');
@@ -2456,6 +2456,7 @@ async function showMoveInfoById(id){
  if(!id)return;const sameMove=String(calcState.selectedMove)===String(id);calcState.selectedMove=id;
  try{
   const m=await json(`${API}/move/${id}`);
+  updateHpMoveControl(m,calcState.attacker);
    updateRageFistStacksVisibility(m.name);
   updateChargedStateVisibility(m.name);
   updateTargetArea(m,true);
@@ -2947,26 +2948,28 @@ function updateTargetArea(m,reset=false){
  sel.value=!reset&&allowed.includes(old)?old:defaultValue;
 }
 function selectedTargetArea(){return $('targetArea')?.value||'one'}
+function updateHpMoveControl(move,a=calcState.attacker){
+ const hpMoveNames=['water spout','eruption'];
+ const hpMove=!!move&&hpMoveNames.includes(normalizeMoveName(move.name));
+ const hpWrap=$('hpMoveControl');
+ if(!hpWrap)return;
+ hpWrap.hidden=!hpMove;
+ if(hpMove&&a){
+  const maxHp=calcLevel50Stats(a,'atk')[0];
+  $('attackerMaxHp').textContent=String(maxHp);
+  $('attackerCurrentHp').max=String(maxHp);
+  $('attackerCurrentHp').placeholder=String(maxHp);
+  $('hpMoveLabel').textContent=uiLang==='en'?'Attacker current HP':'Aktuelle KP des Angreifers';
+  $('hpMoveHelp').textContent=uiLang==='en'?'Leave blank to assume full HP.':'Leer lassen, um volle KP anzunehmen.';
+ }
+}
 async function calculateDamage(){
  const a=calcState.attacker,d=calcState.defender,mid=calcState.selectedMove;
  if(!a||!d||!mid){$('damageResult').innerHTML='<div class="damage-box">Bitte Angreifer, Verteidiger und Attacke auswählen.</div>';return}
  try{
   const m=await json(`${API}/move/${mid}`);
   updateTargetArea(m,false);
-  const hpMoveNames=['water spout','eruption'];
-  const hpMove=hpMoveNames.includes(normalizeMoveName(m.name));
-  const hpWrap=$('hpMoveControl');
-  if(hpWrap){
-    hpWrap.hidden=!hpMove;
-    if(hpMove){
-      const maxHp=calcLevel50Stats(a,'atk')[0];
-      $('attackerMaxHp').textContent=String(maxHp);
-      $('attackerCurrentHp').max=String(maxHp);
-      $('attackerCurrentHp').placeholder=String(maxHp);
-      $('hpMoveLabel').textContent=uiLang==='en'?'Attacker current HP':'Aktuelle KP des Angreifers';
-      $('hpMoveHelp').textContent=uiLang==='en'?'Leave blank to assume full HP.':'Leer lassen, um volle KP anzunehmen.';
-    }
-  }
+  updateHpMoveControl(m,a);
   const dynamicMoveName=normalizeMoveName(m.name);
   const dynamicPowerMoves=['water spout','eruption','body press','foul play','psyshock','psystrike','secret sword','heavy slam','heat crash','low kick','grass knot'];
   if(!m.power&&!dynamicPowerMoves.includes(dynamicMoveName)){$('damageResult').innerHTML='<div class="damage-box">Diese Attacke hat keinen festen Basiswert. Eine direkte Schadenszahl wird dafür nicht angezeigt.</div>';return}
@@ -3184,7 +3187,7 @@ function setupCalculator(){makeEVInputs('atk');makeEVInputs('def');fillOptions()
   const input=$(calcMoveInputIds[i]);
   const chosen=calcState.moves.find(m=>m.label===input?.value||m.name===input?.value);
   if(loadMove&&chosen){showMoveInfoById(chosen.id);return}
-  if(loadMove&&!chosen){calcState.selectedMove=null;$('moveInfo').textContent=uiLang==='en'?'Choose a move in this slot to calculate damage.':'Wähle in diesem Slot eine Attacke für die Kalkulation.';$('damageResult').innerHTML='<div class="damage-box">Bitte eine Attacke im ausgewählten Slot wählen.</div>';}
+  if(loadMove&&!chosen){calcState.selectedMove=null;updateHpMoveControl(null);$('moveInfo').textContent=uiLang==='en'?'Choose a move in this slot to calculate damage.':'Wähle in diesem Slot eine Attacke für die Kalkulation.';$('damageResult').innerHTML='<div class="damage-box">Bitte eine Attacke im ausgewählten Slot wählen.</div>';}
 }
  document.querySelectorAll('.calc-move-choice').forEach((choice,i)=>choice.addEventListener('change',()=>{if(choice.checked)selectCalculatorMoveSlot(i,true);else choice.checked=true;}));
  calcMoveInputIds.forEach((inputId,i)=>{const listId=calcMoveSuggestionIds[i];setupSearchBox(inputId,listId,'move',moveSearchItems,x=>{selectCalculatorMoveSlot(i,false);$(inputId).value=x.label;$(listId).hidden=true;showMoveInfoById(x.id);});});
