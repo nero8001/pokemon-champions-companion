@@ -1,15 +1,12 @@
-# Pokémon Champions Companion – Web-App v9.0
+# Pokémon Champions Companion – Web v9.1
 
-## Release v9.0
+## v9.1 – Move data and Punk Rock correction
+- Champions-specific learnsets now take priority over the general PokéAPI learnset, preventing valid Champions moves from being omitted.
+- Toxtricity (both forms) receives Overdrive in the Pokédex and Team Builder; Overdrive is also added to the Calculator move list.
+- Punk Rock now boosts sound-based attacks by 30% and halves incoming sound-based damage.
 
-- **v9.0:** Release version with the new Download page. Includes the Windows installer and Android APK (both v9.0). This download feature is Web-App-only and is not carried over to Android or Windows.
+## Release note
+- The Windows and Android installers currently included in `downloads/` are still v9.0. Updated installers must be built from their respective project sources before publishing this Web v9.1 package as the complete cross-platform release.
 
-## Deployment
-
-Publish the complete contents of this folder through GitHub Pages. Keep the `downloads/` directory alongside `index.html`, `app.js`, and `style.css`.
-
-Download files:
-- `downloads/Pokemon_Champions_Companion_v9.0_Setup.exe`
-- `downloads/Pokemon_Champions_Companion_v9.0.apk`
-
-The Web-App is version 9.0. The downloadable desktop and Android applications are also version 9.0.
+## Data reference
+- Champions move pools: Pokemon Champions Data (CC BY 4.0), cross-checked with current Champions move references.

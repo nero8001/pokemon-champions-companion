@@ -317,23 +317,10 @@ async function getChampionsMovesForPokemon(p,s){
   const dex=Number(p?.speciesId||s?.id||p?.id||0);
   const moveMap=new Map((Array.isArray(championsMovesData)?championsMovesData:[]).map(x=>[normMoveName(x.name),x]));
   const entries=Object.entries(championsLearnsetsData||{}).filter(([key,v])=>Number(v?.dexNumber)===dex&&Array.isArray(v?.moves));
-  // Prefer the same per-Pokémon move pool that the Calculator reads from PokéAPI,
-  // intersected with the canonical Champions move metadata. The previous flow
-  // trusted a possibly incomplete form-specific community learnset and could
-  // return a one-move list (e.g. only Glaive Rush for Baxcalibur/Mega-Espinodon).
+  // Champions-Learnsets are authoritative. PokéAPI contains main-series learnsets
+  // and can omit Champions-only availability (notably Toxtricity's Overdrive),
+  // so it must never short-circuit the Champions-specific list.
   const apiNames=(p?.moves||[]).map(x=>x?.move?.name||x?.name).filter(Boolean);
-  const apiChampionsMoves=apiNames
-    .map(name=>moveMap.get(normMoveName(name)))
-    .filter(m=>m && m.inChampions!==false);
-  if(apiChampionsMoves.length){
-    const unique=new Map(apiChampionsMoves.map(m=>[normMoveName(m.name),m]));
-    if(dex===998){
-      const signature=moveMap.get('glaiverush');
-      if(signature)unique.set('glaiverush',{...signature,inChampions:true});
-      else unique.set('glaiverush',{name:'Glaive Rush',type:'Dragon',category:'Physical',power:120,accuracy:100,inChampions:true});
-    }
-    return [...unique.values()].sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
-  }
   let names=[];
   if(entries.length){
     const candidates=championsFormCandidates(p,s);
@@ -407,6 +394,12 @@ async function getChampionsMovesForPokemon(p,s){
     }
   }
   includeEspinodonSignatureMove();
+  // Overdrive is part of the verified Champions learnset for both Toxtricity forms.
+  // The upstream snapshot / PokéAPI intersection has omitted this signature move.
+  if(dex===849 && !result.some(m=>normMoveName(m?.name)==='overdrive')){
+    const signature=moveMap.get('overdrive');
+    result.push(signature?{...signature,inChampions:true}:{name:'Overdrive',type:'Electric',category:'Special',power:80,accuracy:100,pp:12,target:'allAdjacentFoes',inChampions:true});
+  }
   return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
 }
 // v5.2 – form-specific Champions learnset corrections.
@@ -2393,6 +2386,15 @@ async function loadCalcMoves(){
    let info={id,name:x.move.name,label:deM(id)||title(x.move.name),type:'',cls:''};
    calcState.moves.push(info);
   }
+  // Champions signature move: Overdrive is selectable for both Toxtricity forms
+  // even when the general PokéAPI learnset does not expose it.
+  if(Number(p.speciesId||p.id)===849 && !calcState.moves.some(x=>normMoveName(x.name)==='overdrive')){
+   try{
+    const overdrive=await json(`${API}/move/overdrive`);
+    const id=Number(overdrive.id);
+    if(id&&!seen.has(id))calcState.moves.push({id,name:overdrive.name,label:deM(id)||title(overdrive.name),type:'electric',cls:'special'});
+   }catch(e){console.warn('Overdrive move data unavailable:',e)}
+  }
   calcState.moves.sort((a,b)=>a.label.localeCompare(b.label,'de'));
   calcMoveInputIds.forEach(id=>{const el=$(id);if(el){el.disabled=false;el.placeholder=t('moveSearch')+' …'}});
   input.disabled=false;
@@ -2517,6 +2519,16 @@ function applyWeatherDefense(m,d,defense,physical){
   if(weather===weatherEffects.snow&&physical&&(d.types||[]).some(t=>t.type?.name==='ice'))return Math.floor(defense*1.5);
   return defense;
 }
+const CHAMPIONS_SOUND_MOVES=new Set([
+  'alluring voice','boomburst','bug buzz','chatter','clanging scales','clangorous soul','clangorous soulblaze',
+  'disarming voice','echoed voice','eerie spell','growl','heal bell','hyper voice','metal sound',
+  'howl','noble roar','overdrive','parting shot','perish song','psychic noise','relic song','roar',
+  'round','screech','sing','snarl','snore','sparkling aria','supersonic','torchsong','uproar'
+].map(normMoveName));
+function isChampionsSoundMove(m){
+  const name=normMoveName(m?.name||m?.move?.name||'');
+  return !!(m?.flags?.sound || m?.flags?.sound===1 || CHAMPIONS_SOUND_MOVES.has(name));
+}
 function moveAbilityTypeAndPower(m,a,d){
  const ability=selectedAbility('atk');
  let type=m.type?.name||'', powerMult=1, notes=[];
@@ -2556,7 +2568,7 @@ function moveAbilityTypeAndPower(m,a,d){
  if(ab==='solar power'&&$('weatherStatus')?.value==='sun'&&m.damage_class?.name==='special'){powerMult*=1.5;notes.push('Solar Power: ×1,5')}
  if(ab==='water bubble'&&type==='water'){powerMult*=2;notes.push('Water Bubble: Wasser ×2')}
  if(ab==='transistor'&&type==='electric'){powerMult*=1.3;notes.push('Transistor: Elektro ×1,3')}
- if(ab==='punk rock'&&['sound'].some(k=>name.includes(k))){powerMult*=1.3;notes.push('Punk Rock: Schall-Attacke ×1,3')}
+ if(ab==='punk rock'&&isChampionsSoundMove(m)){powerMult*=1.3;notes.push('Punk Rock: Schall-Attacke ×1,3')}
  return {type,powerMult,notes};
 }
 function normalizeMoveName(name){return String(name||'').toLowerCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim()}
@@ -2564,6 +2576,7 @@ function abilityDefenseMultiplier(m,d){
  const ability=selectedAbility('def');const ab=normalizeAbilityName(ability?.name);const type=m.type?.name||'';let mult=1,notes=[];
  if(ab==='thick fat'&&['fire','ice'].includes(type)){mult*=.5;notes.push('Speckschicht: ×0,5')}
  if(ab==='water bubble'&&type==='fire'){mult*=.5;notes.push('Water Bubble: Feuer ×0,5')}
+ if(ab==='punk rock'&&isChampionsSoundMove(m)){mult*=.5;notes.push('Punk Rock: erlittene Schall-Attacke ×0,5')}
   // Champions contact flag: Aura Guard only halves damage from moves that actually make contact.
   // PokeAPI does not expose the contact flag, so keep a local Champions-compatible contact list.
   const contactMoves=new Set([
