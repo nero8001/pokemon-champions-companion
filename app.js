@@ -362,15 +362,20 @@ async function getChampionsMovesForPokemon(p,s){
   // Adding Espinodon's signature move must not make an otherwise empty
   // learnset look complete; otherwise the fallback below is skipped and the
   // Team Builder shows Großklingenstoß as the sole option.
-  // Epitaff (Annihilape) can select Zornesfaust in the Champions Team Builder
-  // even when the upstream Champions learnset snapshot omits this move.
-  if(dex===979 && !result.some(m=>normMoveName(m?.name)==='ragefist')){
+  // If an incomplete upstream snapshot contains only Rage Fist, do not mistake
+  // that single signature move for Epitaff's complete Champions learnset.
+  if(dex===979 && result.length===1 && normMoveName(result[0]?.name)==='ragefist') result=[];
+  const includeAnnihilapeRageFist=()=>{
+    if(dex!==979 || result.some(m=>normMoveName(m?.name)==='ragefist'))return;
     const rage=moveMap.get('ragefist')||moveMap.get('rage fist');
     result.push(rage?{...rage,inChampions:true}:{name:'Rage Fist',type:'Ghost',category:'Physical',power:50,accuracy:100,pp:10,inChampions:true});
-  }
+  };
   const hasLearnsetMoves=result.length>0;
   includeEspinodonSignatureMove();
-  if(hasLearnsetMoves)return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
+  if(hasLearnsetMoves){
+    includeAnnihilapeRageFist();
+    return result.sort((a,b)=>championsMoveLabel(a).localeCompare(championsMoveLabel(b),uiLang==='de'?'de':'en'));
+  }
 
   // Robust fallback: if the large community learnset file could not be loaded
   // on the mobile browser, use the selected Pokémon's PokéAPI learnset and
@@ -400,6 +405,7 @@ async function getChampionsMovesForPokemon(p,s){
     }
   }
   includeEspinodonSignatureMove();
+  includeAnnihilapeRageFist();
   // Overdrive is part of the verified Champions learnset for both Toxtricity forms.
   // The upstream snapshot / PokéAPI intersection has omitted this signature move.
   if(dex===849 && !result.some(m=>normMoveName(m?.name)==='overdrive')){
