@@ -2486,6 +2486,7 @@ async function showMoveInfoById(id){
    if(calcState.attacker&&calcState.defender&&calcState.selectedMove)calculateDamage();
   });
   const entry=calcState.moves.find(x=>x.id===id);if(entry){entry.type=type;entry.cls=cls}
+  if(calcState.attacker&&calcState.defender)await calculateDamage();
  }catch(e){$('moveInfo').textContent=uiLang==='en'?'Move data could not be loaded.':'Attackendaten konnten nicht geladen werden.'}
 }
 const fieldEffects={
@@ -3017,6 +3018,7 @@ async function calculateDamage(){
      basePower=Math.max(1,Math.floor(150*currentHp/maxHp));
      notesHpMove=`${uiLang==='en'?'Current HP':'Aktuelle KP'}: ${currentHp}/${maxHp} · ${uiLang==='en'?'Base power':'Basisstärke'} ${basePower}`;
    }
+   const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
    const weightKg=x=>Math.max(0,Number(x?.weight)||0)/10;
    if(dynamicMoveName==='heavy slam'||dynamicMoveName==='heat crash'){
      const ratio=weightKg(a)/Math.max(.001,weightKg(d));
@@ -3031,7 +3033,6 @@ async function calculateDamage(){
    if(['heavy slam','heat crash','low kick','grass knot'].includes(dynamicMoveName))notes.push(`${uiLang==='en'?'Weight-based base power':'Gewichtsabhängige Basisstärke'}: ${basePower}`);
    if(typeof notesHpMove!=='undefined'&&notesHpMove)notes.push(notesHpMove);
   let power=Math.floor(basePower*abilityMove.powerMult*fw.mult);
-   const notes=[...abilityMove.notes,...abilityDef.notes,...fw.notes];
   const isElectricMove=String(abilityMove.type||m.type?.name||'').toLowerCase()==='electric';
   const chargedEligible=hasDynamoAbility()||hasChargeMoveSelected();
   const chargedYes=$('chargedState')?.value==='yes';
