@@ -467,3 +467,12 @@ header{z-index:20000}
 }
 
 .hp-move-input{display:flex;align-items:center;gap:.55rem;max-width:220px}.hp-move-input input{width:110px}.hp-move-input b{min-width:2.5rem}.hp-move-input span{opacity:.65}
+
+/* Defender current HP percentage */
+.defender-hp-control{margin:12px 0 4px;padding:10px 12px;border:1px solid var(--border,#34445f);border-radius:12px;background:rgba(255,255,255,.025)}
+.defender-hp-control .hp-move-input{display:flex;align-items:center;gap:8px;margin-top:6px}
+.defender-hp-control input{width:100%;max-width:130px}
+.hpbar{position:relative;overflow:hidden}
+.hpbar-start-lost{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(210,215,225,.35) 0 3px,rgba(120,130,150,.12) 3px 6px);border-left:1px dashed rgba(230,235,245,.7);border-right:1px dashed rgba(230,235,245,.7);z-index:3;pointer-events:none}
+.hpbar-current-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(65,190,125,.55);z-index:1}
+.hpbar-current-range{position:absolute;top:0;bottom:0;background:rgba(245,190,65,.75);z-index:2}

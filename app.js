@@ -3092,8 +3092,14 @@ async function calculateDamage(){
   const max=hitRolls.reduce((sum,r)=>sum+Math.max(...r),0);
   const avg=hitRolls.reduce((sum,r)=>sum+r.reduce((x,y)=>x+y,0)/r.length,0);
   const hp=Math.max(1,dv[0]);
+  const rawDefenderHpPct=String($('defenderRemainingHp')?.value??'100').trim();
+  const defenderHpPct=Math.max(0,Math.min(100,rawDefenderHpPct===''?100:(Number(rawDefenderHpPct)||0)));
+  const currentHp=hp*defenderHpPct/100;
   const minPct=min/hp*100,maxPct=max/hp*100;
   const avgPct=avg/hp*100;
+  const remainingAfterMaxPct=Math.max(0,(currentHp-max)/hp*100);
+  const remainingAfterMinPct=Math.max(0,(currentHp-min)/hp*100);
+  const priorLostPct=100-defenderHpPct;
   const label=deM(mid)||title(m.name);
   const env=[getSelectedField().label,getSelectedWeather().label].filter(x=>x!=='Kein Feld'&&x!=='Kein Wetter').join(' · ');
   if(stab!==1)notes.push(`STAB: ×${String(stab).replace('.',',')}${stab===2?' (Anpassung)':''}`);
@@ -3103,7 +3109,11 @@ async function calculateDamage(){
   $('damageResult').innerHTML=`<div class="damage-box">
    <div class="damage-number">${min}–${max} KP</div>
    <div class="damage-percent">${minPct.toFixed(1).replace('.',',')}–${maxPct.toFixed(1).replace('.',',')} % Schaden · Ø ${avg.toFixed(1).replace('.',',')} KP</div>
-   <div class="hpbar-wrap"><div class="hpbar" aria-label="Schadensspanne: ${minPct.toFixed(1)} bis ${maxPct.toFixed(1)} Prozent">${max>=hp?`<div class="hpbar-range hpbar-range-ohko" style="width:100%" title="K.o. möglich"></div>`:`<div class="hpbar-fill" style="width:${Math.max(0,Math.min(100,100-maxPct))}%" title="Sicher verbleibende KP"></div><div class="hpbar-range" style="left:${Math.max(0,Math.min(100,100-maxPct))}%;width:${Math.max(0,Math.min(100,maxPct-minPct))}%" title="Mögliche zusätzliche Schadensspanne"></div>`}</div><div class="hpbar-label">${Math.max(0,hp-max)}–${Math.max(0,hp-min)} KP verbleibend${max>=hp?' · K.o. möglich':''}</div></div>
+   <div class="hpbar-wrap"><div class="hpbar" aria-label="Verbleibende KP vor Angriff: ${defenderHpPct} Prozent; Schadensspanne: ${minPct.toFixed(1)} bis ${maxPct.toFixed(1)} Prozent der maximalen KP">
+    <div class="hpbar-fill hpbar-current-fill" style="width:${remainingAfterMaxPct}%" title="KP nach maximalem Schaden"></div>
+    <div class="hpbar-range hpbar-current-range" style="left:${remainingAfterMaxPct}%;width:${Math.max(0,remainingAfterMinPct-remainingAfterMaxPct)}%" title="Mögliche Schadensspanne"></div>
+    ${priorLostPct>0?`<div class="hpbar-start-lost" style="left:${defenderHpPct}%;width:${priorLostPct}%" title="${priorLostPct}% KP waren bereits verloren"></div>`:''}
+   </div><div class="hpbar-label">${Math.max(0,Math.floor(currentHp-max))}–${Math.max(0,Math.ceil(currentHp-min))} KP verbleibend · Start: ${defenderHpPct}%${max>=currentHp?' · K.o. möglich':''}</div></div>
    <div class="damage-muted">${label}${hitCount>1?` · ${hitCount} ${t('hits')}`:''} · ${TARGET_AREA_LABELS[selectedTargetArea()][uiLang==='en'?'en':'de']} · 16 ${uiLang==='en'?'damage rolls per hit':'Schadenswürfe pro Treffer'} (85–100 %) · ${physical?(uiLang==='en'?'physical':'physisch'):(uiLang==='en'?'special':'speziell')}${env?' · '+env:''}</div>
    ${notes.length?`<div class="damage-muted">${notes.join(' · ')}</div>`:''}
   </div>`;
